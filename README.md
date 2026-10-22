@@ -1,0 +1,84 @@
+# Matriz
+
+Aplicação interna de gestão de projetos e tarefas para equipas de trabalho, ao estilo de Jira, Azure DevOps ou Trello.
+
+> **Estado atual:** fase de especificação (Ficha PL 01). Ainda não há código nem tecnologia escolhida; essas decisões ficam para a Aula 2.
+
+## Problema
+
+O pedido inicial do cliente foi:
+
+> "Precisamos de uma aplicação onde as nossas equipas possam organizar projetos, gerir tarefas e acompanhar o progresso do trabalho."
+
+O cliente não definiu funcionalidades, regras de negócio, requisitos técnicos nem prioridades. A análise de requisitos (Ex. 1–3) transformou este pedido numa especificação verificável.
+
+## Objetivos principais
+
+- Organizar o trabalho por **equipas e projetos**, com responsabilidades claras.
+- **Decompor o trabalho** em objetivos, épicos, tarefas e subtarefas.
+- **Planear em sprints por equipa** sem ultrapassar a capacidade disponível, medida em horas e em story points, sem conversão entre ambos.
+- Saber objetivamente **quando uma tarefa está cumprida**, com base em critérios de aceitação.
+- Dar **visibilidade** sobre progresso, desvios e alertas.
+- Garantir **rastreabilidade**: quem executou cada tarefa e a que equipa pertencia, mesmo após transferências.
+
+Detalhe em [`docs/requirements.md`](docs/requirements.md) §1.
+
+## Funcionalidades previstas para o MVP
+
+| ID | Funcionalidade | Prioridade |
+|---|---|---|
+| US01 | Gerir equipas e projetos | P0 |
+| US02 | Gerir a hierarquia de trabalho (Objetivos → Épicos → Tarefas → Subtarefas) | P0 |
+| US03 | Criar, estimar e atribuir tarefas | P0 |
+| US04 | Gerir backlog e sprints por equipa | P0 |
+| US05 | Consultar capacidade e carga de trabalho | P0 |
+| US06 | Atualizar o estado e validar a conclusão das tarefas | P0 |
+| US07 | Consultar progresso, desvios e alertas (versão básica) | P1 |
+| US08 | Propor trabalho e preservar o histórico entre equipas | P1 |
+
+O MVP destina-se à utilização interna da empresa. Os critérios de aceitação estão em [`docs/user-stories.md`](docs/user-stories.md).
+
+## Organização da documentação
+
+```
+matriz/
+├── README.md              visão geral e estado do projeto
+├── AGENTS.md              instruções para coding agents (Ex. 5 — por criar)
+└── docs/
+    ├── requirements.md    visão, utilizadores, regras de negócio, RF, RNF, âmbito do MVP
+    ├── user-stories.md    user stories, prioridades, critérios de aceitação, casos excecionais
+    └── constraints.md     restrições, pressupostos, segurança e privacidade, decisões pendentes
+```
+
+### Utilização como contexto
+
+1. Ordem de leitura: `requirements.md` → `user-stories.md` → `constraints.md`.
+2. Precedência: regras de negócio **Confirmadas** (RN) > User Stories e CA > requisitos **Propostos** > **Pressupostos**.
+3. Comportamento que dependa de uma decisão pendente (`Dxx`) não é implementado enquanto a decisão não estiver registada.
+4. Quando uma decisão é tomada, regista-se no documento respetivo e retira-se da lista de pendentes.
+
+### Identificadores
+
+| Prefixo | Significado | Documento |
+|---|---|---|
+| OBJ | Objetivo do produto | requirements.md |
+| RN | Regra de negócio | requirements.md |
+| RF / RNF | Requisito funcional / não funcional | requirements.md |
+| US / CA / EC | User story / critério de aceitação / caso excecional | user-stories.md |
+| R / P / L | Restrição / pressuposto / limitação de âmbito | constraints.md |
+| SEC | Requisito de segurança e privacidade | constraints.md |
+| D / DT | Decisão pendente funcional / técnica | constraints.md |
+
+## Estado atual
+
+- [x] Ex. 1 — Prompt engineering
+- [x] Ex. 2 — Análise de requisitos e âmbito do MVP
+- [x] Ex. 3 — User stories e critérios de aceitação
+- [x] Ex. 4 — Specification Pack v0.1 (em revisão)
+- [ ] Ex. 5 — `AGENTS.md`
+- [ ] Ex. 6 — Revisão crítica (human-in-the-loop)
+- [ ] Aula 2 — Arquitetura, modelo de dados, API e protótipo
+
+**Em números:** 17 regras de negócio · 30 requisitos funcionais · 8 user stories · 44 critérios de aceitação (29 verificáveis, 15 dependentes de decisões) · 21 decisões funcionais pendentes.
+
+**Decisões a fechar primeiro:** D01 (transição backlog → sprint), D04 / D05 / D18 (ciclo de vida das tarefas), D14 (permissões), D20 (requisitos não funcionais quantitativos, necessários para a Aula 2).
