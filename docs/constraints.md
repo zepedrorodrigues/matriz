@@ -48,7 +48,7 @@ Confirmados na revisão crítica (Ex. 6). Os critérios de aceitação transvers
 
 ### 4.1 Funcionais
 
-Não há decisões funcionais pendentes: D01–D32 estão resolvidas (§4.3).
+Não há decisões funcionais pendentes: D01–D34 estão resolvidas (§4.3).
 
 ### 4.2 Técnicas
 
@@ -102,6 +102,8 @@ As decisões técnicas da Aula 2 estão resolvidas no §4.3. Ficam planeadas as 
 | D30 | Capacidade com subtarefas noutras sprints. | RN22 — contam só as subtarefas, cada uma na sua sprint. |
 | D31 | Feriados na capacidade. | RN06 — ajusta-se a disponibilidade. |
 | D32 | Equipas sem líder. | RN34 — uma equipa ativa tem sempre pelo menos um líder. |
+| D33 | O líder conta para a capacidade da equipa? | RN06 — sim, como qualquer membro. |
+| D34 | Criação de contas de utilizador. | RN35 — o administrador cria a conta pelo e-mail profissional; a ligação à identidade faz-se no primeiro acesso. |
 
 **Pressupostos**
 

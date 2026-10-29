@@ -24,7 +24,7 @@ Modelo lógico dos dados essenciais do MVP, para PostgreSQL (DT02). Os requisito
 | Atributo | Tipo | Chave | Regra |
 |---|---|---|---|
 | id | uuid | PK | |
-| external_subject | text | UK, nulo | Identificador do utilizador no fornecedor de identidade (OIDC, DT04); preenchido no primeiro login. **Por confirmar** (§6). |
+| external_subject | text | UK, nulo | Identificador do utilizador no fornecedor de identidade (OIDC, DT04); preenchido no primeiro acesso (RN35). |
 | name | text | | Obrigatório. Mantém-se no histórico após a saída (RN15, SEC09). |
 | work_email | text | UK | Contacto profissional (SEC05). |
 | is_admin | boolean | | Papel global de administrador (§3.1). |
@@ -50,7 +50,7 @@ Modelo lógico dos dados essenciais do MVP, para PostgreSQL (DT02). Os requisito
 |---|---|---|---|
 | team_id | uuid | PK, FK → team | |
 | user_id | uuid | PK, ref. lógica → user | |
-| role | enum (`leader`, `member`) | | Papel por equipa (§3.1). Uma equipa ativa tem pelo menos um `leader` (RN34). |
+| role | enum (`leader`, `member`) | | Papel por equipa (§3.1). Uma equipa ativa tem pelo menos um `leader` (RN34). Líderes e membros contam para a capacidade (RN06). |
 | allocation_pct | smallint | | 1–100. A soma das alocações de um utilizador é 100 (RN06). |
 | created_at | timestamptz | | |
 
@@ -379,7 +379,7 @@ erDiagram
 | # | Ponto | Estado |
 |---|---|---|
 | 1 | Equipas e projetos em relação N:M (`project_team`). | Pressuposto **P06** — por validar com o cliente. Se for 1:N, a tabela de associação dá lugar a uma coluna em `team`. |
-| 2 | O líder de equipa conta para a capacidade da equipa? O modelo guarda a alocação de todas as pertenças, qualquer que seja o papel. | **Por confirmar** — nenhuma regra o define (RN06 fala em "membros"). |
-| 3 | Criação de contas: o administrador regista o utilizador pelo e-mail profissional e a ligação ao fornecedor de identidade (`external_subject`) faz-se no primeiro login. | **Por confirmar** — a forma de criar contas não está definida (§3.1 só diz que o administrador gere utilizadores). |
+| 2 | O líder de equipa conta para a capacidade da equipa. | Confirmado — RN06 (D33). |
+| 3 | Criação de contas: o administrador regista o utilizador pelo e-mail profissional e a ligação ao fornecedor de identidade (`external_subject`) faz-se no primeiro acesso. | Confirmado — RN35 (D34). |
 | 4 | Referências lógicas, sem chave estrangeira, entre módulos (§1). | Decisão de modelação desta proposta, decorrente da ADR-001. |
 | 5 | Volume das tabelas `alert` e `history_event`. | Revisão futura: DT09; retenção segundo SEC09 (validação jurídica: P12). |

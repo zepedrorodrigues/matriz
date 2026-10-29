@@ -39,7 +39,7 @@
 
 ### US01 — Gerir equipas e projetos
 
-**Prioridade:** P0 — Crítica · **Objetivo:** estabelecer a estrutura organizacional mínima para gerir o trabalho. · **Regras:** RN01, RN02, RN06, RN21, RN25, RN33, RN34
+**Prioridade:** P0 — Crítica · **Objetivo:** estabelecer a estrutura organizacional mínima para gerir o trabalho. · **Regras:** RN01, RN02, RN06, RN21, RN25, RN33, RN34, RN35
 
 > Como **administrador** — e, no caso dos projetos, também como **gestor de projeto** —, quero criar e gerir equipas e projetos, associando as equipas aos projetos em que participam, para organizar o trabalho e identificar as responsabilidades de cada unidade.
 
@@ -104,6 +104,11 @@
 - **Given** que sou um administrador e uma equipa ativa tem um único líder,
 - **When** tento remover esse líder da equipa,
 - **Then** a operação é recusada e a equipa mantém o líder.
+
+**CA01.13 — Criar uma conta de utilizador** · *verificável*
+- **Given** que sou um administrador,
+- **When** crio uma conta com o e-mail profissional de um colaborador,
+- **Then** a conta fica registada e, no primeiro acesso desse colaborador, fica ligada à sua identidade na empresa.
 
 #### Casos excecionais
 
@@ -367,6 +372,11 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 - **Given** que um membro pertence a duas equipas com 50 % de alocação a cada uma, e as sprints de ambas têm 10 dias úteis sem ajustes,
 - **When** consulto a capacidade desse membro em cada equipa,
 - **Then** a capacidade apresentada é de 40 horas em cada uma.
+
+**CA05.11 — Incluir o líder na capacidade da equipa** · *verificável*
+- **Given** que uma equipa tem um líder e um membro, ambos com 100 % de alocação, numa sprint de 10 dias úteis sem ajustes,
+- **When** consulto a capacidade da equipa nessa sprint,
+- **Then** a capacidade apresentada é de 160 horas.
 
 #### Casos excecionais
 
@@ -649,7 +659,7 @@ Aplicam-se a todas as US e verificam os requisitos de segurança e privacidade (
 
 ## 4. Verificabilidade dos critérios de aceitação
 
-**86 CA no total (80 nas US + 6 transversais), todos verificáveis.** Não há decisões funcionais pendentes que bloqueiem critérios de aceitação ([`constraints.md`](constraints.md) §4.1).
+**88 CA no total (82 nas US + 6 transversais), todos verificáveis.** Não há decisões funcionais pendentes que bloqueiem critérios de aceitação ([`constraints.md`](constraints.md) §4.1).
 
 ---
 

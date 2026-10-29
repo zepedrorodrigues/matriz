@@ -86,6 +86,6 @@ Os coding agents seguem, além disto, as instruções de [`AGENTS.md`](AGENTS.md
 - [x] Ex. 6 — Revisão crítica (human-in-the-loop) — Specification Pack v0.3, ver [`docs/review.md`](docs/review.md)
 - [ ] Aula 2 (Ficha PL 02) — Architecture Pack: arquitetura, modelo de dados, API e protótipo — decisões fechadas, artefactos em curso
 
-**Em números:** 34 regras de negócio · 31 requisitos funcionais · 12 requisitos não funcionais · 9 user stories · 86 critérios de aceitação (80 nas US e 6 transversais), todos verificáveis · sem decisões funcionais pendentes.
+**Em números:** 35 regras de negócio · 31 requisitos funcionais · 12 requisitos não funcionais · 9 user stories · 88 critérios de aceitação (82 nas US e 6 transversais), todos verificáveis · sem decisões funcionais pendentes.
 
 **Pendentes:** P12 (validação jurídica da retenção). Revisões futuras planeadas: DT09–DT13 (alertas, microservices, eventos, erros, alta disponibilidade).
