@@ -1,13 +1,28 @@
 openapi: 3.1.0
 info:
   title: Matriz API
-  version: 0.2.0
-  summary: Contrato REST simplificado do MVP da Matriz (Ficha PL 02, Ex. 3; revisto no Ex. 5).
+  version: 0.3.0
+  summary: Contrato REST do MVP da Matriz (Ficha PL 02; completado na Ficha PL 03, Ex. 1).
   description: |
-    Duas operações representativas do MVP:
+    Âmbito desta versão:
 
-    - **Consultar a capacidade de uma sprint** (US05 — CA05.1–CA05.11; RN06, RN19, RN22, RN27; SEC07).
-    - **Transferir uma tarefa para outra equipa** (US09 — CA09.3–CA09.5, CA09.7, CA09.8; RN20, RN22, RN23, RN32).
+    - **Ficha PL 02:** capacidade de uma sprint (US05) e transferência de uma tarefa (US09).
+    - **Ficha PL 03, Ex. 1:** utilizador autenticado, painel inicial, projetos, objetivos e
+      épicos, tarefas, estados, critérios de aceitação, utilizadores elegíveis, participantes e
+      comentários (US01–US03, US06, US07, US10).
+    - As restantes operações (equipas, sprints, alertas, histórico) acrescentam-se no início de
+      cada incremento, antes do código (`docs/implementation-plan.md`).
+
+    Ciclo da sessão (DT04):
+
+    - A aplicação web inicia a sessão no fornecedor OpenID Connect — o Keycloak local em
+      desenvolvimento (DT15) — com Authorization Code + PKCE, e envia
+      `Authorization: Bearer <token de acesso>` em cada pedido.
+    - O backend valida a assinatura (chaves públicas do fornecedor), o emissor, a audiência e a
+      validade do token; não há sessão no servidor. Sem token válido, a API responde 401.
+    - A aplicação renova o token antes de expirar; se a renovação falhar ou a API responder 401,
+      volta ao início de sessão com uma mensagem. Terminar a sessão faz-se no fornecedor.
+    - A identidade (autor, criador, gestor) vem sempre do token e nunca do corpo do pedido.
 
     Convenções:
 
@@ -17,16 +32,26 @@ info:
     - Erros no formato *problem details* (RFC 9457), com `Content-Type: application/problem+json`
       (`docs/architecture.md` §7). Uma operação recusada não altera dados (SEC02).
     - Horas e story points são sempre campos distintos e nunca convertidos (RN06).
+    - Listagens paginadas com `page` e `pageSize` (20 por omissão, no máximo 100), devolvendo o
+      total do conjunto filtrado (D46).
+    - Valores técnicos dos estados e prioridades em inglês; a interface apresenta-os em pt-PT.
+    - Os elementos eliminados (eliminação lógica, RN38) respondem 404.
 servers:
   - url: /api
     description: Mesma origem do frontend; o proxy encaminha `/api` para o backend (`docs/architecture.md` §8).
 security:
   - bearerAuth: []
 tags:
+  - name: Identidade e acesso
+    description: Utilizador autenticado (módulo Identidade e acesso).
+  - name: Organização
+    description: Projetos e equipas (módulo Organização).
+  - name: Acompanhamento
+    description: Painel inicial, progresso e alertas (módulo Acompanhamento).
   - name: Planeamento
     description: Sprints, backlog e capacidade (módulo Planeamento).
   - name: Trabalho
-    description: Tarefas, atribuição e transferências (módulo Trabalho).
+    description: Hierarquia, tarefas, atribuição, participantes, comentários e transferências (módulo Trabalho).
 
 paths:
   /sprints/{sprintId}/capacity:
@@ -187,13 +212,709 @@ paths:
               schema:
                 $ref: '#/components/schemas/Problem'
 
+  /me:
+    get:
+      tags: [Identidade e acesso]
+      operationId: getCurrentUser
+      summary: Consultar o utilizador autenticado
+      description: |
+        Devolve a conta da Matriz associada ao token. No primeiro acesso, a conta criada pelo
+        administrador liga-se à identidade do fornecedor pelo e-mail profissional (RN35, CA01.13).
+        Um token válido de alguém sem conta ativa na Matriz recebe 403.
+      responses:
+        '200':
+          description: Utilizador autenticado, com o papel global, as equipas e os projetos que gere.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /dashboard:
+    get:
+      tags: [Acompanhamento]
+      operationId: getDashboard
+      summary: Consultar o painel inicial
+      description: |
+        Projetos visíveis ao utilizador (`docs/requirements.md` §3.1, CAT06), com o número de
+        tarefas em cada estado (CA07.9, RF36). As contagens abrangem todas as tarefas do projeto,
+        e não uma página, e excluem os elementos eliminados (RN38).
+      responses:
+        '200':
+          description: Painel inicial.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /projects:
+    get:
+      tags: [Organização]
+      operationId: listProjects
+      summary: Listar e pesquisar os projetos visíveis
+      description: |
+        Projetos visíveis ao utilizador (CAT06), ordenados pelo nome. O parâmetro `q` filtra pelo
+        nome, sem distinguir maiúsculas de minúsculas (CA01.14). Os projetos eliminados não
+        aparecem (RN38).
+      parameters:
+        - $ref: '#/components/parameters/Query'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Página de projetos, com o total do conjunto filtrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Organização]
+      operationId: createProject
+      summary: Criar um projeto
+      description: |
+        Só o administrador e o gestor de projeto criam projetos (RN25). Quem cria o projeto passa a
+        ser o seu gestor; a identidade vem do token e não do pedido (`docs/requirements.md` §3.1,
+        CA01.2, CA01.17).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectInput'
+            examples:
+              projeto:
+                value:
+                  name: Portal do Colaborador
+                  objective: Concentrar os serviços internos num único portal.
+      responses:
+        '201':
+          description: Projeto criado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /projects/{projectId}:
+    get:
+      tags: [Organização]
+      operationId: getProject
+      summary: Consultar um projeto
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Projeto, com os gestores e as equipas associadas (CA01.4).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Organização]
+      operationId: updateProject
+      summary: Editar um projeto
+      description: Administrador ou gestor do projeto (CA01.6, CA01.17).
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectUpdate'
+      responses:
+        '200':
+          description: Projeto alterado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Organização]
+      operationId: deleteProject
+      summary: Eliminar um projeto
+      description: |
+        Eliminação lógica (RN38, CA01.15, CA01.16): o projeto e a sua hierarquia deixam de aparecer
+        nas listagens, pesquisas e contagens; o histórico conserva-se e regista a eliminação.
+        Só o administrador e o gestor do projeto. A interface pede confirmação antes do pedido.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '204':
+          description: Projeto eliminado.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /projects/{projectId}/teams:
+    get:
+      tags: [Organização]
+      operationId: listProjectTeams
+      summary: Consultar as equipas de um projeto
+      description: Equipas associadas ao projeto (CA01.4); são as que podem ser responsáveis pelas suas tarefas (RN23).
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Equipas do projeto.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /projects/{projectId}/objectives:
+    get:
+      tags: [Trabalho]
+      operationId: listObjectives
+      summary: Consultar os objetivos e épicos de um projeto
+      description: Os dois níveis superiores da hierarquia (RN12, CA02.6), necessários para criar tarefas.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Objetivos do projeto, cada um com os seus épicos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Objective'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Trabalho]
+      operationId: createObjective
+      summary: Criar um objetivo
+      description: Administrador, gestor do projeto ou líder de uma equipa do projeto (CA02.1).
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ElementInput'
+      responses:
+        '201':
+          description: Objetivo criado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Objective'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /objectives/{objectiveId}/epics:
+    post:
+      tags: [Trabalho]
+      operationId: createEpic
+      summary: Criar um épico num objetivo
+      description: O épico pertence ao projeto do objetivo (RN23, CA02.2).
+      parameters:
+        - $ref: '#/components/parameters/ObjectiveId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ElementInput'
+      responses:
+        '201':
+          description: Épico criado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Epic'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /projects/{projectId}/tasks:
+    get:
+      tags: [Trabalho]
+      operationId: listProjectTasks
+      summary: Listar e filtrar as tarefas de um projeto
+      description: |
+        Tarefas do projeto, sem as subtarefas (que aparecem no detalhe da tarefa principal), filtradas
+        por estado e por prioridade (CA03.19). O total corresponde a todas as tarefas filtradas, e não
+        só à página. As tarefas eliminadas não aparecem (RN38).
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/StateFilter'
+        - $ref: '#/components/parameters/PriorityFilter'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Página de tarefas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Trabalho]
+      operationId: createTask
+      summary: Criar uma tarefa ou subtarefa
+      description: |
+        Uma tarefa indica o épico e a equipa responsável (RN12, RN29, CA03.1); uma subtarefa indica a
+        tarefa principal e herda a sua equipa (RN22). A equipa tem de estar associada ao projeto
+        (RN23). Um membro cria tarefas só no backlog da sua equipa (RN08, RN21). O estado inicial é
+        `in_planning` e a prioridade, se omitida, é `medium` (RN39, CA03.11). O criador vem do token.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+            examples:
+              tarefa:
+                value:
+                  epicId: 3c2b1a0f-9e8d-4c7b-a6f5-e4d3c2b1a0f9
+                  teamId: 0b9e8d7c-6a5b-4c3d-9e2f-1a0b9c8d7e6f
+                  title: Exportar relatório de horas
+                  priority: high
+                  estimateHours: 8
+                  storyPoints: 5
+      responses:
+        '201':
+          description: Tarefa criada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /tasks/{taskId}:
+    get:
+      tags: [Trabalho]
+      operationId: getTask
+      summary: Consultar uma tarefa
+      description: Inclui os critérios de aceitação, os participantes e as subtarefas.
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: Tarefa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Trabalho]
+      operationId: updateTask
+      summary: Editar uma tarefa
+      description: |
+        Altera os campos indicados, com registo no histórico (RN32). Regras: estimativas após
+        «A desenvolver» só pelo líder ou gestor (RN10, CA03.10); prioridade (RN39, CA03.12);
+        responsável pela execução segundo §3.1 e RN03; prazo pelo líder ou gestor (RN29); bloqueio
+        com motivo obrigatório (RN28). A equipa só muda por transferência (RN20) e o estado por
+        `POST /tasks/{taskId}/state`.
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+      responses:
+        '200':
+          description: Tarefa alterada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+    delete:
+      tags: [Trabalho]
+      operationId: deleteTask
+      summary: Eliminar uma tarefa
+      description: |
+        Eliminação lógica da tarefa e das suas subtarefas (RN38, CA03.17): deixam de aparecer nas
+        listagens, contagens e cálculos de capacidade; o histórico conserva-se. Administrador,
+        gestor do projeto ou líder da equipa responsável. A interface pede confirmação.
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '204':
+          description: Tarefa eliminada.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tasks/{taskId}/state:
+    post:
+      tags: [Trabalho]
+      operationId: changeTaskState
+      summary: Mudar o estado de uma tarefa
+      description: |
+        Transições de RN26: avança-se um estado de cada vez e recua-se para qualquer estado anterior;
+        «Pronto a desenvolver» exige pelo menos um critério (RN27); «Terminada» exige todos os
+        critérios cumpridos (RN13); «Entregue» só a partir de «Terminada» e só por líder, gestor ou
+        administrador; de «Entregue» só se sai por reabertura, para «A desenvolver». O membro move
+        apenas as tarefas que lhe estão atribuídas, entre «Pronto a desenvolver» e «Terminada».
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StateChange'
+      responses:
+        '200':
+          description: Estado alterado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /tasks/{taskId}/acceptance-criteria:
+    post:
+      tags: [Trabalho]
+      operationId: createAcceptanceCriterion
+      summary: Acrescentar um critério de aceitação
+      description: Depois de «A desenvolver», só o líder ou o gestor alteram os critérios (RN24, CA06.7–CA06.9).
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptanceCriterionInput'
+      responses:
+        '201':
+          description: Critério criado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptanceCriterion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tasks/{taskId}/acceptance-criteria/{criterionId}:
+    patch:
+      tags: [Trabalho]
+      operationId: updateAcceptanceCriterion
+      summary: Alterar um critério ou registar o seu cumprimento
+      description: |
+        Os membros registam apenas o cumprimento (`isMet`) nas tarefas que lhes estão atribuídas;
+        alterar o texto segue RN24. Quem regista o cumprimento e quando vêm do token e do sistema.
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+        - $ref: '#/components/parameters/CriterionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptanceCriterionUpdate'
+      responses:
+        '200':
+          description: Critério alterado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptanceCriterion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tasks/{taskId}/eligible-users:
+    get:
+      tags: [Trabalho]
+      operationId: listEligibleUsers
+      summary: Consultar os utilizadores elegíveis para uma tarefa
+      description: |
+        Utilizadores que podem ser responsável pela execução ou participantes. Com `scope=team`
+        (por omissão), os membros ativos da equipa responsável. Com `scope=all`, todos os
+        utilizadores ativos; só para o gestor de projeto e o administrador, que podem atribuir
+        a alguém de outra equipa com justificação (RN03, RN40).
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [team, all]
+            default: team
+      responses:
+        '200':
+          description: Utilizadores elegíveis, ordenados pelo nome.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserSummary'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tasks/{taskId}/participants:
+    get:
+      tags: [Trabalho]
+      operationId: listParticipants
+      summary: Consultar os participantes de uma tarefa
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: Participantes (RN40).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Participant'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Trabalho]
+      operationId: addParticipant
+      summary: Associar um participante
+      description: |
+        Líder da equipa responsável (só membros dessa equipa), gestor do projeto ou administrador
+        (também de outra equipa, com justificação: RN03). Associar duas vezes o mesmo utilizador
+        é recusado com 409 (CA03.13–CA03.15).
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParticipantInput'
+      responses:
+        '201':
+          description: Participante associado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Participant'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /tasks/{taskId}/participants/{userId}:
+    delete:
+      tags: [Trabalho]
+      operationId: removeParticipant
+      summary: Remover um participante
+      description: Com registo no histórico (CA03.16).
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '204':
+          description: Participante removido.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tasks/{taskId}/comments:
+    get:
+      tags: [Trabalho]
+      operationId: listComments
+      summary: Consultar os comentários de uma tarefa
+      description: Por ordem cronológica, com autor e data/hora (CA10.2, CA10.4).
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Página de comentários.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Trabalho]
+      operationId: addComment
+      summary: Comentar uma tarefa
+      description: |
+        Quem vê o projeto pode comentar (RN41, CA10.1, CA10.4). O autor e a data/hora são definidos
+        pelo sistema; outros campos enviados, como um autor, são ignorados (CA10.5). Os comentários
+        não são editados nem eliminados.
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentInput'
+      responses:
+        '201':
+          description: Comentário guardado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: Token de acesso emitido pelo fornecedor de identidade da empresa (OpenID Connect, DT04).
+      description: Token de acesso emitido pelo fornecedor OpenID Connect — o da empresa em produção, o Keycloak local em desenvolvimento (DT04, DT15).
 
   parameters:
     SprintId:
@@ -208,10 +929,84 @@ components:
       name: taskId
       in: path
       required: true
-      description: Identificador da tarefa (não pode ser uma subtarefa).
+      description: Identificador da tarefa ou subtarefa. Na transferência, só tarefas (RN22).
       schema:
         type: string
         format: uuid
+
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      description: Identificador do projeto.
+      schema:
+        type: string
+        format: uuid
+    ObjectiveId:
+      name: objectiveId
+      in: path
+      required: true
+      description: Identificador do objetivo.
+      schema:
+        type: string
+        format: uuid
+    CriterionId:
+      name: criterionId
+      in: path
+      required: true
+      description: Identificador do critério de aceitação.
+      schema:
+        type: string
+        format: uuid
+    UserId:
+      name: userId
+      in: path
+      required: true
+      description: Identificador do utilizador.
+      schema:
+        type: string
+        format: uuid
+    Query:
+      name: q
+      in: query
+      required: false
+      description: Texto a procurar no nome, sem distinguir maiúsculas de minúsculas.
+      schema:
+        type: string
+        maxLength: 100
+    Page:
+      name: page
+      in: query
+      required: false
+      description: Número da página, a começar em 1.
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: pageSize
+      in: query
+      required: false
+      description: Elementos por página (D46).
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    StateFilter:
+      name: state
+      in: query
+      required: false
+      description: Filtra pelo estado (CA03.19).
+      schema:
+        $ref: '#/components/schemas/TaskState'
+    PriorityFilter:
+      name: priority
+      in: query
+      required: false
+      description: Filtra pela prioridade (CA03.19).
+      schema:
+        $ref: '#/components/schemas/Priority'
 
   schemas:
     SprintCapacity:
@@ -344,6 +1139,595 @@ components:
           type: string
           format: date-time
 
+    TaskState:
+      type: string
+      enum: [in_planning, in_technical_analysis, ready_for_development, in_development, in_testing,
+             done, delivered]
+      description: |
+        Estados de RN17, por ordem: «Em planeamento», «Em análise técnica», «Pronto a desenvolver»,
+        «A desenvolver», «Em testes», «Terminada», «Entregue». A interface apresenta-os em pt-PT.
+
+    Priority:
+      type: string
+      enum: [low, medium, high]
+      description: Prioridade «Baixa», «Média» ou «Alta» (RN39).
+
+    StoryPoints:
+      type: integer
+      enum: [1, 2, 3, 5, 8, 13, 21]
+      description: Escala fixa (RN07).
+
+    PageInfo:
+      type: object
+      required: [page, pageSize, total]
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          minimum: 0
+          description: Número de elementos do conjunto filtrado, e não só da página.
+
+    UserSummary:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+
+    CurrentUser:
+      type: object
+      required: [id, name, workEmail, isAdmin, teams, managedProjectIds]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        workEmail:
+          type: string
+          format: email
+        isAdmin:
+          type: boolean
+          description: Papel global de administrador.
+        teams:
+          type: array
+          description: Equipas a que pertence, com o papel e a alocação (RN06, RN21).
+          items:
+            type: object
+            required: [teamId, teamName, role, allocationPct]
+            properties:
+              teamId:
+                type: string
+                format: uuid
+              teamName:
+                type: string
+              role:
+                type: string
+                enum: [leader, member]
+              allocationPct:
+                type: integer
+                minimum: 1
+                maximum: 100
+        managedProjectIds:
+          type: array
+          description: Projetos de que é gestor.
+          items:
+            type: string
+            format: uuid
+
+    TeamSummary:
+      type: object
+      required: [id, name, active]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        active:
+          type: boolean
+
+    ProjectInput:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          pattern: \S
+          description: |
+            3 a 100 caracteres, contados depois de retirar os espaços no início e no fim; não pode ser
+            composto apenas por espaços (RN42). Guarda-se sem esses espaços.
+        objective:
+          type: string
+          maxLength: 1000
+          description: Objetivo do projeto, até 1000 caracteres (RN42).
+
+    ProjectUpdate:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          pattern: \S
+          description: Mesmas regras de `ProjectInput.name`.
+        objective:
+          type: string
+          maxLength: 1000
+
+    ProjectSummary:
+      type: object
+      required: [id, name, objective, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        objective:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+
+    Project:
+      type: object
+      required: [id, name, objective, managers, teams, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        objective:
+          type: [string, 'null']
+        managers:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserSummary'
+        teams:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamSummary'
+        createdAt:
+          type: string
+          format: date-time
+
+    ProjectPage:
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/ProjectSummary'
+
+    ElementInput:
+      type: object
+      required: [title]
+      additionalProperties: false
+      description: Dados de um objetivo ou de um épico.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          pattern: \S
+        description:
+          type: string
+
+    Epic:
+      type: object
+      required: [id, objectiveId, title, description]
+      properties:
+        id:
+          type: string
+          format: uuid
+        objectiveId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: [string, 'null']
+
+    Objective:
+      type: object
+      required: [id, projectId, title, description, epics]
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: [string, 'null']
+        epics:
+          type: array
+          items:
+            $ref: '#/components/schemas/Epic'
+
+    TaskCreate:
+      type: object
+      required: [title]
+      additionalProperties: false
+      description: |
+        Indica `epicId` e `teamId` numa tarefa, ou `parentTaskId` numa subtarefa, que herda a equipa
+        da tarefa principal (RN12, RN22, CA02.9).
+      oneOf:
+        - required: [epicId, teamId]
+        - required: [parentTaskId]
+      properties:
+        epicId:
+          type: string
+          format: uuid
+        parentTaskId:
+          type: string
+          format: uuid
+        teamId:
+          type: string
+          format: uuid
+          description: Equipa responsável, associada ao projeto (RN23).
+        title:
+          type: string
+          minLength: 3
+          maxLength: 150
+          pattern: \S
+          description: 3 a 150 caracteres, contados depois de retirar os espaços no início e no fim (RN42).
+        description:
+          type: string
+          maxLength: 2000
+          description: Até 2000 caracteres (RN42); sem motivos pessoais (SEC06).
+        assigneeId:
+          type: string
+          format: uuid
+          description: Responsável pela execução (RN15).
+        priority:
+          $ref: '#/components/schemas/Priority'
+        estimateHours:
+          type: number
+          minimum: 0
+        storyPoints:
+          $ref: '#/components/schemas/StoryPoints'
+        dueDate:
+          type: string
+          format: date
+
+    TaskUpdate:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      description: Os campos a `null` ficam sem valor.
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 150
+          pattern: \S
+        description:
+          type: [string, 'null']
+          maxLength: 2000
+        priority:
+          $ref: '#/components/schemas/Priority'
+        assigneeId:
+          type: [string, 'null']
+          format: uuid
+        assignmentJustification:
+          type: string
+          minLength: 1
+          description: Obrigatória quando o responsável pela execução é de outra equipa (RN03, CA09.6).
+        estimateHours:
+          type: [number, 'null']
+          minimum: 0
+        storyPoints:
+          type: [integer, 'null']
+          enum: [1, 2, 3, 5, 8, 13, 21, null]
+        dueDate:
+          type: [string, 'null']
+          format: date
+        isBlocked:
+          type: boolean
+        blockReason:
+          type: [string, 'null']
+          description: Obrigatório quando `isBlocked` é verdadeiro; descreve o impedimento (RN28, SEC06).
+
+    StateChange:
+      type: object
+      required: [state]
+      additionalProperties: false
+      properties:
+        state:
+          $ref: '#/components/schemas/TaskState'
+
+    AcceptanceCriterionInput:
+      type: object
+      required: [description]
+      additionalProperties: false
+      properties:
+        description:
+          type: string
+          minLength: 1
+          pattern: \S
+
+    AcceptanceCriterionUpdate:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        description:
+          type: string
+          minLength: 1
+          pattern: \S
+        isMet:
+          type: boolean
+
+    AcceptanceCriterion:
+      type: object
+      required: [id, description, isMet, metBy, metAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        description:
+          type: string
+        isMet:
+          type: boolean
+        metBy:
+          oneOf:
+            - $ref: '#/components/schemas/UserSummary'
+            - type: 'null'
+        metAt:
+          type: [string, 'null']
+          format: date-time
+
+    ParticipantInput:
+      type: object
+      required: [userId]
+      additionalProperties: false
+      properties:
+        userId:
+          type: string
+          format: uuid
+        justification:
+          type: string
+          minLength: 1
+          description: Obrigatória quando o utilizador é de outra equipa (RN03).
+
+    Participant:
+      type: object
+      required: [user, addedBy, addedAt]
+      properties:
+        user:
+          $ref: '#/components/schemas/UserSummary'
+        addedBy:
+          $ref: '#/components/schemas/UserSummary'
+        addedAt:
+          type: string
+          format: date-time
+
+    TaskSummary:
+      type: object
+      required: [id, title, state, priority, teamId, assignee, estimateHours, storyPoints, isBlocked,
+                 isOverdue, subtaskCount]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        state:
+          $ref: '#/components/schemas/TaskState'
+        priority:
+          $ref: '#/components/schemas/Priority'
+        teamId:
+          type: string
+          format: uuid
+        assignee:
+          oneOf:
+            - $ref: '#/components/schemas/UserSummary'
+            - type: 'null'
+        estimateHours:
+          type: [number, 'null']
+          description: Numa tarefa com subtarefas, soma das subtarefas (RN22).
+        storyPoints:
+          type: [integer, 'null']
+          description: Numa tarefa com subtarefas, soma das subtarefas (RN22).
+        isBlocked:
+          type: boolean
+        isOverdue:
+          type: boolean
+          description: Prazo ultrapassado e tarefa não concluída (RF28).
+        subtaskCount:
+          type: integer
+          minimum: 0
+
+    Task:
+      type: object
+      required: [id, projectId, epicId, parentTaskId, title, description, teamId, originalTeamId,
+                 assignee, state, priority, estimateHours, storyPoints, dueDate, isBlocked, blockReason,
+                 isOverdue, acceptanceCriteria, participants, subtasks, createdBy, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        epicId:
+          type: [string, 'null']
+          format: uuid
+        parentTaskId:
+          type: [string, 'null']
+          format: uuid
+        title:
+          type: string
+        description:
+          type: [string, 'null']
+        teamId:
+          type: string
+          format: uuid
+        originalTeamId:
+          type: string
+          format: uuid
+          description: Equipa em que a tarefa foi criada; nunca muda (RN14).
+        assignee:
+          oneOf:
+            - $ref: '#/components/schemas/UserSummary'
+            - type: 'null'
+        state:
+          $ref: '#/components/schemas/TaskState'
+        priority:
+          $ref: '#/components/schemas/Priority'
+        estimateHours:
+          type: [number, 'null']
+        storyPoints:
+          type: [integer, 'null']
+        dueDate:
+          type: [string, 'null']
+          format: date
+        isBlocked:
+          type: boolean
+        blockReason:
+          type: [string, 'null']
+        isOverdue:
+          type: boolean
+        acceptanceCriteria:
+          type: array
+          items:
+            $ref: '#/components/schemas/AcceptanceCriterion'
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/Participant'
+        subtasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskSummary'
+        createdBy:
+          $ref: '#/components/schemas/UserSummary'
+        createdAt:
+          type: string
+          format: date-time
+
+    TaskPage:
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/TaskSummary'
+
+    CommentInput:
+      type: object
+      required: [body]
+      description: Outros campos, como um autor, são ignorados (CA10.5).
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: \S
+          description: 1 a 2000 caracteres, não só espaços (RN41); sem motivos pessoais (SEC06).
+
+    Comment:
+      type: object
+      required: [id, taskId, author, body, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        author:
+          $ref: '#/components/schemas/UserSummary'
+        body:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CommentPage:
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Comment'
+
+    TaskStateCounts:
+      type: object
+      description: Número de tarefas em cada estado (RN17), sem subtarefas nem elementos eliminados.
+      required: [in_planning, in_technical_analysis, ready_for_development, in_development, in_testing,
+                 done, delivered]
+      properties:
+        in_planning:
+          type: integer
+          minimum: 0
+        in_technical_analysis:
+          type: integer
+          minimum: 0
+        ready_for_development:
+          type: integer
+          minimum: 0
+        in_development:
+          type: integer
+          minimum: 0
+        in_testing:
+          type: integer
+          minimum: 0
+        done:
+          type: integer
+          minimum: 0
+        delivered:
+          type: integer
+          minimum: 0
+
+    Dashboard:
+      type: object
+      required: [projects]
+      properties:
+        projects:
+          type: array
+          items:
+            type: object
+            required: [id, name, taskCounts, totalTasks]
+            properties:
+              id:
+                type: string
+                format: uuid
+              name:
+                type: string
+              taskCounts:
+                $ref: '#/components/schemas/TaskStateCounts'
+              totalTasks:
+                type: integer
+                minimum: 0
+
     Problem:
       type: object
       description: Erro no formato *problem details* (RFC 9457).
@@ -397,6 +1781,18 @@ components:
             $ref: '#/components/schemas/Problem'
     NotFound:
       description: O recurso não existe.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Conflict:
+      description: A operação viola uma regra de negócio no estado atual (p. ex. transição de estado inválida ou associação repetida).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    UnprocessableEntity:
+      description: Os dados são válidos, mas referem elementos que não os podem receber (p. ex. equipa não associada ao projeto ou utilizador não elegível).
       content:
         application/problem+json:
           schema:
