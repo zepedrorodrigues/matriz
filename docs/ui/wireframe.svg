@@ -1,0 +1,194 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="960" viewBox="0 0 1280 960" font-family="Arial, Helvetica, sans-serif" role="img" aria-labelledby="t d">
+  <title id="t">Matriz — wireframe do planeamento da sprint</title>
+  <desc id="d">Wireframe de baixa fidelidade do ecrã de planeamento e capacidade de uma sprint, visto pelo líder de equipa. Dados fictícios.</desc>
+  <style>
+    .box { fill: #ffffff; stroke: #888888; stroke-width: 1; }
+    .panel { fill: #fafafa; stroke: #888888; stroke-width: 1; }
+    .bar { fill: #e4e4e4; }
+    .btn { fill: #ffffff; stroke: #555555; stroke-width: 1; }
+    .btn-primary { fill: #555555; stroke: #555555; }
+    .btn-disabled { fill: #f0f0f0; stroke: #bbbbbb; stroke-dasharray: 4 3; }
+    .chip { fill: #eeeeee; stroke: #999999; }
+    .warn { fill: #f2f2f2; stroke: #333333; stroke-width: 2; stroke-dasharray: 6 4; }
+    .h1 { font-size: 22px; font-weight: bold; fill: #222222; }
+    .h2 { font-size: 16px; font-weight: bold; fill: #222222; }
+    .t { font-size: 13px; fill: #333333; }
+    .s { font-size: 11px; fill: #666666; }
+    .kpi { font-size: 26px; font-weight: bold; fill: #222222; }
+    .w { font-size: 13px; fill: #ffffff; }
+    .note { font-size: 10px; fill: #8a8a8a; font-style: italic; }
+    .line { stroke: #cccccc; stroke-width: 1; }
+  </style>
+
+  <rect width="1280" height="960" fill="#ffffff"/>
+
+  <!-- Barra de navegação -->
+  <rect class="bar" x="0" y="0" width="1280" height="56"/>
+  <text x="24" y="35" class="h2">MATRIZ</text>
+  <text x="140" y="34" class="t">Projetos</text>
+  <text x="230" y="34" class="t">Backlog</text>
+  <text x="315" y="34" class="t" font-weight="bold">Sprints</text>
+  <rect x="312" y="44" width="52" height="3" fill="#333333"/>
+  <text x="395" y="34" class="t">Acompanhamento</text>
+  <text x="535" y="34" class="t">Alertas</text>
+  <circle cx="595" cy="29" r="10" fill="#555555"/>
+  <text x="591" y="33" class="w" font-size="11px">3</text>
+  <text x="1010" y="34" class="t">Ana Exemplo · Líder · Equipa Alfa ▾</text>
+  <text x="140" y="52" class="note">navegação: US01–US09 (ver docs/ui/wireframe.md)</text>
+
+  <!-- Cabeçalho -->
+  <text x="24" y="84" class="s">Sprints › Equipa Alfa › Sprint 12</text>
+  <text x="24" y="114" class="h1">Planeamento da Sprint 12 — Equipa Alfa</text>
+  <text x="24" y="138" class="t">02/11/2026 – 13/11/2026 · 10 dias úteis · Estado: Planeada</text>
+  <text x="980" y="138" class="note">Ações sobre a sprint: por decidir (ver docs/ui/wireframe.md §3)</text>
+
+  <!-- Aviso de sobrecarga -->
+  <rect class="warn" x="24" y="156" width="1232" height="40" rx="4"/>
+  <text x="40" y="181" class="t" font-weight="bold">⚠ Sobrecarga:</text>
+  <text x="140" y="181" class="t">172 h planeadas para 160 h de capacidade (−12 h). O planeamento não é bloqueado; o líder e a equipa foram notificados.</text>
+  <text x="1150" y="181" class="note">RN19, CA05.8</text>
+
+  <!-- Indicadores -->
+  <rect class="box" x="24" y="212" width="236" height="80" rx="4"/>
+  <text x="40" y="236" class="s">CAPACIDADE DA EQUIPA</text>
+  <text x="40" y="272" class="kpi">160 h</text>
+  <text x="180" y="284" class="note">CA05.1, CA05.7</text>
+
+  <rect class="box" x="272" y="212" width="236" height="80" rx="4"/>
+  <text x="288" y="236" class="s">HORAS PLANEADAS</text>
+  <text x="288" y="272" class="kpi">172 h</text>
+  <text x="428" y="284" class="note">CA05.1, CA05.9</text>
+
+  <rect class="box" x="520" y="212" width="236" height="80" rx="4" stroke-width="2" stroke="#333333"/>
+  <text x="536" y="236" class="s">HORAS RESTANTES</text>
+  <text x="536" y="272" class="kpi">−12 h ⚠</text>
+  <text x="676" y="284" class="note">CA05.3</text>
+
+  <rect class="box" x="768" y="212" width="236" height="80" rx="4"/>
+  <text x="784" y="236" class="s">STORY POINTS PLANEADOS</text>
+  <text x="784" y="272" class="kpi">34 SP</text>
+  <text x="870" y="266" class="s">sem conversão em horas</text>
+  <text x="932" y="284" class="note">CA05.2</text>
+
+  <rect class="box" x="1016" y="212" width="240" height="80" rx="4"/>
+  <text x="1032" y="236" class="s">TAREFAS SEM STORY POINTS</text>
+  <text x="1032" y="272" class="kpi">1</text>
+  <text x="1060" y="266" class="s">contam como 0 SP</text>
+  <text x="1196" y="284" class="note">RN27</text>
+
+  <!-- Capacidade por pessoa -->
+  <text x="24" y="326" class="h2">Capacidade por pessoa</text>
+  <text x="220" y="326" class="note">visível para o líder e, nos próprios dados, para cada membro (SEC07)</text>
+  <rect class="box" x="24" y="336" width="1232" height="104" rx="4"/>
+  <rect x="24" y="336" width="1232" height="30" fill="#efefef"/>
+  <text x="40" y="356" class="s">PESSOA</text>
+  <text x="240" y="356" class="s">PAPEL</text>
+  <text x="360" y="356" class="s">ALOCAÇÃO</text>
+  <text x="480" y="356" class="s">CAPACIDADE</text>
+  <text x="610" y="356" class="s">PLANEADO</text>
+  <text x="730" y="356" class="s">RESTANTE</text>
+  <text x="850" y="356" class="s">SITUAÇÃO</text>
+  <text x="1080" y="356" class="s">AÇÃO</text>
+
+  <text x="40" y="391" class="t">Ana Exemplo</text>
+  <text x="240" y="391" class="t">Líder</text>
+  <text x="360" y="391" class="t">100 %</text>
+  <text x="480" y="391" class="t">80 h</text>
+  <text x="610" y="391" class="t">70 h</text>
+  <text x="730" y="391" class="t">10 h</text>
+  <text x="850" y="391" class="t">Dentro da capacidade</text>
+  <rect class="btn" x="1080" y="374" width="140" height="26" rx="4"/>
+  <text x="1096" y="392" class="t">Ajustar horas</text>
+  <line class="line" x1="24" y1="406" x2="1256" y2="406"/>
+
+  <text x="40" y="427" class="t">Rui Exemplo</text>
+  <text x="240" y="427" class="t">Membro</text>
+  <text x="360" y="427" class="t">100 %</text>
+  <text x="480" y="427" class="t">80 h</text>
+  <text x="610" y="427" class="t">102 h</text>
+  <text x="730" y="427" class="t" font-weight="bold">−22 h</text>
+  <rect class="chip" x="846" y="412" width="110" height="22" rx="11"/>
+  <text x="858" y="427" class="t" font-weight="bold">⚠ Sobrecarga</text>
+  <rect class="btn" x="1080" y="410" width="140" height="26" rx="4"/>
+  <text x="1096" y="428" class="t">Ajustar horas</text>
+  <text x="966" y="427" class="note">CA05.4</text>
+  <text x="1080" y="452" class="note">pede só horas, nunca o motivo (CA05.5, SEC06)</text>
+
+  <!-- Backlog -->
+  <rect class="panel" x="24" y="468" width="600" height="432" rx="4"/>
+  <text x="40" y="496" class="h2">Backlog da equipa</text>
+  <text x="200" y="496" class="s">tarefas fora da sprint ativa · 4</text>
+  <text x="440" y="496" class="note">CA04.2, CA04.3, CA04.7</text>
+  <line class="line" x1="24" y1="508" x2="624" y2="508"/>
+
+  <rect class="box" x="40" y="520" width="568" height="64" rx="4"/>
+  <text x="56" y="544" class="t" font-weight="bold">Exportar relatório de horas</text>
+  <text x="56" y="566" class="s">Projeto Portal › Épico Relatórios · 8 h · 5 SP · Em planeamento</text>
+  <rect class="btn" x="500" y="536" width="92" height="28" rx="4"/>
+  <text x="514" y="555" class="t">Planear →</text>
+
+  <rect class="box" x="40" y="594" width="568" height="64" rx="4"/>
+  <text x="56" y="618" class="t" font-weight="bold">Rever permissões de acesso</text>
+  <text x="56" y="640" class="s">Projeto Portal › Épico Segurança · 5 h · sem SP · Pronto a desenvolver</text>
+  <rect class="btn" x="500" y="610" width="92" height="28" rx="4"/>
+  <text x="514" y="629" class="t">Planear →</text>
+
+  <rect class="box" x="40" y="668" width="568" height="78" rx="4"/>
+  <text x="56" y="692" class="t" font-weight="bold">Corrigir filtro de pesquisa</text>
+  <text x="56" y="714" class="s">Projeto Intranet › Épico Pesquisa · sem estimativa · Em planeamento</text>
+  <text x="56" y="734" class="note">Precisa de estimativa em horas para ser planeada (RN27)</text>
+  <rect class="btn-disabled" x="500" y="684" width="92" height="28" rx="4"/>
+  <text x="514" y="703" class="s">Planear →</text>
+
+  <rect class="box" x="40" y="756" width="568" height="64" rx="4"/>
+  <text x="56" y="780" class="t" font-weight="bold">Nova página de ajuda</text>
+  <text x="56" y="802" class="s">Projeto Intranet › Épico Conteúdos · 3 h · 2 SP · criada por um membro</text>
+  <rect class="btn" x="500" y="772" width="92" height="28" rx="4"/>
+  <text x="514" y="791" class="t">Planear →</text>
+  <text x="40" y="844" class="note">Só o líder planeia; os membros criam tarefas no backlog sem as colocar na sprint (RN08, CA04.6, CA08.3)</text>
+
+  <!-- Sprint -->
+  <rect class="panel" x="656" y="468" width="600" height="432" rx="4"/>
+  <text x="672" y="496" class="h2">Sprint 12 — tarefas planeadas</text>
+  <text x="920" y="496" class="s">5 · 172 h · 34 SP</text>
+  <text x="1072" y="496" class="note">CA07.1, CA07.3, CA07.4</text>
+  <line class="line" x1="656" y1="508" x2="1256" y2="508"/>
+
+  <rect class="box" x="672" y="520" width="568" height="64" rx="4"/>
+  <text x="688" y="544" class="t" font-weight="bold">Integrar login da empresa</text>
+  <text x="688" y="566" class="s">Rui Exemplo · 40 h · 13 SP</text>
+  <rect class="chip" x="980" y="530" width="104" height="22" rx="11"/>
+  <text x="992" y="545" class="s">A desenvolver</text>
+
+  <rect class="box" x="672" y="594" width="568" height="64" rx="4"/>
+  <text x="688" y="618" class="t" font-weight="bold">Ecrã de alertas</text>
+  <text x="688" y="640" class="s">Ana Exemplo · 24 h · 8 SP</text>
+  <rect class="chip" x="980" y="604" width="84" height="22" rx="11"/>
+  <text x="992" y="619" class="s">Em testes</text>
+
+  <rect class="box" x="672" y="668" width="568" height="64" rx="4"/>
+  <text x="688" y="692" class="t" font-weight="bold">Migração de dados</text>
+  <text x="688" y="714" class="s">Rui Exemplo · 62 h · 8 SP · motivo: aguarda acesso ao servidor</text>
+  <rect class="chip" x="980" y="678" width="140" height="22" rx="11"/>
+  <text x="992" y="693" class="s">Pronto a desenvolver</text>
+  <rect x="980" y="704" width="96" height="22" rx="11" fill="#555555"/>
+  <text x="992" y="719" class="w" font-size="11px">🔒 Bloqueada</text>
+
+  <rect class="box" x="672" y="742" width="568" height="64" rx="4"/>
+  <text x="688" y="766" class="t" font-weight="bold">Documentação da API</text>
+  <text x="688" y="788" class="s">Ana Exemplo · 30 h · 5 SP · prazo 30/10/2026</text>
+  <rect class="chip" x="980" y="752" width="136" height="22" rx="11"/>
+  <text x="992" y="767" class="s">Em análise técnica</text>
+  <rect x="980" y="778" width="132" height="22" rx="11" fill="#555555"/>
+  <text x="992" y="793" class="w" font-size="11px">Prazo ultrapassado</text>
+
+  <rect class="box" x="672" y="816" width="568" height="64" rx="4"/>
+  <text x="688" y="840" class="t" font-weight="bold">Testes de carga</text>
+  <text x="688" y="862" class="s">Subtarefa de «Preparar ambiente de testes» (Sprint 13) · Ana Exemplo · 16 h · sem SP</text>
+  <rect class="chip" x="1012" y="826" width="112" height="22" rx="11"/>
+  <text x="1024" y="841" class="s">Em planeamento</text>
+
+  <!-- Rodapé -->
+  <line class="line" x1="24" y1="920" x2="1256" y2="920"/>
+  <text x="24" y="944" class="note">Wireframe de baixa fidelidade · Ficha PL 02, Ex. 4 · ecrã do líder de equipa (US04, US05, US07) · dados fictícios (SEC08) · interface em pt-PT para computador (RNF10, RNF11)</text>
+</svg>

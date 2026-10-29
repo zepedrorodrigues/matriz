@@ -102,8 +102,8 @@ As decisões técnicas da Aula 2 estão resolvidas no §4.3. Ficam planeadas as 
 | D31 | Feriados na capacidade. | RN06 — ajusta-se a disponibilidade. |
 | D32 | Equipas sem líder. | RN34 — uma equipa ativa tem sempre pelo menos um líder. |
 | D33 | O líder conta para a capacidade da equipa? | RN06 — sim, como qualquer membro. |
-| D35 | Tarefa transferida que está planeada numa sprint da equipa de origem. | RN20 — sai dessa sprint e passa para o backlog da equipa de destino. |
 | D34 | Criação de contas de utilizador. | RN35 — o administrador cria a conta pelo e-mail profissional; a ligação à identidade faz-se no primeiro acesso. |
+| D35 | Tarefa transferida que está planeada numa sprint da equipa de origem. | RN20 — sai dessa sprint e passa para o backlog da equipa de destino. |
 
 **Pressupostos**
 
