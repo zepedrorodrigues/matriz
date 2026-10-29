@@ -1,6 +1,6 @@
 # Matriz — User Stories do MVP
 
-> **Versão:** 0.3 · **Data:** 2026-10-29 · **Estado:** revisto na revisão crítica (Ficha PL 01, Ex. 6)
+> **Versão:** 0.4 · **Data:** 2026-10-29 · **Estado:** decisões pendentes fechadas (preparação da Ficha PL 02)
 > **Fonte:** backlog produzido no Ex. 3, consolidado no Ex. 4 e revisto no Ex. 6. As alterações estão no §5.
 > **Relacionados:** [`requirements.md`](requirements.md) · [`constraints.md`](constraints.md) · [`review.md`](review.md)
 
@@ -39,15 +39,15 @@
 
 ### US01 — Gerir equipas e projetos
 
-**Prioridade:** P0 — Crítica · **Objetivo:** estabelecer a estrutura organizacional mínima para gerir o trabalho. · **Regras:** RN01, RN02, RN21, RN25
+**Prioridade:** P0 — Crítica · **Objetivo:** estabelecer a estrutura organizacional mínima para gerir o trabalho. · **Regras:** RN01, RN02, RN06, RN21, RN25, RN33
 
 > Como **administrador** — e, no caso dos projetos, também como **gestor de projeto** —, quero criar e gerir equipas e projetos, associando as equipas aos projetos em que participam, para organizar o trabalho e identificar as responsabilidades de cada unidade.
 
 #### Critérios de aceitação
 
-**CA01.1 — Criar uma equipa** · *depende de D22 (o que é um nome válido)*
+**CA01.1 — Criar uma equipa** · *verificável*
 - **Given** que sou um administrador,
-- **When** crio uma equipa com um nome válido,
+- **When** crio uma equipa com um nome não vazio, com até 100 caracteres e não usado por outra equipa ativa (sem distinguir maiúsculas de minúsculas),
 - **Then** a equipa fica registada, consta da lista de equipas e pode ser associada a projetos e a utilizadores.
 
 **CA01.2 — Criar um projeto** · *verificável*
@@ -75,9 +75,9 @@
 - **When** altero o nome ou o objetivo do projeto,
 - **Then** a consulta do projeto apresenta os novos valores e as equipas e objetivos associados mantêm-se.
 
-**CA01.7 — Editar uma equipa** · *depende de D22 (o que é um nome válido)*
+**CA01.7 — Editar uma equipa** · *verificável*
 - **Given** que existe uma equipa e sou um administrador,
-- **When** altero o nome da equipa para um nome válido,
+- **When** altero o nome da equipa para um nome que cumpra as regras do CA01.1,
 - **Then** a consulta da equipa apresenta o novo nome e as associações a projetos, utilizadores e tarefas mantêm-se.
 
 **CA01.8 — Consultar equipas e projetos** · *verificável*
@@ -87,18 +87,28 @@
 
 **CA01.9 — Associar um utilizador a uma equipa** · *verificável*
 - **Given** que existe um utilizador e uma equipa e sou um administrador,
-- **When** associo o utilizador à equipa,
-- **Then** o utilizador passa a constar dos membros da equipa.
+- **When** associo o utilizador à equipa com uma percentagem de alocação,
+- **Then** o utilizador passa a constar dos membros da equipa, com essa alocação.
+
+**CA01.10 — Impedir a desativação de uma equipa com tarefas por concluir** · *verificável*
+- **Given** que sou um administrador e uma equipa tem tarefas que não estão em «Terminada» nem em «Entregue»,
+- **When** tento desativar a equipa,
+- **Then** a operação é recusada e a equipa mantém-se ativa.
+
+**CA01.11 — Desativar uma equipa** · *verificável*
+- **Given** que sou um administrador e uma equipa não tem tarefas por concluir,
+- **When** desativo a equipa,
+- **Then** a equipa deixa de poder receber tarefas e o seu histórico continua consultável.
 
 #### Casos excecionais
 
 | ID | Situação | Regra |
 |---|---|---|
-| EC01.1 | Criar uma equipa com o mesmo nome de outra equipa existente. | D22 |
-| EC01.2 | Criar um projeto antes de lhe associar qualquer equipa. | D23 |
-| EC01.3 | Desativar uma equipa que ainda tem tarefas atribuídas. | D24 |
+| EC01.1 | Criar uma equipa com o mesmo nome de outra equipa existente. | Recusado se a outra equipa estiver ativa (RN33). |
+| EC01.2 | Criar um projeto antes de lhe associar qualquer equipa. | Permitido (RN33). |
+| EC01.3 | Desativar uma equipa que ainda tem tarefas atribuídas. | Só sem tarefas por concluir (RN33, CA01.10). |
 
-**Decisões pendentes:** D22, D23, D24 · **Pressupostos:** P06, P07
+**Pressupostos:** P06
 
 ---
 
@@ -150,30 +160,33 @@
 - **When** um utilizador autorizado tenta atribuir a subtarefa a outra equipa,
 - **Then** a operação é recusada e a subtarefa mantém a equipa responsável da tarefa principal.
 
+**CA02.9 — Exigir um épico para cada tarefa** · *verificável*
+- **Given** que existe um objetivo,
+- **When** tento criar uma tarefa associada diretamente ao objetivo, sem épico,
+- **Then** a operação é recusada.
+
 #### Casos excecionais
 
 | ID | Situação | Regra |
 |---|---|---|
-| EC02.1 | Associar uma tarefa diretamente a um objetivo, sem épico. | D06 |
+| EC02.1 | Associar uma tarefa diretamente a um objetivo, sem épico. | Não permitido — uma tarefa pertence sempre a um épico (RN12, CA02.9). |
 | EC02.2 | Criar uma subtarefa sem tarefa principal. | Impossível por definição: uma subtarefa está sempre contida numa tarefa (RN22). |
 | EC02.3 | Associar um elemento a si próprio ou criar uma relação hierárquica circular. | É sempre impedido, sem exceções (RF07, CA02.7). |
 | EC02.4 | Atribuir uma subtarefa a uma equipa diferente da tarefa principal. | Não permitido — a subtarefa tem sempre a equipa da tarefa principal (RN22, CA02.8). |
-
-**Decisões pendentes:** D06, D13
 
 ---
 
 ### US03 — Criar, estimar e atribuir tarefas
 
-**Prioridade:** P0 — Crítica · **Objetivo:** distribuir o trabalho pelas equipas e pelos seus elementos. · **Regras:** RN02, RN03, RN06, RN07, RN10, RN20, RN22, RN23
+**Prioridade:** P0 — Crítica · **Objetivo:** distribuir o trabalho pelas equipas e pelos seus elementos. · **Regras:** RN02, RN03, RN06, RN07, RN10, RN20, RN22, RN23, RN27, RN29
 
 > Como **líder de equipa** ou **gestor de projeto** autorizado, quero criar tarefas, definir as respetivas estimativas e atribuí-las a uma equipa ou indivíduo, para distribuir o trabalho de acordo com as responsabilidades e o planeamento estabelecido.
 
 #### Critérios de aceitação
 
-**CA03.1 — Criar uma tarefa** · *depende de D16 (campos obrigatórios)*
+**CA03.1 — Criar uma tarefa** · *verificável*
 - **Given** que sou um utilizador autorizado a criar tarefas,
-- **When** registo uma tarefa com os campos obrigatórios definidos,
+- **When** registo uma tarefa com título, épico e equipa responsável (RN29),
 - **Then** a tarefa fica registada, pertence ao projeto do elemento a que está associada e consta do backlog da equipa responsável.
 
 **CA03.2 — Atribuir uma tarefa a uma equipa** · *verificável*
@@ -213,32 +226,38 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 - **When** consulto as estimativas da tarefa,
 - **Then** a estimativa temporal apresentada é a soma das estimativas temporais das subtarefas e os story points são a soma dos story points das subtarefas, apresentados separadamente.
 
+**CA03.9 — Validar a escala de story points** · *verificável*
+- **Given** que existe uma tarefa,
+- **When** registo uma estimativa em story points fora da escala 1, 2, 3, 5, 8, 13, 21,
+- **Then** a estimativa é recusada e a anterior mantém-se.
+
+**CA03.10 — Proteger as estimativas durante o desenvolvimento** · *verificável*
+- **Given** que uma tarefa já entrou em «A desenvolver»,
+- **When** um membro tenta alterar uma das suas estimativas,
+- **Then** a operação é recusada e a estimativa mantém-se.
+
 #### Casos excecionais
 
 | ID | Situação | Regra |
 |---|---|---|
-| EC03.1 | Tarefa sem story points ou sem estimativa temporal. | D03 |
-| EC03.2 | Estimativa negativa ou incompatível com a escala definida. | D10 |
-| EC03.3 | Atribuição a alguém de outra equipa: que justificação ou autorização é exigida? | D25 — RN03 define apenas quem pode |
+| EC03.1 | Tarefa sem story points ou sem estimativa temporal. | Pode existir no backlog; para ser planeada numa sprint precisa de estimativa temporal (RN27). |
+| EC03.2 | Estimativa negativa ou incompatível com a escala definida. | Inválida (RN07, CA03.9). |
+| EC03.3 | Atribuição a alguém de outra equipa: que justificação ou autorização é exigida? | Justificação obrigatória, registada no histórico (RN03, CA09.6). |
 | EC03.4 | Story points de uma tarefa com subtarefas. | Soma dos das subtarefas (RN22, CA03.8). |
-
-**Observação:** RN10 confirma que líderes e membros podem estimar, mas não determina se um membro pode alterar a estimativa de uma tarefa atribuída a outra pessoa, nem se uma estimativa aprovada fica protegida (D11). A US define a capacidade de estimar sem inventar uma política de edição.
-
-**Decisões pendentes:** D03, D10, D11, D16, D25
 
 ---
 
 ### US04 — Gerir backlog e sprints por equipa
 
-**Prioridade:** P0 — Crítica · **Objetivo:** organizar temporalmente o trabalho de cada equipa. · **Regras:** RN01, RN04, RN05, RN08, RN21
+**Prioridade:** P0 — Crítica · **Objetivo:** organizar temporalmente o trabalho de cada equipa. · **Regras:** RN01, RN04, RN05, RN08, RN21, RN26, RN27, RN31
 
 > Como **líder de equipa**, quero gerir o backlog e as sprints da minha equipa, selecionando e acompanhando as tarefas previstas para cada período, para planear a execução do trabalho de acordo com os objetivos e a capacidade disponível.
 
 #### Critérios de aceitação
 
-**CA04.1 — Criar uma sprint** · *depende de D19 (o que são datas válidas)*
+**CA04.1 — Criar uma sprint** · *verificável*
 - **Given** que sou um líder autorizado,
-- **When** crio uma sprint com uma data de início e uma data de fim válidas,
+- **When** crio uma sprint com data de início igual ou anterior à data de fim, sem sobreposição com outra sprint da minha equipa,
 - **Then** a sprint fica registada e associada à minha equipa.
 
 **CA04.2 — Adicionar uma tarefa ao backlog** · *verificável*
@@ -251,32 +270,38 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 - **When** um utilizador com permissão planeia a tarefa nessa sprint,
 - **Then** a tarefa fica associada à sprint selecionada e, enquanto essa sprint não estiver ativa, continua a constar do backlog da equipa.
 
-**CA04.4 — Terminar uma sprint** · *depende de D04 (que estado conta como concluído)*
-- **Given** que uma sprint chega ao fim e existem tarefas não concluídas,
+**CA04.4 — Terminar uma sprint** · *verificável*
+- **Given** que uma sprint chega ao fim e existem tarefas que não estão em «Terminada» nem em «Entregue»,
 - **When** a sprint termina,
 - **Then** as tarefas não concluídas transitam para o backlog, mantendo o estado, as estimativas, a equipa e o indivíduo responsáveis, os critérios de aceitação e o histórico.
 
-**CA04.5 — Iniciar a sprint seguinte** · *depende de D01 (regra de transição)*
-- **Given** que existe uma nova sprint e tarefas elegíveis no backlog,
+**CA04.5 — Iniciar a sprint seguinte** · *verificável*
+- **Given** que existe uma nova sprint e, no backlog, tarefas planeadas para ela e tarefas não planeadas,
 - **When** a nova sprint se inicia,
-- **Then** as tarefas abrangidas pela regra de transição definida são associadas à nova sprint.
+- **Then** só as tarefas planeadas para essa sprint passam a fazer parte dela; as restantes permanecem no backlog.
 
 **CA04.6 — Restringir o planeamento a membros comuns** · *verificável*
 - **Given** que sou um membro sem permissão para gerir sprints,
 - **When** tento adicionar uma tarefa a uma sprint,
 - **Then** a operação é recusada e a tarefa permanece no backlog.
 
+**CA04.7 — Exigir estimativa temporal para planear** · *verificável*
+- **Given** que uma tarefa do backlog não tem estimativa temporal,
+- **When** um líder tenta planeá-la numa sprint,
+- **Then** a operação é recusada e a tarefa permanece no backlog.
+
+**CA04.8 — Impedir sprints sobrepostas** · *verificável*
+- **Given** que a minha equipa tem uma sprint registada,
+- **When** crio outra sprint cujo período se sobrepõe ao dessa sprint,
+- **Then** a operação é recusada.
+
 #### Casos excecionais
 
 | ID | Situação | Regra |
 |---|---|---|
-| EC04.1 | Uma tarefa concluída permanece associada à sprint original quando as restantes transitam para o backlog? | D04 |
-| EC04.2 | Há mais tarefas elegíveis no backlog do que capacidade disponível na nova sprint. | D01 — a sobrecarga não impede o planeamento (RN19) |
-| EC04.3 | Iniciar uma sprint sem trabalho planeado. | D19 |
-
-**Decisão pendente importante — D01.** A frase "as tarefas passam para a sprint seguinte quando esta se inicia" pode significar que **todo** o backlog transita automaticamente ou que só transitam as tarefas **previamente selecionadas**. A US preserva a intenção de automatizar o processo e assume a segunda leitura (**P01**), mas a regra tem de ser confirmada.
-
-**Decisões pendentes:** D01, D04, D19 · **Pressupostos:** P01
+| EC04.1 | Uma tarefa concluída permanece associada à sprint original quando as restantes transitam para o backlog? | Sim — só as não concluídas transitam (RN04, RN26). |
+| EC04.2 | Há mais tarefas elegíveis no backlog do que capacidade disponível na nova sprint. | Só transitam as planeadas (RN05); a sobrecarga não impede o planeamento e é notificada (RN19). |
+| EC04.3 | Iniciar uma sprint sem trabalho planeado. | Permitido (RN31). |
 
 ---
 
@@ -314,7 +339,7 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 - **Then** a capacidade do indivíduo e da equipa passa a refletir o ajuste, a identificação de sobrecargas é recalculada e não é pedido nem registado o motivo do ajuste (SEC06).
 
 **CA05.6 — Calcular a capacidade individual** · *verificável*
-- **Given** que uma sprint tem 10 dias úteis (segunda a sexta) entre a data de início e a data de fim, e um indivíduo sem ajustes de disponibilidade,
+- **Given** que uma sprint tem 10 dias úteis (segunda a sexta) entre a data de início e a data de fim, e um indivíduo com 100 % de alocação e sem ajustes de disponibilidade,
 - **When** consulto a capacidade desse indivíduo na sprint,
 - **Then** a capacidade apresentada é de 80 horas.
 
@@ -333,25 +358,28 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 - **When** consulto o planeamento das duas sprints,
 - **Then** as 8 horas contam apenas na sprint B e a estimativa somada da tarefa principal não é contabilizada na capacidade de nenhuma das sprints.
 
+**CA05.10 — Capacidade de um membro de várias equipas** · *verificável*
+- **Given** que um membro pertence a duas equipas com 50 % de alocação a cada uma, e as sprints de ambas têm 10 dias úteis sem ajustes,
+- **When** consulto a capacidade desse membro em cada equipa,
+- **Then** a capacidade apresentada é de 40 horas em cada uma.
+
 #### Casos excecionais
 
 | ID | Situação | Regra |
 |---|---|---|
 | EC05.1 | Equipa sem horas disponíveis registadas. | Resolvido — a capacidade é calculada a partir das datas da sprint (RN06). |
-| EC05.2 | Tarefa com story points mas sem estimativa temporal. | D03 |
-| EC05.3 | Pessoa que participa em sprints de várias equipas (risco de duplicar a capacidade). | D09 |
+| EC05.2 | Tarefa com story points mas sem estimativa temporal. | Não pode ser planeada numa sprint (RN27). |
+| EC05.3 | Pessoa que participa em sprints de várias equipas (risco de duplicar a capacidade). | A capacidade divide-se pela alocação a cada equipa (RN06, CA05.10). |
 | EC05.4 | Subtarefas planeadas numa sprint diferente da tarefa principal (risco de contar as horas duas vezes). | Contam só as subtarefas, cada uma na sua sprint (RN22, CA05.9). |
 | EC05.5 | Feriados dentro do período da sprint. | Não são descontados automaticamente; ajusta-se a disponibilidade (RN06, CA05.5). |
 
 **Nota:** horas e story points nunca são somados nem convertidos; a capacidade mede-se apenas em horas (RN06) e é uma referência, não um limite (RN19).
 
-**Decisões pendentes:** D03, D09 · **Pressupostos:** P07
-
 ---
 
 ### US06 — Atualizar o estado e validar a conclusão das tarefas
 
-**Prioridade:** P0 — Crítica · **Objetivo:** acompanhar a execução e assegurar que uma tarefa só é considerada concluída quando satisfaz os critérios estabelecidos. · **Regras:** RN11, RN13, RN15, RN17, RN22, RN24
+**Prioridade:** P0 — Crítica · **Objetivo:** acompanhar a execução e assegurar que uma tarefa só é considerada concluída quando satisfaz os critérios estabelecidos. · **Regras:** RN11, RN13, RN15, RN17, RN22, RN24, RN26, RN27
 
 > Como **membro da equipa**, quero atualizar o estado das tarefas que me estão atribuídas e registar o cumprimento dos respetivos critérios de aceitação, para que o progresso apresentado reflita o trabalho efetivamente concluído.
 
@@ -362,25 +390,25 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 - **When** um utilizador autorizado consulta os seus detalhes,
 - **Then** consegue identificar o estado atual da tarefa.
 
-**CA06.2 — Atualizar o estado** · *depende de D18 (transições permitidas)*
+**CA06.2 — Atualizar o estado** · *verificável*
 - **Given** que tenho permissão para atualizar uma tarefa,
-- **When** altero o seu estado através de uma transição permitida,
+- **When** altero o seu estado através de uma transição permitida (RN26),
 - **Then** a aplicação guarda o novo estado.
 
-**CA06.3 — Impedir a conclusão com critérios por cumprir** · *depende de D04 (que estado conta como concluído)*
+**CA06.3 — Impedir a conclusão com critérios por cumprir** · *verificável*
 - **Given** que uma tarefa tem critérios de aceitação definidos,
-- **When** um utilizador tenta marcá-la como concluída com algum critério por cumprir,
+- **When** um utilizador tenta passá-la para «Terminada» com algum critério por cumprir,
 - **Then** a aplicação impede a conclusão e identifica os critérios que permanecem por cumprir.
 
-**CA06.4 — Concluir uma tarefa** · *depende de D04 (que estado conta como concluído)*
+**CA06.4 — Concluir uma tarefa** · *verificável*
 - **Given** que todos os critérios de aceitação da tarefa estão cumpridos,
-- **When** um utilizador autorizado conclui a tarefa,
-- **Then** a aplicação regista a tarefa como concluída.
+- **When** um utilizador autorizado a passa para «Terminada»,
+- **Then** a aplicação regista a tarefa em «Terminada», que conta como concluída.
 
-**CA06.5 — Reabrir uma tarefa entregue** · *depende de D05 (estado de destino)*
+**CA06.5 — Reabrir uma tarefa entregue** · *verificável*
 - **Given** que uma tarefa entregue apresenta um problema que exige nova intervenção,
 - **When** um utilizador autorizado reabre a tarefa,
-- **Then** a tarefa deixa de estar no estado «Entregue» e o histórico anterior à reabertura continua consultável.
+- **Then** a tarefa passa para «A desenvolver» e o histórico anterior à reabertura continua consultável.
 
 **CA06.6 — Preservar o responsável pela execução** · *verificável* · *exige a transferência da US09 (ver §1)*
 - **Given** que uma tarefa foi executada por um indivíduo e posteriormente transferida para outra equipa,
@@ -402,70 +430,91 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 - **When** o líder de equipa ou o gestor de projeto altera um dos seus critérios de aceitação,
 - **Then** a alteração é guardada e fica registada no histórico com autor e data/hora.
 
+**CA06.10 — Exigir critérios para a tarefa estar pronta** · *verificável*
+- **Given** que uma tarefa não tem critérios de aceitação,
+- **When** tento passá-la para «Pronto a desenvolver»,
+- **Then** a operação é recusada.
+
+**CA06.11 — Impedir saltos de estado** · *verificável*
+- **Given** que uma tarefa está em «Em planeamento»,
+- **When** tento passá-la diretamente para «A desenvolver»,
+- **Then** a operação é recusada e o estado mantém-se.
+
+**CA06.12 — Restringir a entrega** · *verificável*
+- **Given** que sou um membro e uma tarefa que me está atribuída está em «Terminada»,
+- **When** tento passá-la para «Entregue»,
+- **Then** a operação é recusada.
+
 #### Casos excecionais
 
 | ID | Situação | Regra |
 |---|---|---|
-| EC06.1 | Concluir uma tarefa sem critérios de aceitação formalmente definidos. | D08 — pressuposto P08 |
-| EC06.2 | Estado para onde regressa uma tarefa entregue quando é reaberta (p. ex. o anterior à entrega ou «Em análise técnica»). | D05 |
-| EC06.3 | O responsável muda depois da entrega: distinguir o responsável atual do responsável histórico pela execução. | RN15 — formato do registo: D12 |
+| EC06.1 | Concluir uma tarefa sem critérios de aceitação formalmente definidos. | Impossível: sem critérios, a tarefa não chega a «Pronto a desenvolver» (RN27). |
+| EC06.2 | Estado para onde regressa uma tarefa entregue quando é reaberta. | «A desenvolver» (RN26). |
+| EC06.3 | O responsável muda depois da entrega: distinguir o responsável atual do responsável histórico pela execução. | RN15; registo segundo RN32. |
 | EC06.4 | Concluir uma tarefa cujas subtarefas não estão concluídas. | Permitido — a conclusão da tarefa principal não depende das subtarefas (RN22). |
 
-**Estados confirmados (RN17):** Em planeamento · Em análise técnica · Pronto a desenvolver · A desenvolver · Em testes · Terminada · Entregue. «Em reparação» não é um estado (RN11). Falta definir se «Terminada» e «Entregue» representam situações distintas (D04) e quais as transições permitidas (D18).
-
-**Decisões pendentes:** D04, D05, D08, D12, D18
+**Estados confirmados (RN17):** Em planeamento · Em análise técnica · Pronto a desenvolver · A desenvolver · Em testes · Terminada · Entregue. «Em reparação» não é um estado (RN11). «Terminada» e «Entregue» são situações distintas e as transições permitidas estão em RN26.
 
 ---
 
 ### US07 — Consultar progresso, desvios e alertas
 
-**Prioridade:** P1 — Alta, com funcionalidades básicas incluídas no MVP · **Objetivo:** acompanhar o trabalho sem ter de analisar individualmente todas as tarefas. · **Regras:** RN06, RN09, RN13, RN17, RN18, RN19
+**Prioridade:** P1 — Alta, com funcionalidades básicas incluídas no MVP · **Objetivo:** acompanhar o trabalho sem ter de analisar individualmente todas as tarefas. · **Regras:** RN06, RN09, RN13, RN17, RN18, RN19, RN26, RN28, RN29, RN30
 
 > Como **líder de equipa** ou **gestor de projeto**, quero consultar o progresso das tarefas, sprints e projetos, incluindo os desvios relativamente ao planeamento e os alertas relevantes, para identificar problemas e agir antes que comprometam os objetivos.
 
 #### Critérios de aceitação
 
-**CA07.1 — Consultar o trabalho da equipa** · *depende de D04, D15, D18 (correspondência entre estados e situações)*
+**CA07.1 — Consultar o trabalho da equipa** · *verificável*
 - **Given** que existem tarefas associadas à minha equipa,
 - **When** acedo à vista de gestão da equipa,
-- **Then** consigo distinguir as tarefas planeadas, em execução, concluídas e bloqueadas, de acordo com os estados e classificações definidos.
+- **Then** consigo distinguir as tarefas planeadas («Em planeamento», «Em análise técnica», «Pronto a desenvolver»), em execução («A desenvolver», «Em testes») e concluídas («Terminada», «Entregue»), e identificar as bloqueadas, qualquer que seja o seu estado.
 
-**CA07.2 — Comparar planeamento e execução** · *depende de D11 (estimativa original ou atual)*
+**CA07.2 — Comparar planeamento e execução** · *verificável*
 - **Given** que existem estimativas iniciais e tarefas concluídas numa sprint,
 - **When** consulto essa sprint,
-- **Then** consigo comparar a estimativa do trabalho planeado com a do trabalho concluído, em horas e em story points, apresentados separadamente.
+- **Then** consigo comparar a estimativa do trabalho planeado com a do trabalho concluído, em horas e em story points apresentados separadamente, com a estimativa registada no início da sprint e a atual.
 
-**CA07.3 — Identificar tarefas atrasadas** · *depende de D16 (prazo como campo da tarefa)*
+**CA07.3 — Identificar tarefas atrasadas** · *verificável*
 - **Given** que uma tarefa tem um prazo definido e não está concluída,
 - **When** o prazo é ultrapassado,
 - **Then** a aplicação identifica a tarefa como atrasada.
 
-**CA07.4 — Consultar bloqueios** · *depende de D15 (bloqueio como estado ou indicador)*
+**CA07.4 — Consultar bloqueios** · *verificável*
 - **Given** que uma tarefa está identificada como bloqueada,
 - **When** consulto o trabalho da equipa ou do projeto,
 - **Then** consigo identificar a tarefa e consultar o motivo do bloqueio, quando registado.
 
-**CA07.5 — Consultar alertas relevantes** · *depende de D17 (eventos que geram alertas)*
-- **Given** que ocorreu um evento definido como relevante para acompanhamento,
-- **When** um utilizador com responsabilidade de acompanhamento consulta os alertas na aplicação,
-- **Then** o alerta correspondente é apresentado ao utilizador autorizado.
+**CA07.5 — Alertar bloqueios** · *verificável*
+- **Given** que uma tarefa da minha equipa ficou bloqueada,
+- **When** consulto, como líder de equipa, os alertas na aplicação,
+- **Then** é-me apresentado o alerta correspondente, com a tarefa e o motivo do bloqueio.
 
-**CA07.6 — Assinalar um bloqueio** · *depende de D15 (bloqueio como estado ou indicador)*
+**CA07.6 — Assinalar um bloqueio** · *verificável*
 - **Given** que tenho permissão para atualizar uma tarefa,
 - **When** a assinalo como bloqueada e registo o motivo do impedimento,
-- **Then** a tarefa passa a ser identificada como bloqueada e o motivo fica registado e consultável.
+- **Then** a tarefa passa a ser identificada como bloqueada, mantém o seu estado e o motivo fica registado e consultável.
+
+**CA07.7 — Alertar prazos ultrapassados** · *verificável*
+- **Given** que uma tarefa tem prazo e não está em «Terminada» nem em «Entregue»,
+- **When** o prazo é ultrapassado,
+- **Then** o responsável pela execução e o líder de equipa recebem um alerta na aplicação.
+
+**CA07.8 — Alertar reaberturas** · *verificável*
+- **Given** que uma tarefa entregue tem responsável pela execução,
+- **When** a tarefa é reaberta,
+- **Then** o responsável pela execução e o líder de equipa recebem um alerta na aplicação.
 
 #### Casos excecionais
 
 | ID | Situação | Regra |
 |---|---|---|
-| EC07.1 | Prazo ultrapassado enquanto o responsável esteve indisponível. | D26 — o motivo da ausência não é registado (SEC06) |
-| EC07.2 | Estimativa alterada durante a execução: a comparação usa a original, a atual ou ambas? | D11 |
-| EC07.3 | Tarefa simultaneamente bloqueada e atrasada: uma classificação ou ambas visíveis? | D15 |
+| EC07.1 | Prazo ultrapassado enquanto o responsável esteve indisponível. | Sem tratamento especial; o líder pode alterar o prazo, com registo (RN29). |
+| EC07.2 | Estimativa alterada durante a execução: a comparação usa a original, a atual ou ambas? | Ambas (RN10, CA07.2). |
+| EC07.3 | Tarefa simultaneamente bloqueada e atrasada: uma classificação ou ambas visíveis? | Ambas — o bloqueio é um indicador (RN28). |
 
-**Alertas:** apenas na aplicação (RN18). A sobrecarga de capacidade gera alerta (RN19). Os restantes eventos são uma recomendação ainda não confirmada (**P04**): prazo ultrapassado, tarefa bloqueada, nova tarefa criada no backlog, tarefa reaberta depois de entregue. Sem previsões automáticas nem avaliações de risco.
-
-**Decisões pendentes:** D04, D11, D15, D16, D17, D18, D26 · **Pressupostos:** P02, P04
+**Alertas:** apenas na aplicação (RN18), para os eventos e destinatários de RN30. Sem previsões automáticas nem avaliações de risco.
 
 ---
 
@@ -477,22 +526,22 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 
 #### Critérios de aceitação
 
-**CA08.1 — Criar uma tarefa no backlog** · *depende de D01 (regra de transição)*
+**CA08.1 — Criar uma tarefa no backlog** · *verificável*
 - **Given** que sou um membro da equipa autorizado a criar tarefas,
 - **When** registo uma nova tarefa sem a associar a uma sprint,
 - **Then** a tarefa fica no backlog da minha equipa e não é automaticamente incluída numa sprint.
 
-**CA08.2 — Notificar os responsáveis** · *depende de D07 (destinatários)*
+**CA08.2 — Notificar o líder** · *verificável*
 - **Given** que um membro cria uma tarefa no backlog,
 - **When** a tarefa é registada com sucesso,
-- **Then** os responsáveis definidos para esse tipo de notificação recebem um alerta na aplicação.
+- **Then** o(s) líder(es) da equipa da tarefa recebem um alerta na aplicação.
 
 **CA08.3 — Impedir a inclusão direta numa sprint** · *verificável*
 - **Given** que sou um membro sem permissão para gerir sprints,
 - **When** tento associar diretamente uma nova tarefa a uma sprint,
 - **Then** a aplicação recusa a operação e mantém a tarefa no backlog.
 
-**CA08.4 — Escolher a equipa ao criar uma tarefa** · *depende de D09 (pertença a várias equipas — P07)*
+**CA08.4 — Escolher a equipa ao criar uma tarefa** · *verificável*
 - **Given** que sou um membro de mais do que uma equipa,
 - **When** crio uma tarefa no backlog,
 - **Then** escolho uma das minhas equipas e a tarefa fica no backlog dessa equipa.
@@ -501,15 +550,13 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 
 | ID | Situação | Regra |
 |---|---|---|
-| EC08.1 | Tarefa criada sem um responsável claramente definido para receber o alerta. | D07 |
-
-**Decisões pendentes:** D01, D07, D09 · **Pressupostos:** P07
+| EC08.1 | Equipa sem líder para receber o alerta. | D32 |
 
 ---
 
 ### US09 — Atribuir e transferir tarefas entre equipas
 
-**Prioridade:** P1 — Alta (ver a dependência da US06 no §1) · **Objetivo:** garantir que as atribuições e transferências entre equipas não destroem a rastreabilidade. · **Regras:** RN03, RN14, RN15, RN20, RN22
+**Prioridade:** P1 — Alta (ver a dependência da US06 no §1) · **Objetivo:** garantir que as atribuições e transferências entre equipas não destroem a rastreabilidade. · **Regras:** RN03, RN14, RN15, RN20, RN22, RN32
 
 > Como **gestor de projeto** ou **administrador**, quero atribuir excecionalmente tarefas a pessoas de outras equipas e transferir tarefas entre equipas, preservando a equipa original e o responsável pela execução, para manter as responsabilidades e o histórico organizacional.
 
@@ -517,8 +564,8 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 
 **CA09.1 — Atribuir uma tarefa a alguém de outra equipa** · *verificável*
 - **Given** que sou um gestor de projeto ou administrador,
-- **When** atribuo uma tarefa a um indivíduo de outra equipa,
-- **Then** o indivíduo fica responsável pela execução, a equipa responsável pela tarefa não muda e a alteração fica registada no histórico.
+- **When** atribuo uma tarefa a um indivíduo de outra equipa, indicando uma justificação,
+- **Then** o indivíduo fica responsável pela execução, a equipa responsável pela tarefa não muda e a alteração e a justificação ficam registadas no histórico.
 
 **CA09.2 — Consultar o histórico de transferência** · *verificável*
 - **Given** que uma tarefa foi transferida entre equipas,
@@ -540,14 +587,22 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 - **When** um gestor de projeto ou administrador transfere a tarefa para outra equipa,
 - **Then** as subtarefas passam também para a nova equipa e o histórico de cada uma regista a transferência.
 
+**CA09.6 — Exigir justificação** · *verificável*
+- **Given** que sou um gestor de projeto ou administrador,
+- **When** tento atribuir uma tarefa a um indivíduo de outra equipa sem indicar justificação,
+- **Then** a operação é recusada.
+
+**CA09.7 — Impedir a transferência de tarefas concluídas** · *verificável*
+- **Given** que uma tarefa está em «Terminada» ou «Entregue»,
+- **When** um gestor de projeto ou administrador tenta transferi-la para outra equipa,
+- **Then** a operação é recusada e a equipa responsável mantém-se.
+
 #### Casos excecionais
 
 | ID | Situação | Regra |
 |---|---|---|
-| EC09.1 | Transferir uma tarefa já concluída ou entregue. | D27 |
-| EC09.2 | Tarefa que passa por três ou mais equipas: como apresentar o histórico. | D12 |
-
-**Decisões pendentes:** D12, D25, D27
+| EC09.1 | Transferir uma tarefa já concluída ou entregue. | Não permitido (RN20, CA09.7). |
+| EC09.2 | Tarefa que passa por três ou mais equipas: como apresentar o histórico. | Lista cronológica (RN32). |
 
 ---
 
@@ -589,22 +644,7 @@ Aplicam-se a todas as US e verificam os requisitos de segurança e privacidade (
 
 ## 4. Verificabilidade dos critérios de aceitação
 
-**70 CA no total (64 nas US + 6 transversais): 51 verificáveis hoje, 19 dependentes de decisões pendentes.**
-
-| Decisão a tomar | CA que desbloqueia |
-|---|---|
-| D04 — «Terminada» vs «Entregue»; o que conta como concluída | CA04.4, CA06.3, CA06.4, CA07.1 |
-| D15 — «Bloqueada»: estado ou indicador | CA07.1, CA07.4, CA07.6 |
-| D01 — Regra de transição backlog → sprint | CA04.5, CA08.1 |
-| D16 — Campos obrigatórios da tarefa (incluindo prazo) | CA03.1, CA07.3 |
-| D18 — Transições de estado permitidas | CA06.2, CA07.1 |
-| D22 — Validade e unicidade do nome da equipa | CA01.1, CA01.7 |
-| D05 — Estado após reabertura | CA06.5 |
-| D07 — Destinatários dos alertas de novas tarefas | CA08.2 |
-| D09 — Pertença a várias equipas | CA08.4 |
-| D11 — Estimativa original vs atual | CA07.2 |
-| D17 — Eventos que geram alertas | CA07.5 |
-| D19 — Validação das datas da sprint | CA04.1 |
+**85 CA no total (79 nas US + 6 transversais), todos verificáveis.** Não há decisões funcionais pendentes que bloqueiem critérios de aceitação ([`constraints.md`](constraints.md) §4.1).
 
 ---
 
@@ -623,7 +663,7 @@ Aplicam-se a todas as US e verificam os requisitos de segurança e privacidade (
 
 ### 5.2 Alterações na revisão crítica (Ex. 6)
 
-Os problemas encontrados, as decisões tomadas e as alterações resultantes estão em [`review.md`](review.md).
+Os problemas encontrados, as decisões tomadas e as alterações resultantes estão em [`review.md`](review.md). Na preparação da Ficha PL 02 foram fechadas as decisões funcionais pendentes (3.ª ronda).
 
 A US08 foi dividida em duas, porque juntava dois papéis e dois objetivos. Os CA foram renumerados:
 
@@ -639,4 +679,4 @@ A US08 foi dividida em duas, porque juntava dois papéis e dois objetivos. Os CA
 
 ### 5.3 Observações em aberto
 
-1. **CA08.1 vs RN05:** "não é automaticamente incluída numa sprint" só é coerente com a transição automática de RN05 se esta abranger apenas tarefas selecionadas (P01 → D01).
+Nenhuma. A observação sobre CA08.1 e RN05 foi resolvida pela RN05 (D01).

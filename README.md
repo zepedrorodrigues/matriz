@@ -2,7 +2,7 @@
 
 Aplicação interna de gestão de projetos e tarefas para equipas de trabalho, ao estilo de Jira, Azure DevOps ou Trello.
 
-> **Estado atual:** fase de especificação (Ficha PL 01) — Specification Pack v0.3, revisto na revisão crítica (Ex. 6) e pronto para a Aula 2. Ainda não há código nem tecnologia escolhida; essas decisões ficam para a Aula 2.
+> **Estado atual:** fase de especificação (Ficha PL 01) — Specification Pack v0.4, com as decisões funcionais fechadas; Architecture Pack em preparação (Ficha PL 02). Ainda não há código nem tecnologia escolhida; essas decisões ficam para a Aula 2.
 
 ## Problema
 
@@ -82,8 +82,8 @@ Os coding agents seguem, além disto, as instruções de [`AGENTS.md`](AGENTS.md
 - [x] Ex. 4 — Specification Pack v0.1
 - [x] Ex. 5 — `AGENTS.md`
 - [x] Ex. 6 — Revisão crítica (human-in-the-loop) — Specification Pack v0.3, ver [`docs/review.md`](docs/review.md)
-- [ ] Aula 2 — Arquitetura, modelo de dados, API e protótipo
+- [ ] Aula 2 (Ficha PL 02) — Architecture Pack: arquitetura, modelo de dados, API e protótipo — decisões fechadas, artefactos em curso
 
-**Em números:** 25 regras de negócio · 31 requisitos funcionais · 12 requisitos não funcionais · 9 user stories · 70 critérios de aceitação (64 nas US e 6 transversais; 51 verificáveis, 19 dependentes de decisões) · 24 decisões funcionais pendentes.
+**Em números:** 33 regras de negócio · 31 requisitos funcionais · 12 requisitos não funcionais · 9 user stories · 85 critérios de aceitação (79 nas US e 6 transversais), todos verificáveis · 1 decisão funcional pendente (D32).
 
-**Decisões a fechar primeiro:** D01 (transição backlog → sprint) e D04 / D05 / D18 (ciclo de vida das tarefas), que bloqueiam 8 critérios de aceitação.
+**Pendentes:** D32 (equipas sem líder), DT01 (linguagem e framework, em análise) e P12 (validação jurídica da retenção). DT09 e DT10 são revisões futuras planeadas.

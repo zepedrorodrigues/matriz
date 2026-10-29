@@ -82,13 +82,29 @@ Este documento não é normativo: as decisões estão incorporadas nos restantes
 | D14 | Matriz de permissões. | Papéis fixos e acumuláveis; administrador global, gestor por projeto, líder e membro por equipa; visibilidade por participação. | `requirements.md` §3.1, CAT05, CAT06 |
 | US08 | A US juntava dois papéis e dois objetivos. | Dividida em US08 (propor trabalho) e US09 (atribuir e transferir entre equipas). | `user-stories.md` §2, §5.2 |
 
+### 1.8 Terceira ronda (preparação da Ficha PL 02)
+
+Todas as decisões pendentes foram propostas pelo agente e aprovadas pelo humano, com uma alteração (D05).
+
+| ID | Decisão | Registo |
+|---|---|---|
+| DT02–DT08 | PostgreSQL; monólito modular com API REST/OpenAPI 3.1; OpenID Connect; aplicação web para computador (móvel no futuro); contentores na UE; alertas na base de dados, criados na mesma transação e consultados periodicamente; um teste automático por CA. | `constraints.md` §4.3 |
+| DT01 | Em análise: comparação entre TypeScript, Go e Rust pedida pelo humano. | `constraints.md` §4.2 |
+| DT09, DT10 | Revisões futuras planeadas: peso dos alertas na base de dados; extração de módulos para microservices quando houver sinais concretos (o número de utilizadores, por si só, não obriga). | `constraints.md` §4.2 |
+| D05 | Reabertura → «A desenvolver». **Alterado pelo humano** (a proposta era «Em análise técnica»). | RN26 |
+| D01, D03, D04, D06–D13, D15–D19, D21–D27 | Aprovados como propostos. | RN03–RN12, RN20, RN26–RN33, SEC09; `constraints.md` §4.3 |
+| P01, P02, P04, P07, P11 | Confirmados. P08 **rejeitado** (RN27). | `constraints.md` §4.3 |
+| P12 | Novo: a política de retenção (SEC09) carece de validação jurídica. | `constraints.md` §2 |
+| D32 | Nova: equipa sem líder — quem recebe os alertas dirigidos ao líder? | `constraints.md` §4.1 |
+| CA | 15 CA novos para os comportamentos criados pelas decisões; os 19 CA dependentes passaram a verificáveis. | `user-stories.md` |
+
 ## 2. Critérios de validação (Ficha PL 01)
 
 | Critério | Estado | Evidência |
 |---|---|---|
 | O MVP está claramente definido. | Cumprido | `requirements.md` §7–§8; todos os requisitos do MVP confirmados. |
 | Existem pelo menos 5 User Stories. | Cumprido | 9 US (`user-stories.md` §2). |
-| Existem critérios de aceitação verificáveis. | Cumprido | 51 de 70 CA verificáveis (`user-stories.md` §4). |
+| Existem critérios de aceitação verificáveis. | Cumprido | 85 de 85 CA verificáveis (`user-stories.md` §4). |
 | Os pressupostos estão separados dos requisitos confirmados. | Cumprido | `constraints.md` §2; pressupostos resolvidos em §4.3. |
 | A documentação apresenta consistência. | Cumprido | Problemas C, I e V corrigidos. |
 | O AGENTS.md contém instruções claras e adequadas. | Cumprido | `AGENTS.md`. |
@@ -97,6 +113,7 @@ Este documento não é normativo: as decisões estão incorporadas nos restantes
 
 ## 3. Pendente após a revisão
 
-- **D01, D04, D05, D18:** ciclo de vida e transição de sprints; bloqueiam 8 CA. São as primeiras a fechar.
-- **D22–D27:** decisões abertas nesta revisão (nome e desativação de equipas, projetos sem equipas, justificação de atribuições, atrasos por indisponibilidade, transferência de tarefas concluídas).
-- Restantes decisões em `constraints.md` §4.1 (24 no total).
+- **DT01:** linguagem e framework (em análise).
+- **D32:** equipas sem líder.
+- **P12:** validação jurídica da política de retenção.
+- **Revisões futuras:** DT09 (alertas na base de dados) e DT10 (extração para microservices).
