@@ -7,7 +7,7 @@ info:
     Duas operações representativas do MVP:
 
     - **Consultar a capacidade de uma sprint** (US05 — CA05.1–CA05.11; RN06, RN19, RN22, RN27; SEC07).
-    - **Transferir uma tarefa para outra equipa** (US09 — CA09.3–CA09.5, CA09.7; RN20, RN22, RN23, RN32).
+    - **Transferir uma tarefa para outra equipa** (US09 — CA09.3–CA09.5, CA09.7, CA09.8; RN20, RN22, RN23, RN32).
 
     Convenções:
 
@@ -121,8 +121,8 @@ paths:
         - a tarefa não está em «Terminada» nem em «Entregue» (RN20, CA09.7);
         - só se transferem tarefas, não subtarefas isoladas (RN22).
 
-        **Por confirmar (D35):** o que acontece a uma tarefa que está planeada numa sprint da
-        equipa de origem. Proposta: sai dessa sprint e passa para o backlog da equipa de destino.
+        Se a tarefa estiver planeada numa sprint da equipa de origem, sai dessa sprint e passa para
+        o backlog da equipa de destino (RN20, CA09.8).
       parameters:
         - $ref: '#/components/parameters/TaskId'
       requestBody:

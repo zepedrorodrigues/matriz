@@ -610,13 +610,18 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 - **When** um gestor de projeto ou administrador tenta transferi-la para outra equipa,
 - **Then** a operação é recusada e a equipa responsável mantém-se.
 
+**CA09.8 — Retirar da sprint de origem uma tarefa transferida** · *verificável*
+- **Given** que uma tarefa está planeada numa sprint da equipa de origem,
+- **When** um gestor de projeto ou administrador a transfere para outra equipa,
+- **Then** a tarefa deixa de estar nessa sprint e passa a constar do backlog da equipa de destino.
+
 #### Casos excecionais
 
 | ID | Situação | Regra |
 |---|---|---|
 | EC09.1 | Transferir uma tarefa já concluída ou entregue. | Não permitido (RN20, CA09.7). |
 | EC09.2 | Tarefa que passa por três ou mais equipas: como apresentar o histórico. | Lista cronológica (RN32). |
-| EC09.3 | Transferir uma tarefa planeada numa sprint da equipa de origem. | D35 |
+| EC09.3 | Transferir uma tarefa planeada numa sprint da equipa de origem. | Sai dessa sprint e passa para o backlog da equipa de destino (RN20, CA09.8). |
 
 ---
 
@@ -658,7 +663,7 @@ Aplicam-se a todas as US e verificam os requisitos de segurança e privacidade (
 
 ## 4. Verificabilidade dos critérios de aceitação
 
-**88 CA no total (82 nas US + 6 transversais), todos verificáveis.** Não há decisões funcionais pendentes que bloqueiem critérios de aceitação ([`constraints.md`](constraints.md) §4.1).
+**89 CA no total (83 nas US + 6 transversais), todos verificáveis.** Não há decisões funcionais pendentes que bloqueiem critérios de aceitação ([`constraints.md`](constraints.md) §4.1).
 
 ---
 

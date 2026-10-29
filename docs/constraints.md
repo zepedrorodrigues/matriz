@@ -47,11 +47,7 @@ Confirmados na revisão crítica (Ex. 6). Os critérios de aceitação transvers
 
 ### 4.1 Funcionais
 
-D01–D34 estão resolvidas (§4.3). Fica pendente uma questão identificada ao desenhar a API (Ficha PL 02, Ex. 3):
-
-| ID | Questão | Impacto | Afeta | Urgência |
-|---|---|---|---|---|
-| D35 | O que acontece a uma tarefa planeada numa sprint da equipa de origem quando é transferida para outra equipa? Proposta: sai dessa sprint e passa para o backlog da equipa de destino. | Planeamento e rastreabilidade | RN20, RN31, US09 · EC09.3 | Média |
+Não há decisões funcionais pendentes: D01–D35 estão resolvidas (§4.3).
 
 ### 4.2 Técnicas
 
@@ -106,6 +102,7 @@ As decisões técnicas da Aula 2 estão resolvidas no §4.3. Ficam planeadas as 
 | D31 | Feriados na capacidade. | RN06 — ajusta-se a disponibilidade. |
 | D32 | Equipas sem líder. | RN34 — uma equipa ativa tem sempre pelo menos um líder. |
 | D33 | O líder conta para a capacidade da equipa? | RN06 — sim, como qualquer membro. |
+| D35 | Tarefa transferida que está planeada numa sprint da equipa de origem. | RN20 — sai dessa sprint e passa para o backlog da equipa de destino. |
 | D34 | Criação de contas de utilizador. | RN35 — o administrador cria a conta pelo e-mail profissional; a ligação à identidade faz-se no primeiro acesso. |
 
 **Pressupostos**
