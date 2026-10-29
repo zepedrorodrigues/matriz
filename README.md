@@ -50,7 +50,8 @@ matriz/
     ├── user-stories.md    user stories, prioridades, critérios de aceitação, casos excecionais
     ├── constraints.md     restrições, pressupostos, segurança e privacidade, decisões
     ├── review.md          revisões críticas: problemas encontrados e decisões tomadas
-    └── architecture.md    arquitetura: estilo, módulos, interação, implantação (Ficha PL 02)
+    ├── architecture.md    arquitetura: estilo, módulos, interação, implantação (Ficha PL 02)
+    └── database.md        modelo de dados e diagrama ER em Mermaid (Ficha PL 02)
 ```
 
 ### Utilização como contexto
