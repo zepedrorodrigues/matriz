@@ -48,7 +48,7 @@ Todos **Propostos** — a validar no Ex. 6.
 | SEC05 | Minimização de dados pessoais: guardar apenas o necessário à gestão do trabalho (p. ex. nome, contacto profissional, papel, equipas, disponibilidade em horas). | P09 (RGPD) |
 | SEC06 | Regista-se apenas a disponibilidade em horas, nunca o motivo da indisponibilidade (férias, doença, etc.). Os dados de saúde são uma categoria especial (art. 9.º do RGPD). | EC07.1, P09 |
 | SEC07 | Os dados individuais de capacidade e sobrecarga, bem como os alertas, só são visíveis para quem tem responsabilidade de gestão sobre essas pessoas ou tarefas. A finalidade destes dados é o planeamento; qualquer uso para avaliação de desempenho exige decisão explícita. | US05, CA07.5 |
-| SEC08 | Credenciais, chaves e dados reais de colaboradores nunca são guardados no repositório nem nos documentos; exemplos e testes usam dados fictícios. | Boas práticas; AGENTS.md (Ex. 5) |
+| SEC08 | Credenciais, chaves e dados reais de colaboradores nunca são guardados no repositório nem nos documentos; exemplos e testes usam dados fictícios. | Boas práticas; `AGENTS.md` §7 |
 | SEC09 | Definir uma política de retenção para os dados de colaboradores que saem da empresa, compatível com RN15 (o responsável pela execução permanece no histórico). | RN15, P09 — D21 |
 
 ## 4. Decisões pendentes

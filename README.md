@@ -43,7 +43,7 @@ O MVP destina-se à utilização interna da empresa. Os critérios de aceitaçã
 ```
 matriz/
 ├── README.md              visão geral e estado do projeto
-├── AGENTS.md              instruções para coding agents (Ex. 5 — por criar)
+├── AGENTS.md              instruções para coding agents
 └── docs/
     ├── requirements.md    visão, utilizadores, regras de negócio, RF, RNF, âmbito do MVP
     ├── user-stories.md    user stories, prioridades, critérios de aceitação, casos excecionais
@@ -56,6 +56,8 @@ matriz/
 2. Precedência: regras de negócio **Confirmadas** (RN) > User Stories e CA > requisitos **Propostos** > **Pressupostos**.
 3. Comportamento que dependa de uma decisão pendente (`Dxx`) não é implementado enquanto a decisão não estiver registada.
 4. Quando uma decisão é tomada, regista-se no documento respetivo e retira-se da lista de pendentes.
+
+Os coding agents seguem, além disto, as instruções de [`AGENTS.md`](AGENTS.md).
 
 ### Identificadores
 
@@ -75,7 +77,7 @@ matriz/
 - [x] Ex. 2 — Análise de requisitos e âmbito do MVP
 - [x] Ex. 3 — User stories e critérios de aceitação
 - [x] Ex. 4 — Specification Pack v0.1 (em revisão)
-- [ ] Ex. 5 — `AGENTS.md`
+- [x] Ex. 5 — `AGENTS.md`
 - [ ] Ex. 6 — Revisão crítica (human-in-the-loop)
 - [ ] Aula 2 — Arquitetura, modelo de dados, API e protótipo
 
