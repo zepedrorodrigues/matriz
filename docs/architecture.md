@@ -1,7 +1,7 @@
 # Matriz — Arquitetura
 
 > **Versão:** 0.1 · **Data:** 2026-10-29 · **Estado:** proposta para revisão (Ficha PL 02, Ex. 1)
-> **Relacionados:** [`requirements.md`](requirements.md) · [`constraints.md`](constraints.md) · [`database.md`](database.md) · [`../openapi.yaml`](../openapi.yaml)
+> **Relacionados:** [`requirements.md`](requirements.md) · [`constraints.md`](constraints.md)
 
 Este documento descreve a arquitetura do MVP. As decisões técnicas (DT) estão registadas em [`constraints.md`](constraints.md) §4; os requisitos prevalecem sobre este documento.
 
@@ -73,7 +73,7 @@ Não são determinantes: elasticidade, escalabilidade além de RNF06 e deploy in
 | Frontend | React, aplicação web para computador, em pt-PT, WCAG 2.1 AA | DT01, DT05, RNF10–RNF12 |
 | Base de dados | PostgreSQL, um schema por módulo | DT02 |
 | Autenticação | OpenID Connect com o fornecedor de identidade da empresa | DT04 |
-| Alojamento | Contentores, infraestrutura interna ou região cloud da UE | DT06 |
+| Alojamento | Contentores — uma imagem para o frontend e outra para o backend —, em infraestrutura interna ou numa região cloud da UE | DT06 |
 
 As bibliotecas concretas (ORM, validação, testes) são escolhidas na Aula 03 e acrescentadas apenas com aprovação (`AGENTS.md` §2).
 
@@ -81,8 +81,8 @@ As bibliotecas concretas (ORM, validação, testes) são escolhidas na Aula 03 e
 
 ```mermaid
 flowchart LR
-    U["Utilizador<br/>(browser)"] -->|HTTPS| FE["Frontend React<br/>(ficheiros estáticos)"]
-    FE -->|"REST/JSON (OpenAPI 3.1)"| API
+    U["Utilizador<br/>(browser com a aplicação React)"] -->|"HTTPS: páginas e recursos estáticos"| FE["Frontend<br/>(servidor de ficheiros estáticos)"]
+    U -->|"HTTPS: REST/JSON (OpenAPI 3.1)"| API
     U -.->|login OIDC| IDP["Fornecedor de identidade<br/>da empresa"]
     API -.->|valida tokens| IDP
     subgraph APP["Aplicação Matriz (NestJS, um deploy)"]
@@ -116,6 +116,7 @@ flowchart LR
 - **Eventos de domínio internos.** Os módulos Trabalho, Planeamento e Organização publicam eventos (p. ex. *tarefa transferida*, *tarefa bloqueada*, *sobrecarga detetada*). Acompanhamento e Histórico subscrevem-nos. Os eventos são entregues **dentro do processo e na mesma transação** do pedido, o que garante que uma alteração nunca fica gravada sem o respetivo histórico e alerta (DT07, SEC03), e evita que o Trabalho dependa do Acompanhamento.
 - **Transações.** Cada pedido é uma transação na base de dados, mesmo quando envolve vários módulos.
 - **Camadas dentro de cada módulo.** API (controladores e DTO) → aplicação (casos de uso) → domínio (entidades e regras) ← infraestrutura (repositórios). As regras de negócio ficam no domínio e não nos controladores nem em SQL.
+- **Evolução planeada (DT11).** A gestão de eventos interna é suficiente para o MVP. Fica por estudar a sua melhoria e, para deployments integrados em larga escala, a adoção de uma plataforma de eventos (p. ex. Kafka). Esse passo acompanha a extração de módulos (DT10): eventos entre serviços deixam de poder ser entregues na mesma transação e passam a exigir, por exemplo, o padrão outbox e consumidores idempotentes.
 
 ## 7. Preocupações transversais
 
@@ -125,7 +126,7 @@ flowchart LR
 | Autorização | Verificada no backend em cada operação, segundo a matriz de permissões; uma operação recusada não altera dados. | SEC02, SEC07, CAT02, CAT05, CAT06 |
 | Histórico e auditoria | Módulo Histórico, alimentado por eventos na mesma transação; sem operações de edição ou remoção. | SEC03, SEC04, RN32, CAT03, CAT04 |
 | Alertas | Guardados na base de dados; o frontend consulta-os periodicamente; prazos verificados por uma tarefa diária, executada por uma única instância. | RN18, RN30, DT07 |
-| Erros da API | Formato único de erro (*problem details*, RFC 9457) com o código HTTP adequado. | Ex. 3 |
+| Erros da API | Formato único de erro (*problem details*, RFC 9457) com o código HTTP adequado. Suficiente para o MVP; a gestão de erros será melhorada no futuro (DT12). | Ex. 3, DT12 |
 | Validação | Dados de entrada validados na fronteira da API. | RN07, RN29, RN31, RN33 |
 | Privacidade | Minimização de dados; motivos pessoais nunca registados; retenção segundo SEC09. | SEC05, SEC06, SEC09, P12 |
 | Observabilidade | Logs estruturados com identificador de pedido; métricas de tempo de resposta para verificar RNF08. | RNF08, RNF09 |
@@ -137,16 +138,19 @@ flowchart LR
 ```mermaid
 flowchart LR
     B[Browser] -->|HTTPS| P["Proxy / balanceador<br/>(TLS)"]
-    P --> A1["Contentor Matriz<br/>(API + frontend estático)"]
-    P -.->|se necessário| A2["Contentor Matriz<br/>(instância adicional)"]
+    P -->|"/ (páginas)"| F["Contentor frontend<br/>(ficheiros estáticos)"]
+    P -->|"/api"| A1["Contentor backend<br/>(API NestJS)"]
+    P -.->|"/api (instância adicional, DT13)"| A2["Contentor backend"]
     A1 --> D[("PostgreSQL")]
     A2 -.-> D
 ```
 
-- **Uma imagem de contentor** com a API e os ficheiros estáticos do frontend: um único artefacto para versionar e atualizar.
-- **Instâncias sem estado:** é possível acrescentar instâncias atrás do balanceador se RNF08 o exigir, sem alterar a arquitetura.
+- **Duas imagens de contentor:** frontend (ficheiros estáticos servidos por um servidor web) e backend (API). Cada uma é versionada, atualizada e reiniciada sem afetar a outra, e o frontend continua disponível — podendo informar o utilizador — se a API falhar.
+- **Mesma origem:** o proxy encaminha `/api` para o backend e o resto para o frontend, o que evita configurar CORS.
+- **Backend sem estado:** é possível acrescentar instâncias atrás do balanceador sem alterar a arquitetura.
 - **PostgreSQL** gerido ou em contentor, na infraestrutura interna ou numa região cloud da UE (DT06, P09).
 - A tarefa diária de prazos corre numa única instância de cada vez.
+- **Limitação conhecida:** com uma única instância do backend e da base de dados, uma falha destes componentes interrompe o serviço. Alternativas mais tolerantes a falhas — várias instâncias do backend com verificações de saúde, réplica e cópias de segurança da base de dados — ficam para estudo (DT13).
 
 ## 9. Riscos e mitigação
 
@@ -155,11 +159,13 @@ flowchart LR
 | Com processo e base de dados partilhados, um módulo acede às tabelas de outro e as fronteiras degradam-se. | Um schema por módulo; testes de arquitetura que falham perante dependências proibidas. |
 | Crescimento das tabelas de alertas e de histórico. | Revisão planeada (DT09); retenção segundo SEC09. |
 | Dependências npm (risco na cadeia de fornecimento, atualizações). | Versões fixadas num lockfile; dependências novas só com aprovação (`AGENTS.md` §2). |
-| Uma falha grave afeta toda a aplicação. | Aceite para o MVP (RNF09 mede apenas o horário de trabalho); revisão segundo DT10. |
+| Uma falha grave do backend afeta todas as funcionalidades. | Frontend e backend em imagens separadas; alta disponibilidade em estudo (DT13); extração de módulos segundo DT10. |
+| A gestão de eventos interna não serve para deployments distribuídos em larga escala. | Estudo da melhoria da gestão de eventos e de uma plataforma de eventos (DT11), em conjunto com DT10. |
+| A gestão de erros é básica (formato único, sem catálogo nem monitorização dedicada). | Melhoria planeada (DT12). |
 | Política de retenção não validada juridicamente. | P12 — validação por um encarregado de proteção de dados antes da produção. |
 
 ## 10. Pressupostos e decisões pendentes
 
 - **Pressupostos em aberto** que afetam a arquitetura: P06 (equipas e projetos N:M), P09 (RGPD), P12 (retenção). Ver [`constraints.md`](constraints.md) §2.
-- **Revisões futuras:** DT09 (alertas na base de dados) e DT10 (extração de módulos).
+- **Revisões futuras** ([`constraints.md`](constraints.md) §4.2): DT09 (alertas na base de dados), DT10 (extração de módulos), DT11 (gestão de eventos e plataforma de eventos), DT12 (gestão de erros) e DT13 (alta disponibilidade).
 - Não há decisões funcionais ou técnicas pendentes que bloqueiem esta arquitetura.

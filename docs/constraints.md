@@ -52,12 +52,15 @@ Não há decisões funcionais pendentes: D01–D32 estão resolvidas (§4.3).
 
 ### 4.2 Técnicas
 
-As decisões técnicas da Aula 2 estão resolvidas no §4.3. Ficam planeadas duas revisões futuras.
+As decisões técnicas da Aula 2 estão resolvidas no §4.3. Ficam planeadas as seguintes revisões futuras.
 
 | ID | Decisão | Quando | Dependências |
 |---|---|---|---|
 | DT09 | Revisão do peso dos alertas na base de dados: volume, retenção e arquivo dos alertas antigos | Médio a longo prazo, com dados reais de utilização | DT07, RN30 |
 | DT10 | Extração de módulos do monólito para serviços independentes (microservices) | Quando se verificarem os sinais de revisão abaixo | DT03 |
+| DT11 | Melhoria da gestão de eventos interna e estudo de uma plataforma de eventos (p. ex. Kafka) para deployments integrados em larga escala | Em conjunto com DT10 | DT03, DT07, DT10 |
+| DT12 | Melhoria da gestão de erros (p. ex. catálogo de códigos de erro, mensagens localizadas, monitorização e alarmística) | Depois do MVP | DT03 |
+| DT13 | Alternativas de implantação mais tolerantes a falhas: várias instâncias do backend com verificações de saúde, réplica e cópias de segurança da base de dados | A estudar; antes da entrada em produção | DT06, RNF09 |
 
 **Sinais de revisão da arquitetura (DT10):** várias equipas de desenvolvimento a trabalhar em módulos diferentes, com ciclos de entrega independentes; módulos com necessidades de carga ou de disponibilidade muito diferentes; ou crescimento para milhares de utilizadores em que o escalonamento horizontal do monólito (várias instâncias sobre a mesma base de dados) deixe de cumprir RNF08 e RNF09. O número de utilizadores, por si só, não obriga à migração. As fronteiras entre módulos (DT03) são o que torna a extração possível sem reescrever a aplicação.
 
@@ -122,7 +125,7 @@ As decisões técnicas da Aula 2 estão resolvidas no §4.3. Ficam planeadas dua
 | DT03 | Arquitetura e API | Monólito modular; API REST/JSON documentada em OpenAPI 3.1; comunicação síncrona. Módulos: Identidade e acesso, Organização, Trabalho, Planeamento, Acompanhamento, Histórico. Cada módulo é dono das suas tabelas e expõe uma interface pública aos restantes. |
 | DT04 | Autenticação | OpenID Connect com o fornecedor de identidade da empresa em produção e um fornecedor local em desenvolvimento; papéis geridos na Matriz (`requirements.md` §3.1). |
 | DT05 | Interface | Aplicação web, pensada primeiro para computador; versão móvel numa fase futura. |
-| DT06 | Alojamento | Contentores, em infraestrutura interna ou numa região cloud da UE; o fornecedor é escolhido pelo cliente. |
+| DT06 | Alojamento | Contentores — pelo menos duas imagens, uma para o frontend e outra para o backend —, em infraestrutura interna ou numa região cloud da UE; o fornecedor é escolhido pelo cliente. Alternativas mais tolerantes a falhas: DT13. |
 | DT07 | Entrega de alertas | Alertas guardados na base de dados, criados na mesma transação que o evento que os origina; a aplicação web consulta-os periodicamente; os prazos ultrapassados são verificados por uma tarefa diária. Revisão futura: DT09. |
 | DT08 | Testes de aceitação | Um teste automático por CA ao nível da API, com o ID do CA no nome; testes end-to-end apenas nos fluxos críticos. |
 
