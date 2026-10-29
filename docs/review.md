@@ -1,6 +1,6 @@
 # Matriz — Revisão crítica do Specification Pack
 
-> **Data:** 2026-10-29 · **Âmbito:** Specification Pack v0.1 (Ficha PL 01, Ex. 6) e Architecture Pack (Ficha PL 02, Ex. 5) · **Resultado:** Specification Pack v0.2 (1.ª ronda), v0.3 (2.ª ronda), v0.4 (3.ª ronda) e v0.5 com o Architecture Pack revisto (§3)
+> **Data:** 2026-10-29 · **Âmbito:** Specification Pack v0.1 (Ficha PL 01, Ex. 6), Architecture Pack (Ficha PL 02, Ex. 5) e conciliação com a Ficha PL 03 (Ex. 1) · **Resultado:** Specification Pack v0.2 (1.ª ronda), v0.3 (2.ª ronda), v0.4 (3.ª ronda), v0.5 com o Architecture Pack revisto (§3) e v0.6 (§6)
 > **Relacionados:** [`requirements.md`](requirements.md) · [`user-stories.md`](user-stories.md) · [`constraints.md`](constraints.md) · [`architecture.md`](architecture.md) · [`database.md`](database.md) · [`../openapi.yaml`](../openapi.yaml) · [`ui/wireframe.md`](ui/wireframe.md)
 
 Revisão da documentação produzida com apoio de IA, feita por um agente e decidida pelo humano responsável (*human-in-the-loop*). Procuraram-se requisitos ambíguos ou contraditórios, funcionalidades sem justificação, pressupostos apresentados como factos, CA não verificáveis, riscos de segurança e privacidade e inconsistências entre documentos.
@@ -187,5 +187,27 @@ Pedida pelo humano depois da revisão cruzada. O agente analisou as falhas poss�
 
 ## 5. Pendente após a revisão
 
+- **Permissões propostas pelo agente na conciliação com a Ficha PL 03** (§6): quem altera a prioridade (RN39) e o facto de os participantes não ganharem permissões sobre a tarefa (RN40).
 - **P12:** validação jurídica da política de retenção. Mantida em aberto pelo humano: não é relevante no âmbito do projeto; necessária antes de uma entrada em produção.
 - **Revisões futuras:** DT09 (alertas na base de dados; até lá, sem apagar nem arquivar alertas, por decisão do humano), DT10 (extração para microservices), DT11 (gestão de eventos) e DT12 (gestão de erros).
+
+## 6. Conciliação com o âmbito da Ficha PL 03 (Ex. 1)
+
+O agente comparou o âmbito funcional da Ficha PL 03 com o MVP aprovado e reportou as diferenças antes de qualquer implementação. O humano decidiu cada ponto.
+
+| # | Diferença | Proposta do agente | Decisão do humano | Registo |
+|---|---|---|---|---|
+| F1 | A ficha pede projetos, tarefas, responsáveis, comentários, pesquisa e painel; o MVP tem 9 US. | Mínimo da ficha sobre o modelo da Matriz; restantes US em incrementos posteriores. | **Diferente da proposta:** MVP completo, com as extensões da ficha. | D41 |
+| F2 | Início de sessão local vs. OIDC com o fornecedor da empresa (DT04). | Login local como "fornecedor local" da DT04. | **Diferente da proposta:** OIDC real, com Keycloak local. | DT04, DT15 |
+| F3 | A ficha pede eliminar projetos e tarefas; o MVP não previa eliminação e o histórico é inalterável. | Eliminação lógica. | Aceite. | RN38, D42 |
+| F4 | Estados TODO/IN_PROGRESS/DONE e prioridade, que o MVP não tinha. | Manter os 7 estados e acrescentar a prioridade. | Aceite. | RN39, D43 |
+| F5 | Vários responsáveis por tarefa vs. um responsável pela execução (RN15), base da capacidade. | Um responsável pela execução e vários participantes. | Aceite. | RN40, D44 |
+| F6 | Comentários, inexistentes no MVP. | RF e US novos. | Aceite. | RN41, RF35, US10, D45 |
+| F7 | Limites dos campos e paginação não definidos. | Limites do exemplo da ficha; paginação com total. | Aceite. | RN42, D46 |
+| F8 | Ecrãs da ficha diferentes do wireframe aprovado. | Seguir a navegação e a linguagem visual do wireframe. | Aceite. | D47 |
+| F9 | Bibliotecas por escolher. | Drizzle para o acesso à base de dados; restantes como em DT14. | **Alterado:** TypeORM; restantes aceites. | DT14 |
+| F10 | Sem PostgreSQL nem Docker na máquina de desenvolvimento. | PostgreSQL 17 instalado com o winget. | Aceite. | DT15 |
+
+**Discrepância reportada depois das respostas:** o Keycloak (F2) precisa de Docker ou de Java 17/21, mas F10 excluía o Docker e só existia o Java 8. O humano decidiu: JDK 21 com a distribuição zip do Keycloak. Decidiu também a forma da sessão (aplicação React com Authorization Code + PKCE e token *bearer*, coerente com `architecture.md` §7) e que o contrato OpenAPI se completa por incremento, antes do código de cada um.
+
+**Propostas do agente por confirmar:** ao redigir as regras novas, o agente propôs quem altera a prioridade (RN39) e que os participantes não ganham permissões sobre a tarefa (RN40). Estão marcadas como «Proposto» em `requirements.md` §4.

@@ -1,6 +1,6 @@
 # Matriz — Restrições, pressupostos e decisões pendentes
 
-> **Versão:** 0.5 · **Data:** 2026-10-29 · **Estado:** revisão cruzada da Ficha PL 02 (Ex. 5)
+> **Versão:** 0.6 · **Data:** 2026-10-29 · **Estado:** conciliação com o âmbito da Ficha PL 03 (Ex. 1)
 > **Relacionados:** [`requirements.md`](requirements.md) · [`user-stories.md`](user-stories.md) · [`review.md`](review.md)
 
 Este documento separa o que **é sabido** (restrições) do que **foi assumido** (pressupostos) e do que **ainda tem de ser decidido**. Um pressuposto nunca se sobrepõe a uma regra de negócio confirmada (RN).
@@ -47,7 +47,7 @@ Confirmados na revisão crítica (Ex. 6). Os critérios de aceitação transvers
 
 ### 4.1 Funcionais
 
-Não há decisões funcionais pendentes: D01–D40 estão resolvidas (§4.3).
+Não há decisões funcionais pendentes: D01–D47 estão resolvidas (§4.3).
 
 ### 4.2 Técnicas
 
@@ -62,7 +62,7 @@ As decisões técnicas da Aula 2 estão resolvidas no §4.3. Ficam planeadas as 
 
 **Sinais de revisão da arquitetura (DT10):** várias equipas de desenvolvimento a trabalhar em módulos diferentes, com ciclos de entrega independentes; módulos com necessidades de carga ou de disponibilidade muito diferentes; ou crescimento para milhares de utilizadores em que o escalonamento horizontal do monólito (várias instâncias sobre a mesma base de dados) deixe de cumprir RNF08 e RNF09. O número de utilizadores, por si só, não obriga à migração. As fronteiras entre módulos (DT03) são o que torna a extração possível sem reescrever a aplicação.
 
-### 4.3 Resolvidos (Ficha PL 01, Ex. 6, e Ficha PL 02 — 2026-10-29)
+### 4.3 Resolvidos (Ficha PL 01, Ex. 6, Ficha PL 02 e Ficha PL 03, Ex. 1 — 2026-10-29)
 
 **Decisões funcionais**
 
@@ -102,6 +102,13 @@ As decisões técnicas da Aula 2 estão resolvidas no §4.3. Ficam planeadas as 
 | D32 | Equipas sem líder. | RN34 — uma equipa ativa tem sempre pelo menos um líder. |
 | D33 | O líder conta para a capacidade da equipa? | RN06 — sim, como qualquer membro. |
 | D34 | Criação de contas de utilizador. | RN35 — o administrador cria a conta pelo e-mail profissional; a ligação à identidade faz-se no primeiro acesso. |
+| D47 | Ecrãs pedidos pela Ficha PL 03 face ao wireframe aprovado. | Os novos ecrãs (início de sessão, painel inicial, projetos, detalhe do projeto e detalhe da tarefa) seguem a navegação e a linguagem visual do wireframe. |
+| D46 | Limites dos campos de texto e paginação. | RN42; listagens paginadas (`page`, `pageSize` 20 por omissão e no máximo 100) que indicam o total (`openapi.yaml`). |
+| D45 | Comentários, pedidos pela Ficha PL 03. | RN41, RF35, US10. |
+| D44 | Vários responsáveis por tarefa, pedidos pela Ficha PL 03. | RN40 — um responsável pela execução (RN15) e vários participantes, que não contam para a capacidade. |
+| D43 | Estado e prioridade, pedidos pela Ficha PL 03. | Mantêm-se os 7 estados de RN17; RN39 acrescenta a prioridade («Baixa», «Média», «Alta»; «Média» por omissão). |
+| D42 | Eliminação de projetos e tarefas, pedida pela Ficha PL 03. | RN38 — eliminação lógica; o histórico conserva-se. |
+| D41 | Âmbito da implementação (Ficha PL 03). | MVP completo (US01–US10), incluindo as extensões da Ficha PL 03 (D42–D47). |
 | D40 | Acrescentar tarefas a uma sprint já iniciada. | RN37 — permitido ao líder; a tarefa fica identificada como acrescentada depois do início. |
 | D39 | Fim da sprint. | RN36 — automático, no fim do dia da data de fim. |
 | D38 | Retirar uma tarefa de uma sprint. | RN37 — permitido ao líder; numa sprint ativa, a tarefa volta ao backlog, a remoção fica registada e continua a contar como planeada no início (RF27). |
@@ -130,10 +137,12 @@ As decisões técnicas da Aula 2 estão resolvidas no §4.3. Ficam planeadas as 
 | DT01 | Linguagem e framework | TypeScript em toda a aplicação: NestJS no backend e React no frontend. Alternativas analisadas: Go (viável, mas com duas linguagens e modelação de regras mais verbosa) e Rust (custo de desenvolvimento desproporcionado para um MVP ligado a dados). Escolhido por simplificar o desenvolvimento, os deployments e a atualização de versões com uma única linguagem e um único ecossistema. |
 | DT02 | Base de dados | PostgreSQL, relacional, com um schema por módulo. |
 | DT03 | Arquitetura e API | Monólito modular; API REST/JSON documentada em OpenAPI 3.1; comunicação síncrona. Módulos: Identidade e acesso, Organização, Trabalho, Planeamento, Acompanhamento, Histórico. Cada módulo é dono das suas tabelas e expõe uma interface pública aos restantes. |
-| DT04 | Autenticação | OpenID Connect com o fornecedor de identidade da empresa em produção e um fornecedor local em desenvolvimento; papéis geridos na Matriz (`requirements.md` §3.1). |
+| DT04 | Autenticação | OpenID Connect: em produção, o fornecedor de identidade da empresa; em desenvolvimento e demonstração, um Keycloak local com um realm versionado e contas fictícias (DT15). A aplicação React autentica-se com Authorization Code + PKCE e envia o token de acesso em cada pedido (*bearer*); o backend valida a assinatura (chaves públicas do fornecedor), o emissor, a audiência e a validade. A conta da Matriz liga-se à identidade pelo e-mail no primeiro acesso (RN35). Papéis geridos na Matriz (`requirements.md` §3.1). |
 | DT05 | Interface | Aplicação web, pensada primeiro para computador; versão móvel numa fase futura. |
 | DT06 | Alojamento | Contentores — pelo menos duas imagens, uma para o frontend e outra para o backend —, em infraestrutura interna ou numa região cloud da UE; o fornecedor é escolhido pelo cliente. Alta disponibilidade: DT13. |
 | DT07 | Entrega de alertas | Alertas guardados na base de dados, criados na mesma transação que o evento que os origina; a aplicação web consulta-os periodicamente; os prazos ultrapassados são verificados por uma tarefa diária. Revisão futura: DT09. |
+| DT14 | Bibliotecas | Um repositório com dois projetos npm (*npm workspaces*): `backend/` e `frontend/`. Backend: NestJS, TypeORM (entidades e migrations), class-validator e class-transformer, jose (validação dos tokens OIDC), Jest e supertest. Frontend: React com Vite, react-router, TanStack Query, oidc-client-ts e react-oidc-context; sem biblioteca de componentes visuais. Versões fixadas no lockfile. Alternativas consideradas para o acesso à base de dados: Drizzle e Prisma (escolhido TypeORM pelo humano). |
+| DT15 | Ambiente de desenvolvimento | Sem Docker. PostgreSQL 17 instalado localmente (winget); Keycloak local executado com o JDK 21 (distribuição zip, modo de desenvolvimento) e realm importado do repositório. |
 | DT08 | Testes de aceitação | Um teste automático por CA ao nível da API, com o ID do CA no nome; testes end-to-end apenas nos fluxos críticos. |
 | DT13 | Alta disponibilidade e recuperação | Duas instâncias do backend atrás do balanceador, com verificações de saúde e reinício automático; a tarefa diária corre numa só instância de cada vez, garantido por um trinco no PostgreSQL. PostgreSQL com réplica e cópias de segurança: cópia base diária e arquivo contínuo das alterações (WAL), que permite repor a base de dados num momento anterior a um erro, com testes de reposição periódicos. As cópias ficam na UE, cifradas, e são conservadas durante 30 dias (cobre uma sprint e o seu fecho; os dados pessoais apagados segundo SEC09 desaparecem das cópias no prazo de um mês). Cumpre RNF09 e RNF13 (RPO 5 min, RTO 1 h). Duas variantes, conforme o fornecedor (DT06): numa cloud da UE, PostgreSQL gerido com réplica e mudança automática para ela; em infraestrutura interna, réplica com mudança manual segundo um procedimento escrito. Alternativas analisadas: só cópias de segurança, com uma instância (a recuperação de uma falha da base de dados gastaria quase toda a margem mensal de RNF09), e cluster com mudança automática em várias zonas (desproporcionado). Rever (passar ao cluster) se a disponibilidade medida se aproximar de 99 %. |
 

@@ -36,6 +36,7 @@ Detalhe em [`docs/requirements.md`](docs/requirements.md) §1.
 | US07 | Consultar progresso, desvios e alertas (versão básica) | P1 |
 | US08 | Propor trabalho no backlog | P1 |
 | US09 | Atribuir e transferir tarefas entre equipas, preservando o histórico | P1 |
+| US10 | Comentar tarefas | P1 |
 
 O MVP destina-se à utilização interna da empresa. Os critérios de aceitação estão em [`docs/user-stories.md`](docs/user-stories.md).
 
@@ -89,7 +90,8 @@ Os coding agents seguem, além disto, as instruções de [`AGENTS.md`](AGENTS.md
 - [x] Ex. 5 — `AGENTS.md`
 - [x] Ex. 6 — Revisão crítica (human-in-the-loop) — Specification Pack v0.3, ver [`docs/review.md`](docs/review.md)
 - [x] Aula 2 (Ficha PL 02) — Architecture Pack: arquitetura, modelo de dados, API e wireframe, com revisão cruzada (human-in-the-loop), ver [`docs/review.md`](docs/review.md) §3
+- [ ] Aula 3 (Ficha PL 03) — Implementação do MVP: plano em [`docs/implementation-plan.md`](docs/implementation-plan.md)
 
-**Em números:** 37 regras de negócio · 31 requisitos funcionais · 13 requisitos não funcionais · 9 user stories · 97 critérios de aceitação (91 nas US e 6 transversais), todos verificáveis · sem decisões funcionais pendentes.
+**Em números:** 42 regras de negócio · 36 requisitos funcionais · 13 requisitos não funcionais · 10 user stories · 116 critérios de aceitação (110 nas US e 6 transversais), todos verificáveis · sem decisões funcionais pendentes.
 
 **Pendentes:** P12 (validação jurídica da retenção). Revisões futuras planeadas: DT09–DT12 (alertas, microservices, eventos, erros).

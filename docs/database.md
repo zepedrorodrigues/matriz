@@ -1,6 +1,6 @@
 # Matriz — Modelo de dados
 
-> **Versão:** 0.2 · **Data:** 2026-10-29 · **Estado:** revisto na revisão cruzada (Ficha PL 02, Ex. 5)
+> **Versão:** 0.3 · **Data:** 2026-10-29 · **Estado:** conciliação com a Ficha PL 03 (Ex. 1)
 > **Relacionados:** [`requirements.md`](requirements.md) · [`architecture.md`](architecture.md) · [`constraints.md`](constraints.md)
 
 Modelo lógico dos dados essenciais do MVP, para PostgreSQL (DT02). Os requisitos prevalecem sobre este documento; o que estiver marcado **por confirmar** não deve ser implementado sem decisão (`AGENTS.md` §2).
@@ -59,8 +59,9 @@ Modelo lógico dos dados essenciais do MVP, para PostgreSQL (DT02). Os requisito
 | Atributo | Tipo | Chave | Regra |
 |---|---|---|---|
 | id | uuid | PK | |
-| name | text | | Obrigatório. |
-| objective | text | | Objetivo do projeto (RF02). |
+| name | varchar(100) | | Obrigatório; 3 a 100 caracteres, não só espaços (RN42). |
+| objective | varchar(1000) | | Objetivo do projeto (RF02); até 1000 caracteres (RN42). |
+| deleted_at | timestamptz | nulo | Eliminação lógica (RN38). |
 | created_at | timestamptz | | |
 
 **project_manager** — gestor de um projeto; quem cria o projeto passa a ser gestor (§3.1).
@@ -106,19 +107,21 @@ Modelo lógico dos dados essenciais do MVP, para PostgreSQL (DT02). Os requisito
 | id | uuid | PK | |
 | epic_id | uuid | FK → epic, nulo | Obrigatório numa tarefa (RN12); nulo numa subtarefa. |
 | parent_task_id | uuid | FK → task, nulo | Preenchido só numa subtarefa. Uma subtarefa não tem subtarefas (RN12). Exatamente um de `epic_id` e `parent_task_id` está preenchido. |
-| title | text | | Obrigatório (RN29). |
-| description | text | | Opcional. Texto livre: sem motivos pessoais (SEC06). |
+| title | varchar(150) | | Obrigatório (RN29); 3 a 150 caracteres, não só espaços (RN42). |
+| description | varchar(2000) | | Opcional; até 2000 caracteres (RN42). Texto livre: sem motivos pessoais (SEC06). |
 | team_id | uuid | ref. lógica → team | Obrigatório (RN29); equipa associada ao projeto (RN23); numa subtarefa, igual à da tarefa principal (RN22). |
 | original_team_id | uuid | ref. lógica → team | Equipa na criação; nunca muda (RN14). |
 | assignee_id | uuid | ref. lógica → user, nulo | Responsável pela execução (RN15). |
 | state | enum (RN17) | | `in_planning`, `in_technical_analysis`, `ready_for_development`, `in_development`, `in_testing`, `done`, `delivered`. Transições: RN26. |
 | estimate_hours | numeric(6,2) | nulo | ≥ 0. Numa tarefa com subtarefas, a soma das subtarefas é calculada e não guardada (RN22). |
 | story_points | smallint | nulo | 1, 2, 3, 5, 8, 13 ou 21 (RN07). |
+| priority | enum (`low`, `medium`, `high`) | | `medium` por omissão (RN39). |
 | due_date | date | nulo | Prazo opcional (RN29). |
 | is_blocked | boolean | | Indicador independente do estado (RN28). |
 | block_reason | text | nulo | Obrigatório quando `is_blocked` (RN28); sem motivos pessoais (SEC06). |
 | created_by | uuid | ref. lógica → user | |
 | created_at | timestamptz | | |
+| deleted_at | timestamptz | nulo | Eliminação lógica; numa tarefa, abrange as subtarefas (RN38). |
 
 **acceptance_criterion** — critério de aceitação de uma tarefa (RN13, RN24, RN27).
 
@@ -132,6 +135,25 @@ Modelo lógico dos dados essenciais do MVP, para PostgreSQL (DT02). Os requisito
 | met_at | timestamptz | nulo | |
 | created_by | uuid | ref. lógica → user | |
 | created_at | timestamptz | | |
+
+**task_participant** — participante de uma tarefa, além do responsável pela execução (RN40).
+
+| Atributo | Tipo | Chave | Regra |
+|---|---|---|---|
+| task_id | uuid | PK, FK → task | A chave composta impede participantes repetidos (CA03.14). |
+| user_id | uuid | PK, ref. lógica → user | Membro da equipa responsável ou, por exceção, de outra equipa (RN03). |
+| added_by | uuid | ref. lógica → user | |
+| added_at | timestamptz | | |
+
+**comment** — comentário de uma tarefa (RN41).
+
+| Atributo | Tipo | Chave | Regra |
+|---|---|---|---|
+| id | uuid | PK | |
+| task_id | uuid | FK → task | |
+| author_id | uuid | ref. lógica → user | Utilizador autenticado, nunca indicado pelo cliente (CA10.5). |
+| body | varchar(2000) | | 1 a 2000 caracteres, não só espaços (RN41). Sem edição nem remoção. |
+| created_at | timestamptz | | Data/hora do sistema. |
 
 ### 2.4 Planeamento (`planning`)
 
@@ -218,6 +240,8 @@ Sem `UPDATE` nem `DELETE` para a aplicação (SEC04); as retificações são nov
 | Épico — tarefa | 1 : N; cada tarefa tem exatamente um épico | RN12 |
 | Tarefa — subtarefa | 1 : N; uma subtarefa tem exatamente uma tarefa principal | RN22 |
 | Tarefa — critério de aceitação | 1 : N (0 enquanto a tarefa não estiver pronta) | RN27 |
+| Tarefa — participante — utilizador | N : M (via `task_participant`), sem repetições | RN40 |
+| Tarefa — comentário | 1 : N; cada comentário tem um autor | RN41 |
 | Equipa — tarefa (responsável) | 1 : N; cada tarefa tem exatamente uma equipa | RN02 |
 | Utilizador — tarefa (responsável pela execução) | 0..1 : N | RN15, RN29 |
 | Equipa — sprint | 1 : N | RN01 |
@@ -255,8 +279,9 @@ erDiagram
     }
     PROJECT {
         uuid id PK
-        text name
-        text objective
+        varchar name "3-100"
+        varchar objective "ate 1000"
+        timestamptz deleted_at
     }
     PROJECT_MANAGER {
         uuid project_id PK, FK
@@ -282,16 +307,30 @@ erDiagram
         uuid id PK
         uuid epic_id FK "nulo numa subtarefa"
         uuid parent_task_id FK "so numa subtarefa"
-        text title
+        varchar title "3-150"
         uuid team_id
         uuid original_team_id
         uuid assignee_id
         enum state "RN17"
         numeric estimate_hours
         smallint story_points "1,2,3,5,8,13,21"
+        enum priority "low | medium | high"
         date due_date
         boolean is_blocked
         text block_reason
+        timestamptz deleted_at
+    }
+    TASK_PARTICIPANT {
+        uuid task_id PK, FK
+        uuid user_id PK
+        timestamptz added_at
+    }
+    COMMENT {
+        uuid id PK
+        uuid task_id FK
+        uuid author_id
+        varchar body "1-2000"
+        timestamptz created_at
     }
     ACCEPTANCE_CRITERION {
         uuid id PK
@@ -355,6 +394,10 @@ erDiagram
     EPIC ||--o{ TASK : "decompoe-se em"
     TASK |o--o{ TASK : "subtarefas"
     TASK ||--o{ ACCEPTANCE_CRITERION : "tem"
+    TASK ||--o{ TASK_PARTICIPANT : "tem participantes"
+    USER ||..o{ TASK_PARTICIPANT : "participa em"
+    TASK ||--o{ COMMENT : "tem comentarios"
+    USER ||..o{ COMMENT : "escreve"
     TEAM ||..o{ TASK : "responsavel por"
     USER |o..o{ TASK : "executa"
     TEAM ||..o{ SPRINT : "planeia"
@@ -372,7 +415,9 @@ erDiagram
 | Regra | Onde é garantida |
 |---|---|
 | Nome de equipa único entre equipas ativas, sem distinguir maiúsculas (RN33) | Base de dados: índice único parcial sobre `lower(name)` onde `active` |
-| Story points na escala fixa (RN07); alocação entre 1 e 100 (RN06); horas ≥ 0 | Base de dados: restrições `CHECK` |
+| Story points na escala fixa (RN07); alocação entre 1 e 100 (RN06); horas ≥ 0; limites e textos não só com espaços (RN41, RN42) | Base de dados: restrições `CHECK`; também validados na API |
+| Participante sem repetições (RN40) | Base de dados: chave primária composta |
+| Elementos eliminados (RN38) fora das listagens, contagens e capacidade | Aplicação: consultas filtram `deleted_at` |
 | Tarefa com exatamente um de `epic_id` / `parent_task_id`; subtarefa sem subtarefas (RN12, RN22) | Base de dados (`CHECK`) e aplicação |
 | Início da sprint ≤ fim; sem sobreposição; no máximo uma sprint ativa por equipa (RN31) | Base de dados: `CHECK`, restrição de exclusão sobre o intervalo de datas e índice único parcial |
 | Datas da sprint alteráveis só enquanto `planned` (RN36) | Aplicação |
@@ -390,4 +435,5 @@ erDiagram
 | 3 | Criação de contas: o administrador regista o utilizador pelo e-mail profissional e a ligação ao fornecedor de identidade (`external_subject`) faz-se no primeiro acesso. | Confirmado — RN35 (D34). |
 | 4 | Referências lógicas, sem chave estrangeira, entre módulos (§1). | Decisão de modelação desta proposta, decorrente da ADR-001. |
 | 5 | Volume das tabelas `alert` e `history_event`. | Revisão futura: DT09; retenção segundo SEC09 (validação jurídica: P12). |
+| 7 | Prioridade, eliminação lógica, participantes e comentários (`priority`, `deleted_at`, `task_participant`, `comment`). | Confirmado — RN38–RN42 (D42–D46). |
 | 6 | Ciclo de vida da sprint e saída de tarefas a meio da sprint (`started_at`, `closed_at`, `left_at`, `left_reason`). | Confirmado — RN20, RN36, RN37 (D35–D40). |

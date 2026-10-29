@@ -1,7 +1,7 @@
 # Matriz — Requisitos
 
-> **Versão:** 0.5 · **Data:** 2026-10-29 · **Estado:** revisão cruzada da Ficha PL 02 (Ex. 5)
-> **Fontes:** descrição inicial do cliente; análise de requisitos assistida por IA (Ex. 1–3); decisões da revisão crítica (Ex. 6), da preparação da Ficha PL 02 e da sua revisão cruzada ([`review.md`](review.md)).
+> **Versão:** 0.6 · **Data:** 2026-10-29 · **Estado:** conciliação com o âmbito da Ficha PL 03 (Ex. 1)
+> **Fontes:** descrição inicial do cliente; análise de requisitos assistida por IA (Ex. 1–3); decisões da revisão crítica (Ex. 6), da preparação da Ficha PL 02, da sua revisão cruzada e da conciliação com a Ficha PL 03 ([`review.md`](review.md)).
 > **Relacionados:** [`user-stories.md`](user-stories.md) · [`constraints.md`](constraints.md)
 
 ## Convenções
@@ -98,6 +98,11 @@ Decidida na revisão crítica (Ex. 6, D14).
 | Iniciar sprints, confirmando ou ajustando as datas (RN36) | ✔ | | ✔ | |
 | Atualizar o estado; registar o cumprimento de critérios; assinalar bloqueios | ✔ | ✔ | ✔ | só tarefas atribuídas |
 | Alterar critérios após «A desenvolver» (RN24); reabrir tarefas entregues | ✔ | ✔ | ✔ | |
+| Eliminar projetos (RN38) | ✔ | ✔ | | |
+| Eliminar tarefas (RN38) | ✔ | ✔ | ✔ | |
+| Alterar a prioridade de uma tarefa (RN39) | ✔ | ✔ | ✔ | só ao criar |
+| Associar e remover participantes (RN40) | ✔ | ✔ | só a sua equipa | |
+| Comentar tarefas e consultar comentários (RN41) | ✔ | ✔ | ✔ | ✔ |
 | Consultar a capacidade e a sobrecarga de um indivíduo | | | ✔ | só os próprios dados |
 | Consultar a capacidade da equipa | ✔ | ✔ | ✔ | ✔ |
 
@@ -141,6 +146,11 @@ Decidida na revisão crítica (Ex. 6, D14).
 | RN34 | Uma equipa ativa tem sempre pelo menos um líder. O administrador designa-o ao criar a equipa, e não é possível remover o último líder de uma equipa ativa. | Confirmado (D32) |
 | RN35 | As contas de utilizador são criadas pelo administrador a partir do e-mail profissional; a ligação à identidade do colaborador na empresa é feita no seu primeiro acesso. | Confirmado (D34) |
 | RN36 | Uma sprint é criada pelo líder de equipa no estado «Planeada» e passa a «Ativa» e depois a «Terminada». Enquanto está «Planeada», as datas podem ser alteradas pelo líder; o início é manual, feito pelo líder de equipa ou pelo administrador, que confirma ou ajusta as datas nesse momento, e só é possível se a equipa não tiver outra sprint ativa (RN31). Depois do início, as datas não podem ser alteradas. A sprint termina automaticamente no fim do dia da data de fim. A alteração das datas, o início e o fim ficam registados (RN32). | Confirmado (D36, D37, D39) |
+| RN38 | Os projetos e as tarefas não são apagados fisicamente: a eliminação é lógica. Um projeto eliminado, com toda a sua hierarquia, e uma tarefa eliminada, com as suas subtarefas, deixam de constar das listagens, pesquisas, contagens e cálculos de capacidade; o histórico conserva-se e regista a eliminação (RN32). Eliminam projetos o administrador e o gestor do projeto; eliminam tarefas o administrador, o gestor de projeto e o líder da equipa responsável. A interface pede confirmação antes de eliminar. | Confirmado (D42) |
+| RN39 | Cada tarefa tem uma prioridade — «Baixa», «Média» ou «Alta» —, «Média» por omissão. Quem cria a tarefa pode defini-la; depois, alteram-na o líder de equipa, o gestor de projeto e o administrador, com registo (RN32). | Confirmado (D43) — quem altera: Proposto |
+| RN40 | Além do responsável pela execução (RN15), uma tarefa pode ter vários participantes, sem repetições. São elegíveis os membros da equipa responsável; um utilizador de outra equipa só por exceção, segundo RN03. Gerem os participantes o líder da equipa responsável, o gestor de projeto e o administrador; cada associação e remoção fica registada (RN32). Os participantes não contam para a capacidade, não substituem o responsável pela execução (RN06, RN15, RN19) e não ganham permissões sobre a tarefa. | Confirmado (D44) — permissões dos participantes: Proposto |
+| RN41 | Comenta as tarefas de um projeto quem vê esse projeto (§3.1). Um comentário tem de 1 a 2000 caracteres e não pode ser composto apenas por espaços; o autor e a data/hora são definidos pelo sistema a partir do utilizador autenticado. Os comentários não são editados nem eliminados e estão sujeitos a SEC06. | Confirmado (D45) |
+| RN42 | Limites dos campos de texto: nome do projeto, de 3 a 100 caracteres; objetivo do projeto, até 1000; título da tarefa, de 3 a 150; descrição da tarefa, até 2000. Os campos obrigatórios não podem ser compostos apenas por espaços. | Confirmado (D46) |
 | RN37 | O líder de equipa pode retirar uma tarefa de uma sprint «Planeada» ou «Ativa» e acrescentar tarefas a uma sprint «Ativa» (com estimativa temporal, RN27). Retirada de uma sprint «Planeada», a tarefa deixa de estar planeada nela. Retirada de uma sprint «Ativa», volta ao backlog da equipa, a remoção fica registada (RN32) e a tarefa continua a contar como trabalho planeado no início da sprint na comparação entre planeado e concluído (RF27). Uma tarefa acrescentada a uma sprint «Ativa» fica identificada como acrescentada depois do início. | Confirmado (D38, D40) |
 
 ## 5. Requisitos funcionais
@@ -150,7 +160,7 @@ Decidida na revisão crítica (Ex. 6, D14).
 | ID | Requisito | Base | Prior. | Estado | Pendências |
 |---|---|---|---|---|---|
 | RF01 | Criar, editar, consultar e desativar equipas. | US01 · RN01, RN25, RN33, RN34 | P0 | Confirmado | — |
-| RF02 | Criar, editar e consultar projetos, com nome e objetivo. | US01 · RN25, RN33 | P0 | Confirmado | — |
+| RF02 | Criar, editar, consultar, pesquisar pelo nome e eliminar projetos, com nome e objetivo. | US01 · RN25, RN33, RN38, RN42 | P0 | Confirmado | — |
 | RF03 | Associar equipas a projetos, sem associações duplicadas, e consultar as equipas de um projeto. | US01 · CA01.3–CA01.5 | P0 | Confirmado | — |
 | RF04 | Associar utilizadores a equipas, com uma percentagem de alocação; cada membro pertence a pelo menos uma equipa. | US01 · CA01.9, RN06, RN21 | P0 | Confirmado | — |
 
@@ -174,6 +184,9 @@ Decidida na revisão crítica (Ex. 6, D14).
 | RF13 | Alertar os responsáveis quando um membro cria uma tarefa. | US08 · RN09 | P1 | Confirmado | — |
 | RF14 | Permitir a gestores de projeto e administradores atribuir excecionalmente uma tarefa a alguém de outra equipa, com justificação e sem alterar a equipa responsável. | US09 · RN03, RN20 | P1 | Confirmado | — |
 | RF31 | Permitir a gestores de projeto e administradores transferir uma tarefa não concluída para outra equipa, mantendo no histórico a equipa original e transferindo as subtarefas. | US09 · RN14, RN20, RN22, RN32 | P1 | Confirmado | — |
+| RF32 | Eliminar tarefas, com as suas subtarefas, de forma lógica e conservando o histórico. | US03 · RN38, CA03.17 | P1 | Confirmado | — |
+| RF33 | Registar a prioridade de cada tarefa e filtrar as tarefas de um projeto por estado e por prioridade. | US03 · RN39, CA03.11, CA03.12, CA03.19 | P1 | Confirmado | — |
+| RF34 | Associar e remover participantes de uma tarefa, sem repetições e apenas utilizadores elegíveis. | US03 · RN03, RN40, CA03.13–CA03.16 | P1 | Confirmado | — |
 
 ### 5.4 Backlog e sprints
 
@@ -200,6 +213,7 @@ Decidida na revisão crítica (Ex. 6, D14).
 | RF23 | Registar os critérios de aceitação de cada tarefa e o seu cumprimento; impedir a conclusão enquanto algum critério estiver por cumprir; controlar a alteração dos critérios segundo RN24. | US06 · RN13, RN24, RN27 | P0 | Confirmado | — |
 | RF24 | Reabrir tarefas entregues, que voltam a «A desenvolver», sem estado específico de reparação e preservando o histórico. | US06 · RN11, RN26 | P0 | Confirmado | — |
 | RF25 | Manter o histórico de responsáveis pela execução, equipas e transferências de cada tarefa. | US06, US09 · RN14, RN15, RN32 | P0 | Confirmado | Depende de RF14 e RF31 (P1), ver `user-stories.md` §1 |
+| RF35 | Adicionar e consultar comentários de uma tarefa, com o autor e a data/hora definidos pelo sistema. | US10 · RN41 | P1 | Confirmado | — |
 
 ### 5.7 Acompanhamento e alertas
 
@@ -210,6 +224,7 @@ Decidida na revisão crítica (Ex. 6, D14).
 | RF28 | Identificar como atrasadas as tarefas com prazo ultrapassado e não concluídas. | US07 · CA07.3, RN29 | P1 | Confirmado | — |
 | RF29 | Assinalar tarefas bloqueadas e registar o motivo do bloqueio, que descreve o impedimento ao trabalho e nunca motivos pessoais (SEC06). | US07 · CA07.4, CA07.6, RN28 | P1 | Confirmado | — |
 | RF30 | Apresentar alertas na aplicação a utilizadores com responsabilidade de acompanhamento ou diretamente afetados. | US07 · CA07.5, CA07.7, CA07.8, RN09, RN18, RN19, RN30 | P1 | Confirmado | — |
+| RF36 | Apresentar um painel inicial com os projetos visíveis e o número de tarefas em cada estado, com acesso ao detalhe de cada projeto. | US07 · CA07.9 | P1 | Confirmado | — |
 
 ## 6. Requisitos não funcionais
 
@@ -234,7 +249,7 @@ Os critérios transversais QT01–QT07 do Ex. 3 passam a RNF01–RNF07.
 Os requisitos de **segurança e privacidade** estão em [`constraints.md`](constraints.md) §3 (SEC01–SEC09); os respetivos critérios de aceitação transversais estão em [`user-stories.md`](user-stories.md) §3.
 ## 7. Âmbito do MVP
 
-O MVP é composto pelas nove User Stories detalhadas em [`user-stories.md`](user-stories.md).
+O MVP é composto pelas dez User Stories detalhadas em [`user-stories.md`](user-stories.md).
 
 | US | Funcionalidade | Justificação | Prior. |
 |---|---|---|---|
@@ -247,8 +262,9 @@ O MVP é composto pelas nove User Stories detalhadas em [`user-stories.md`](user
 | US07 | Consultar progresso, desvios e alertas (versão básica) | Responde ao "acompanhar o progresso" do pedido inicial, sem análise tarefa a tarefa. | P1 |
 | US08 | Propor trabalho no backlog | Membros sinalizam trabalho sem poderes de gestão (RN08, RN09, RN21). | P1 |
 | US09 | Atribuir e transferir tarefas entre equipas | Exceções à responsabilidade da equipa sem perder a rastreabilidade (RN03, RN14, RN15, RN20). | P1 |
+| US10 | Comentar tarefas | Pedida no âmbito da Ficha PL 03: discussão do trabalho junto da tarefa (RN41). | P1 |
 
-**Critério de conclusão do MVP** *(Confirmado)*: todas as US01–US09 e os critérios transversais cumprem os respetivos critérios de aceitação, depois de resolvidas as decisões pendentes que os bloqueiam ([`user-stories.md`](user-stories.md) §4).
+**Critério de conclusão do MVP** *(Confirmado)*: todas as US01–US10 e os critérios transversais cumprem os respetivos critérios de aceitação, depois de resolvidas as decisões pendentes que os bloqueiam ([`user-stories.md`](user-stories.md) §4).
 
 ## 8. Funcionalidades fora do âmbito inicial
 

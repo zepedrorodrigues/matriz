@@ -1,6 +1,6 @@
 # Matriz — User Stories do MVP
 
-> **Versão:** 0.5 · **Data:** 2026-10-29 · **Estado:** revisão cruzada da Ficha PL 02 (Ex. 5)
+> **Versão:** 0.6 · **Data:** 2026-10-29 · **Estado:** conciliação com o âmbito da Ficha PL 03 (Ex. 1)
 > **Fonte:** backlog produzido no Ex. 3, consolidado no Ex. 4 e revisto no Ex. 6. As alterações estão no §5.
 > **Relacionados:** [`requirements.md`](requirements.md) · [`constraints.md`](constraints.md) · [`review.md`](review.md)
 
@@ -21,13 +21,14 @@
 |---|---|---|---|---|---|
 | US01 | Gerir equipas e projetos | Administrador, Gestor de projeto | P0 | — | RF01–RF04 |
 | US02 | Gerir a hierarquia de trabalho | Gestor de projeto, Líder de equipa | P0 | US01 | RF05–RF08 |
-| US03 | Criar, estimar e atribuir tarefas | Líder de equipa, Gestor de projeto | P0 | US01, US02 | RF09–RF11 |
+| US03 | Criar, estimar e atribuir tarefas | Líder de equipa, Gestor de projeto | P0 | US01, US02 | RF09–RF11, RF32–RF34 |
 | US04 | Gerir backlog e sprints por equipa | Líder de equipa | P0 | US03 | RF12, RF15–RF18 |
 | US05 | Consultar capacidade e carga de trabalho | Líder de equipa | P0 | US04 | RF19–RF21 |
 | US06 | Atualizar o estado e validar a conclusão | Membro da equipa | P0 | US03; **US09 (CA06.6)** | RF22–RF25 |
-| US07 | Consultar progresso, desvios e alertas | Líder de equipa, Gestor de projeto | P1 | US04–US06 | RF26–RF30 |
+| US07 | Consultar progresso, desvios e alertas | Líder de equipa, Gestor de projeto | P1 | US04–US06 | RF26–RF30, RF36 |
 | US08 | Propor trabalho no backlog | Membro da equipa | P1 | US03, US04 | RF12, RF13 |
 | US09 | Atribuir e transferir tarefas entre equipas | Gestor de projeto, Administrador | P1 | US03 | RF14, RF25, RF31 |
+| US10 | Comentar tarefas | Membro da equipa | P1 | US03 | RF35 |
 
 **Prioridades:** P0 — crítica · P1 — alta, incluída no MVP numa versão básica.
 
@@ -39,7 +40,7 @@
 
 ### US01 — Gerir equipas e projetos
 
-**Prioridade:** P0 — Crítica · **Objetivo:** estabelecer a estrutura organizacional mínima para gerir o trabalho. · **Regras:** RN01, RN02, RN06, RN21, RN25, RN33, RN34, RN35
+**Prioridade:** P0 — Crítica · **Objetivo:** estabelecer a estrutura organizacional mínima para gerir o trabalho. · **Regras:** RN01, RN02, RN06, RN21, RN25, RN33, RN34, RN35, RN38, RN42
 
 > Como **administrador** — e, no caso dos projetos, também como **gestor de projeto** —, quero criar e gerir equipas e projetos, associando as equipas aos projetos em que participam, para organizar o trabalho e identificar as responsabilidades de cada unidade.
 
@@ -109,6 +110,26 @@
 - **Given** que sou um administrador,
 - **When** crio uma conta com o e-mail profissional de um colaborador,
 - **Then** a conta fica registada e, no primeiro acesso desse colaborador, fica ligada à sua identidade na empresa.
+
+**CA01.14 — Pesquisar projetos pelo nome** · *verificável*
+- **Given** que existem projetos que me são visíveis,
+- **When** pesquiso por parte do nome de um projeto,
+- **Then** a lista apresenta apenas os projetos visíveis cujo nome contém o texto pesquisado, sem distinguir maiúsculas de minúsculas.
+
+**CA01.15 — Eliminar um projeto** · *verificável*
+- **Given** que sou administrador ou gestor do projeto,
+- **When** elimino o projeto, depois de confirmar,
+- **Then** o projeto e a sua hierarquia deixam de constar das listagens, pesquisas e contagens, e o histórico mantém-se, com o registo da eliminação.
+
+**CA01.16 — Restringir a eliminação de projetos** · *verificável*
+- **Given** que não sou administrador nem gestor de um projeto,
+- **When** tento eliminá-lo,
+- **Then** a operação é recusada e o projeto mantém-se.
+
+**CA01.17 — Validar o nome e o objetivo do projeto** · *verificável*
+- **Given** que sou um utilizador autorizado a criar ou editar projetos,
+- **When** indico um nome vazio, só com espaços, com menos de 3 ou mais de 100 caracteres, ou um objetivo com mais de 1000 caracteres,
+- **Then** a operação é recusada e o projeto não é criado nem alterado.
 
 #### Casos excecionais
 
@@ -186,7 +207,7 @@
 
 ### US03 — Criar, estimar e atribuir tarefas
 
-**Prioridade:** P0 — Crítica · **Objetivo:** distribuir o trabalho pelas equipas e pelos seus elementos. · **Regras:** RN02, RN03, RN06, RN07, RN10, RN20, RN22, RN23, RN27, RN29
+**Prioridade:** P0 — Crítica · **Objetivo:** distribuir o trabalho pelas equipas e pelos seus elementos. · **Regras:** RN02, RN03, RN06, RN07, RN10, RN20, RN22, RN23, RN27, RN29, RN38–RN40, RN42
 
 > Como **líder de equipa** ou **gestor de projeto** autorizado, quero criar tarefas, definir as respetivas estimativas e atribuí-las a uma equipa ou indivíduo, para distribuir o trabalho de acordo com as responsabilidades e o planeamento estabelecido.
 
@@ -243,6 +264,51 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 - **Given** que uma tarefa já entrou em «A desenvolver»,
 - **When** um membro tenta alterar uma das suas estimativas,
 - **Then** a operação é recusada e a estimativa mantém-se.
+
+**CA03.11 — Prioridade por omissão** · *verificável*
+- **Given** que crio uma tarefa sem indicar a prioridade,
+- **When** a tarefa é registada,
+- **Then** fica com a prioridade «Média».
+
+**CA03.12 — Alterar a prioridade** · *verificável*
+- **Given** que sou líder da equipa responsável, gestor do projeto ou administrador,
+- **When** altero a prioridade de uma tarefa para «Baixa», «Média» ou «Alta»,
+- **Then** a nova prioridade fica guardada e a alteração fica registada no histórico.
+
+**CA03.13 — Associar participantes** · *verificável*
+- **Given** que sou líder da equipa responsável, gestor do projeto ou administrador,
+- **When** associo a uma tarefa vários membros da equipa responsável,
+- **Then** todos passam a constar como participantes, sem alterar o responsável pela execução.
+
+**CA03.14 — Impedir participantes repetidos** · *verificável*
+- **Given** que um utilizador já é participante de uma tarefa,
+- **When** alguém o tenta associar de novo,
+- **Then** a operação é recusada e a associação não fica duplicada.
+
+**CA03.15 — Restringir os participantes aos elegíveis** · *verificável*
+- **Given** que um utilizador não pertence à equipa responsável pela tarefa,
+- **When** um líder o tenta associar como participante,
+- **Then** a operação é recusada; só um gestor de projeto ou um administrador o pode associar, com justificação (RN03).
+
+**CA03.16 — Remover um participante** · *verificável*
+- **Given** que uma tarefa tem participantes,
+- **When** um utilizador autorizado remove um deles,
+- **Then** esse utilizador deixa de constar como participante e a remoção fica registada no histórico.
+
+**CA03.17 — Eliminar uma tarefa** · *verificável*
+- **Given** que sou líder da equipa responsável, gestor do projeto ou administrador,
+- **When** elimino uma tarefa, depois de confirmar,
+- **Then** a tarefa e as suas subtarefas deixam de constar das listagens, contagens e cálculos de capacidade, e o histórico mantém-se, com o registo da eliminação.
+
+**CA03.18 — Validar o título e a descrição da tarefa** · *verificável*
+- **Given** que sou um utilizador autorizado a criar ou editar tarefas,
+- **When** indico um título vazio, só com espaços, com menos de 3 ou mais de 150 caracteres, ou uma descrição com mais de 2000 caracteres,
+- **Then** a operação é recusada e a tarefa não é criada nem alterada.
+
+**CA03.19 — Filtrar tarefas por estado e prioridade** · *verificável*
+- **Given** que um projeto tem tarefas em vários estados e prioridades,
+- **When** filtro as tarefas do projeto por estado, por prioridade ou por ambos,
+- **Then** a lista apresenta apenas as tarefas que cumprem os filtros e o total indicado corresponde a todas as tarefas filtradas, e não só à página apresentada.
 
 #### Casos excecionais
 
@@ -560,6 +626,11 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 - **When** a tarefa é reaberta,
 - **Then** o responsável pela execução e o líder de equipa recebem um alerta na aplicação.
 
+**CA07.9 — Consultar o painel inicial** · *verificável*
+- **Given** que estou autenticado,
+- **When** abro o painel inicial,
+- **Then** vejo os projetos que me são visíveis, com o número de tarefas em cada estado, e consigo abrir o detalhe de cada projeto.
+
 #### Casos excecionais
 
 | ID | Situação | Regra |
@@ -666,6 +737,47 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 
 ---
 
+### US10 — Comentar tarefas
+
+**Prioridade:** P1 — Alta · **Objetivo:** registar a discussão sobre o trabalho junto da tarefa. · **Regras:** RN41, SEC06
+
+> Como **membro de uma equipa** que participa num projeto, quero comentar as tarefas desse projeto e consultar os comentários, para partilhar informação sobre o trabalho no local onde ele é feito.
+
+#### Critérios de aceitação
+
+**CA10.1 — Comentar uma tarefa** · *verificável*
+- **Given** que vejo o projeto de uma tarefa,
+- **When** escrevo um comentário com 1 a 2000 caracteres,
+- **Then** o comentário fica guardado e é apresentado com o meu nome e a data/hora.
+
+**CA10.2 — Consultar os comentários** · *verificável*
+- **Given** que uma tarefa tem comentários,
+- **When** abro a tarefa, incluindo depois de a fechar e voltar a abrir,
+- **Then** vejo todos os comentários, por ordem cronológica, com o autor e a data/hora.
+
+**CA10.3 — Rejeitar comentários inválidos** · *verificável*
+- **Given** que vejo o projeto de uma tarefa,
+- **When** envio um comentário vazio, só com espaços ou com mais de 2000 caracteres,
+- **Then** o comentário é recusado e nada é guardado.
+
+**CA10.4 — Restringir os comentários a quem vê o projeto** · *verificável*
+- **Given** que não vejo o projeto de uma tarefa (CAT06),
+- **When** tento comentar a tarefa ou consultar os seus comentários,
+- **Then** a operação é recusada.
+
+**CA10.5 — Definir o autor pelo sistema** · *verificável*
+- **Given** que envio um comentário indicando outro utilizador como autor,
+- **When** o comentário é guardado,
+- **Then** o autor registado é o utilizador autenticado e a data/hora é a do sistema.
+
+#### Casos excecionais
+
+| ID | Situação | Regra |
+|---|---|---|
+| EC10.1 | Editar ou apagar um comentário. | Não permitido (RN41). |
+
+---
+
 ## 3. Critérios de aceitação transversais
 
 Aplicam-se a todas as US e verificam os requisitos de segurança e privacidade ([`constraints.md`](constraints.md) §3).
@@ -704,7 +816,7 @@ Aplicam-se a todas as US e verificam os requisitos de segurança e privacidade (
 
 ## 4. Verificabilidade dos critérios de aceitação
 
-**97 CA no total (91 nas US + 6 transversais), todos verificáveis.** Não há decisões funcionais pendentes que bloqueiem critérios de aceitação ([`constraints.md`](constraints.md) §4.1).
+**116 CA no total (110 nas US + 6 transversais), todos verificáveis.** Não há decisões funcionais pendentes que bloqueiem critérios de aceitação ([`constraints.md`](constraints.md) §4.1).
 
 ---
 
@@ -723,7 +835,7 @@ Aplicam-se a todas as US e verificam os requisitos de segurança e privacidade (
 
 ### 5.2 Alterações na revisão crítica (Ex. 6)
 
-Os problemas encontrados, as decisões tomadas e as alterações resultantes estão em [`review.md`](review.md). Na preparação da Ficha PL 02 foram fechadas as decisões funcionais pendentes (3.ª ronda); a revisão cruzada da Ficha PL 02 (Ex. 5) acrescentou o ciclo de vida da sprint (CA04.9–CA04.16).
+Os problemas encontrados, as decisões tomadas e as alterações resultantes estão em [`review.md`](review.md). Na preparação da Ficha PL 02 foram fechadas as decisões funcionais pendentes (3.ª ronda); a revisão cruzada da Ficha PL 02 (Ex. 5) acrescentou o ciclo de vida da sprint (CA04.9–CA04.16). A conciliação com a Ficha PL 03 (Ex. 1) acrescentou a US10 e os CA01.14–CA01.17, CA03.11–CA03.19 e CA07.9.
 
 A US08 foi dividida em duas, porque juntava dois papéis e dois objetivos. Os CA foram renumerados:
 

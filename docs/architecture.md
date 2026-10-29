@@ -1,6 +1,6 @@
 # Matriz — Arquitetura
 
-> **Versão:** 0.2 · **Data:** 2026-10-29 · **Estado:** revisto na revisão cruzada (Ficha PL 02, Ex. 5)
+> **Versão:** 0.3 · **Data:** 2026-10-29 · **Estado:** bibliotecas e ambiente definidos (Ficha PL 03, Ex. 1)
 > **Relacionados:** [`requirements.md`](requirements.md) · [`constraints.md`](constraints.md) · [`database.md`](database.md) · [`../openapi.yaml`](../openapi.yaml)
 
 Este documento descreve a arquitetura do MVP. As decisões técnicas (DT) estão registadas em [`constraints.md`](constraints.md) §4; os requisitos prevalecem sobre este documento.
@@ -69,13 +69,13 @@ Não são determinantes: elasticidade, escalabilidade além de RNF06 e deploy in
 | Área | Escolha | DT |
 |---|---|---|
 | Linguagem | TypeScript em toda a aplicação | DT01 |
-| Backend | NestJS — os módulos do NestJS correspondem aos módulos de domínio | DT01 |
-| Frontend | React, aplicação web para computador, em pt-PT, WCAG 2.1 AA | DT01, DT05, RNF10–RNF12 |
+| Backend | NestJS — os módulos do NestJS correspondem aos módulos de domínio; TypeORM (entidades por schema e migrations); class-validator; jose; testes com Jest e supertest | DT01, DT14 |
+| Frontend | React com Vite, aplicação web para computador, em pt-PT, WCAG 2.1 AA; react-router, TanStack Query, oidc-client-ts e react-oidc-context | DT01, DT05, DT14, RNF10–RNF12 |
 | Base de dados | PostgreSQL, um schema por módulo | DT02 |
-| Autenticação | OpenID Connect com o fornecedor de identidade da empresa | DT04 |
+| Autenticação | OpenID Connect com o fornecedor de identidade da empresa; Keycloak local em desenvolvimento | DT04, DT15 |
 | Alojamento | Contentores — uma imagem para o frontend e outra para o backend —, em infraestrutura interna ou numa região cloud da UE | DT06 |
 
-As bibliotecas concretas (ORM, validação, testes) são escolhidas na Aula 03 e acrescentadas apenas com aprovação (`AGENTS.md` §2).
+As bibliotecas foram escolhidas na Ficha PL 03 (DT14); outras só se acrescentam com aprovação (`AGENTS.md` §2). O código organiza-se em dois projetos npm no mesmo repositório: `backend/` e `frontend/`.
 
 ## 4. Vista geral
 
@@ -105,9 +105,9 @@ flowchart LR
 |---|---|---|---|---|
 | **Identidade e acesso** | Autenticação OIDC; contas de utilizador; papel de administrador; avaliação da matriz de permissões em cada operação, consultando o módulo Organização para os papéis por equipa e por projeto. | Utilizadores, papel global | SEC01, SEC02, §3.1 | Transversal |
 | **Organização** | Equipas (criação, nome, desativação, líderes); pertenças a equipas com papel e alocação; projetos e respetivos gestores; associação de equipas a projetos. | Equipas, pertenças, projetos, gestores, associações equipa–projeto | RN06 (alocação), RN21, RN23, RN25, RN33, RN34 | US01 |
-| **Trabalho** | Hierarquia (objetivos, épicos, tarefas, subtarefas); campos e prazos; estimativas; atribuição; ciclo de vida e transições; critérios de aceitação; bloqueios; transferências entre equipas. | Elementos da hierarquia, critérios de aceitação, bloqueios | RN02, RN03, RN07, RN10–RN13, RN17, RN20, RN22, RN24, RN26–RN29 | US02, US03, US06, US09 |
+| **Trabalho** | Hierarquia (objetivos, épicos, tarefas, subtarefas); campos, prazos e prioridade; estimativas; atribuição e participantes; ciclo de vida e transições; critérios de aceitação; bloqueios; comentários; eliminação lógica; transferências entre equipas. | Elementos da hierarquia, critérios de aceitação, bloqueios, participantes, comentários | RN02, RN03, RN07, RN10–RN13, RN17, RN20, RN22, RN24, RN26–RN29, RN38–RN42 | US02, US03, US06, US09, US10 |
 | **Planeamento** | Sprints (criação, datas, início manual e fim automático); backlog; planear, acrescentar e retirar tarefas de sprints, incluindo a saída das tarefas transferidas; capacidade, ajustes de disponibilidade e deteção de sobrecarga; estimativa no início da sprint. | Sprints, planeamento tarefa–sprint, ajustes de disponibilidade, estimativas no início da sprint | RN01, RN04–RN06, RN19, RN20 (saída da sprint), RN22 (capacidade), RN27, RN31, RN36, RN37 | US04, US05, US08 |
-| **Acompanhamento** | Geração e consulta de alertas; verificação diária de prazos; progresso e desvios por equipa e por sprint. | Alertas | RN09, RN18, RN19, RN30 | US07 |
+| **Acompanhamento** | Geração e consulta de alertas; verificação diária de prazos; progresso e desvios por equipa e por sprint; painel inicial. | Alertas | RN09, RN18, RN19, RN30 | US07 |
 | **Histórico** | Registo só de acrescento de todas as alterações relevantes; consulta do histórico de cada elemento; aplicação da política de retenção. | Eventos de histórico | RN14, RN15, RN32, SEC03, SEC04, SEC09 | US06, US09, transversal |
 
 ## 6. Interação entre módulos
@@ -123,13 +123,15 @@ flowchart LR
 
 | Tema | Abordagem | Requisitos |
 |---|---|---|
-| Autenticação | Tokens OIDC validados em cada pedido; sem sessão em memória. | SEC01, CAT01, DT04 |
+| Autenticação | A aplicação React inicia e termina a sessão no fornecedor OIDC (Authorization Code + PKCE) e envia o token de acesso em cada pedido; o backend valida assinatura, emissor, audiência e validade, sem sessão em memória. A identidade (autor, proprietário) vem sempre do token, nunca do corpo do pedido. Sessão expirada: a interface volta ao início de sessão com uma mensagem. | SEC01, CAT01, DT04 |
 | Autorização | Verificada no backend em cada operação, segundo a matriz de permissões; uma operação recusada não altera dados. | SEC02, SEC07, CAT02, CAT05, CAT06 |
 | Histórico e auditoria | Módulo Histórico, alimentado por eventos na mesma transação; sem operações de edição ou remoção. | SEC03, SEC04, RN32, CAT03, CAT04 |
 | Alertas | Guardados na base de dados; o frontend consulta-os periodicamente; prazos verificados por uma tarefa diária, executada por uma única instância. | RN18, RN30, DT07 |
 | Fim das sprints | A mesma tarefa diária termina as sprints ativas cuja data de fim já passou e devolve ao backlog as tarefas não concluídas. | RN04, RN36 |
 | Erros da API | Formato único de erro (*problem details*, RFC 9457) com o código HTTP adequado. Suficiente para o MVP; a gestão de erros será melhorada no futuro (DT12). | Ex. 3, DT12 |
-| Validação | Dados de entrada validados na fronteira da API. | RN07, RN29, RN31, RN33 |
+| Validação | Dados de entrada validados na fronteira da API e repetidos na interface. | RN07, RN29, RN31, RN33, RN41, RN42 |
+| Listagens | Paginadas (`page`, `pageSize` 20 por omissão e no máximo 100), com o total do conjunto filtrado. | D46 |
+| Eliminação | Lógica (`deleted_at`); os elementos eliminados ficam fora das consultas e o histórico conserva-se. | RN38, SEC04 |
 | Privacidade | Minimização de dados; motivos pessoais nunca registados; retenção segundo SEC09. | SEC05, SEC06, SEC09, P12 |
 | Observabilidade | Logs estruturados com identificador de pedido; métricas de tempo de resposta para verificar RNF08; medição da disponibilidade em horário de trabalho para verificar RNF09. | RNF08, RNF09 |
 | Cópias de segurança e recuperação | Cópia base diária e arquivo contínuo das alterações (WAL) do PostgreSQL, na UE, cifrados e conservados durante 30 dias; reposição num momento anterior a um erro; testes de reposição periódicos. Uma réplica não substitui as cópias, porque replica também os erros. | RNF13, DT13 |
@@ -154,6 +156,7 @@ flowchart LR
 - **Mesma origem:** o proxy encaminha `/api` para o backend e o resto para o frontend, o que evita configurar CORS.
 - **Duas instâncias do backend** (DT13), sem estado, atrás do balanceador, com verificações de saúde e reinício automático. Uma falha de uma instância ou de uma máquina não interrompe o serviço, e as correções urgentes publicam-se uma instância de cada vez.
 - **PostgreSQL com réplica e cópias de segurança** (DT13, RNF13: RPO 5 min, RTO 1 h), na infraestrutura interna ou numa região cloud da UE (DT06, P09). Numa cloud, PostgreSQL gerido com mudança automática para a réplica; em infraestrutura interna, mudança manual segundo um procedimento escrito.
+- **Desenvolvimento** (DT15): PostgreSQL 17 e Keycloak (JDK 21) instalados localmente, sem Docker; o servidor de desenvolvimento do frontend encaminha `/api` para o backend, mantendo a mesma origem.
 - A tarefa diária (prazos e fim das sprints) corre numa única instância de cada vez: antes de começar, obtém um trinco no PostgreSQL (*advisory lock*), sem dependências novas.
 - **Limitação conhecida:** o proxy/balanceador e a mudança manual para a réplica (em infraestrutura interna) são pontos a vigiar; se a disponibilidade medida se aproximar de 99 %, passa-se a um cluster com mudança automática (DT13).
 
