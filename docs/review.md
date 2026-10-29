@@ -177,5 +177,5 @@ Todas aprovadas pelo humano.
 
 ## 5. Pendente após a revisão
 
-- **P12:** validação jurídica da política de retenção.
-- **Revisões futuras:** DT09 (alertas na base de dados), DT10 (extração para microservices), DT11 (gestão de eventos), DT12 (gestão de erros) e DT13 (alta disponibilidade).
+- **P12:** validação jurídica da política de retenção. Mantida em aberto pelo humano: não é relevante no âmbito do projeto; necessária antes de uma entrada em produção.
+- **Revisões futuras:** DT09 (alertas na base de dados; até lá, sem apagar nem arquivar alertas, por decisão do humano), DT10 (extração para microservices), DT11 (gestão de eventos), DT12 (gestão de erros) e DT13 (alta disponibilidade).

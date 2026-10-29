@@ -187,7 +187,7 @@ A capacidade não é guardada: calcula-se como 8 h × dias úteis da sprint × `
 | created_at | timestamptz | | |
 | read_at | timestamptz | nulo | |
 
-O volume desta tabela será revisto (DT09).
+No MVP, os alertas não são apagados nem arquivados, para não perder informação; o volume desta tabela será revisto (DT09).
 
 ### 2.6 Histórico (`history`)
 

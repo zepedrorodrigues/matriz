@@ -25,7 +25,7 @@ Cada pressuposto deve ser confirmado ou rejeitado através da decisão indicada.
 |---|---|---|---|
 | P09 | A empresa opera na UE e está sujeita ao RGPD. | Contexto do projeto; a localização da empresa não foi indicada. | Cliente |
 | P10 | As funcionalidades não discutidas na análise ficam fora do MVP (ver `requirements.md` §8). | Manter o MVP mínimo e não inventar âmbito. | Cliente |
-| P12 | A política de retenção e retificação de dados pessoais (SEC09) é adequada ao RGPD. | Proposta pela análise; não foi validada juridicamente. | Encarregado de proteção de dados |
+| P12 | A política de retenção e retificação de dados pessoais (SEC09) é adequada ao RGPD. | Proposta pela análise; não foi validada juridicamente. Mantém-se em aberto por decisão do humano: não é relevante no âmbito do projeto académico; a validação é necessária antes de uma entrada em produção. | Encarregado de proteção de dados |
 
 ## 3. Requisitos de segurança e privacidade
 
@@ -55,7 +55,7 @@ As decisões técnicas da Aula 2 estão resolvidas no §4.3. Ficam planeadas as 
 
 | ID | Decisão | Quando | Dependências |
 |---|---|---|---|
-| DT09 | Revisão do peso dos alertas na base de dados: volume, retenção e arquivo dos alertas antigos | Médio a longo prazo, com dados reais de utilização | DT07, RN30 |
+| DT09 | Revisão do peso dos alertas na base de dados: volume, retenção e arquivo dos alertas antigos. Até lá, os alertas não são apagados nem arquivados (decisão do humano: sem perda de informação no início) | Médio a longo prazo, com dados reais de utilização | DT07, RN30 |
 | DT10 | Extração de módulos do monólito para serviços independentes (microservices) | Quando se verificarem os sinais de revisão abaixo | DT03 |
 | DT11 | Melhoria da gestão de eventos interna e estudo de uma plataforma de eventos (p. ex. Kafka) para deployments integrados em larga escala | Em conjunto com DT10 | DT03, DT07, DT10 |
 | DT12 | Melhoria da gestão de erros (p. ex. catálogo de códigos de erro, mensagens localizadas, monitorização e alarmística) | Depois do MVP | DT03 |
