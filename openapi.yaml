@@ -1,0 +1,395 @@
+openapi: 3.1.0
+info:
+  title: Matriz API
+  version: 0.1.0
+  summary: Contrato REST simplificado do MVP da Matriz (Ficha PL 02, Ex. 3).
+  description: |
+    Duas operações representativas do MVP:
+
+    - **Consultar a capacidade de uma sprint** (US05 — CA05.1–CA05.11; RN06, RN19, RN22, RN27; SEC07).
+    - **Transferir uma tarefa para outra equipa** (US09 — CA09.3–CA09.5, CA09.7; RN20, RN22, RN23, RN32).
+
+    Convenções:
+
+    - Identificadores em inglês; descrições em pt-PT (`docs/database.md` §1).
+    - Autenticação por token OpenID Connect (DT04); autorização verificada em cada operação
+      segundo a matriz de permissões (`docs/requirements.md` §3.1, SEC02).
+    - Erros no formato *problem details* (RFC 9457), com `Content-Type: application/problem+json`
+      (`docs/architecture.md` §7). Uma operação recusada não altera dados (SEC02).
+    - Horas e story points são sempre campos distintos e nunca convertidos (RN06).
+servers:
+  - url: /api
+    description: Mesma origem do frontend; o proxy encaminha `/api` para o backend (`docs/architecture.md` §8).
+security:
+  - bearerAuth: []
+tags:
+  - name: Planeamento
+    description: Sprints, backlog e capacidade (módulo Planeamento).
+  - name: Trabalho
+    description: Tarefas, atribuição e transferências (módulo Trabalho).
+
+paths:
+  /sprints/{sprintId}/capacity:
+    get:
+      tags: [Planeamento]
+      operationId: getSprintCapacity
+      summary: Consultar a capacidade e a carga de uma sprint
+      description: |
+        Devolve, para a sprint indicada, a capacidade da equipa em horas, as horas estimadas
+        planeadas, a diferença entre ambas e o total de story points, apresentados separadamente
+        (CA05.1, CA05.2). Identifica a sobrecarga sem impedir o planeamento (CA05.3, CA05.4, RN19).
+
+        Cálculo (RN06, RN22, RN27):
+
+        - capacidade individual = 8 h × dias úteis da sprint × alocação à equipa, salvo ajuste de
+          disponibilidade para a sprint (CA05.5, CA05.6, CA05.10);
+        - capacidade da equipa = soma da capacidade dos membros, incluindo os líderes (CA05.7, CA05.11);
+        - horas planeadas = estimativas das tarefas planeadas na sprint; de uma tarefa com subtarefas
+          contam apenas as subtarefas planeadas nesta sprint (CA05.9);
+        - tarefas sem story points contam como 0 (RN27).
+
+        Visibilidade dos dados individuais (SEC07, CAT05): o líder da equipa recebe todos os membros;
+        um membro recebe apenas os seus próprios dados; o gestor de projeto e o administrador recebem
+        `members` vazio.
+      parameters:
+        - $ref: '#/components/parameters/SprintId'
+      responses:
+        '200':
+          description: Capacidade e carga da sprint.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SprintCapacity'
+              examples:
+                sobrecarga:
+                  summary: Equipa e um membro em sobrecarga (dados fictícios)
+                  value:
+                    sprintId: 6f1c2a3e-1b2c-4d5e-8f90-1a2b3c4d5e6f
+                    teamId: 0b9e8d7c-6a5b-4c3d-9e2f-1a0b9c8d7e6f
+                    startDate: '2026-11-02'
+                    endDate: '2026-11-13'
+                    workingDays: 10
+                    capacityHours: 160
+                    plannedHours: 172
+                    remainingHours: -12
+                    plannedStoryPoints: 34
+                    tasksWithoutStoryPoints: 1
+                    overloaded: true
+                    members:
+                      - userId: 3c2b1a09-8f7e-4d6c-b5a4-3928170f6e5d
+                        name: Ana Exemplo
+                        role: leader
+                        allocationPct: 100
+                        capacityHours: 80
+                        availabilityAdjusted: false
+                        plannedHours: 70
+                        remainingHours: 10
+                        overloaded: false
+                      - userId: 9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d
+                        name: Rui Exemplo
+                        role: member
+                        allocationPct: 100
+                        capacityHours: 80
+                        availabilityAdjusted: false
+                        plannedHours: 102
+                        remainingHours: -22
+                        overloaded: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tasks/{taskId}/transfer:
+    post:
+      tags: [Trabalho]
+      operationId: transferTask
+      summary: Transferir uma tarefa para outra equipa
+      description: |
+        Muda a equipa responsável por uma tarefa (RN20). Só o gestor de projeto e o administrador
+        podem transferir (CA09.3, CA09.4, §3.1). As subtarefas são transferidas com a tarefa
+        principal (RN22, CA09.5). A equipa original e a transferência ficam no histórico, com autor
+        e data/hora (RN14, RN32, CA09.2, CAT03).
+
+        Regras verificadas:
+
+        - a equipa de destino está ativa e associada ao projeto da tarefa (RN23, RN33);
+        - a equipa de destino é diferente da atual;
+        - a tarefa não está em «Terminada» nem em «Entregue» (RN20, CA09.7);
+        - só se transferem tarefas, não subtarefas isoladas (RN22).
+
+        **Por confirmar (D35):** o que acontece a uma tarefa que está planeada numa sprint da
+        equipa de origem. Proposta: sai dessa sprint e passa para o backlog da equipa de destino.
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferTaskRequest'
+            examples:
+              transferencia:
+                value:
+                  targetTeamId: 5d4c3b2a-1f0e-4d9c-8b7a-6f5e4d3c2b1a
+      responses:
+        '200':
+          description: Tarefa transferida.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskTransfer'
+              examples:
+                transferida:
+                  value:
+                    taskId: 7e6d5c4b-3a2f-4e1d-9c0b-8a7f6e5d4c3b
+                    previousTeamId: 0b9e8d7c-6a5b-4c3d-9e2f-1a0b9c8d7e6f
+                    newTeamId: 5d4c3b2a-1f0e-4d9c-8b7a-6f5e4d3c2b1a
+                    originalTeamId: 0b9e8d7c-6a5b-4c3d-9e2f-1a0b9c8d7e6f
+                    transferredSubtaskIds:
+                      - 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e
+                    transferredBy: 4f3e2d1c-0b9a-4876-a5b4-c3d2e1f0a9b8
+                    transferredAt: '2026-11-05T10:15:00Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            A transferência viola uma regra de negócio: tarefa em «Terminada» ou «Entregue»
+            (CA09.7), equipa de destino igual à atual, ou pedido feito sobre uma subtarefa.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              examples:
+                concluida:
+                  value:
+                    type: https://matriz.example/problems/task-already-done
+                    title: Tarefa concluída
+                    status: 409
+                    detail: Uma tarefa em «Terminada» ou «Entregue» não pode ser transferida.
+                    instance: /api/tasks/7e6d5c4b-3a2f-4e1d-9c0b-8a7f6e5d4c3b/transfer
+        '422':
+          description: |
+            A equipa de destino não pode receber a tarefa: está inativa (RN33) ou não está
+            associada ao projeto da tarefa (RN23).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token de acesso emitido pelo fornecedor de identidade da empresa (OpenID Connect, DT04).
+
+  parameters:
+    SprintId:
+      name: sprintId
+      in: path
+      required: true
+      description: Identificador da sprint.
+      schema:
+        type: string
+        format: uuid
+    TaskId:
+      name: taskId
+      in: path
+      required: true
+      description: Identificador da tarefa (não pode ser uma subtarefa).
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    SprintCapacity:
+      type: object
+      required: [sprintId, teamId, startDate, endDate, workingDays, capacityHours, plannedHours,
+                 remainingHours, plannedStoryPoints, tasksWithoutStoryPoints, overloaded, members]
+      properties:
+        sprintId:
+          type: string
+          format: uuid
+        teamId:
+          type: string
+          format: uuid
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        workingDays:
+          type: integer
+          minimum: 0
+          description: Dias úteis (segunda a sexta) entre o início e o fim da sprint (RN06).
+        capacityHours:
+          type: number
+          minimum: 0
+          description: Capacidade da equipa em horas (RN06).
+        plannedHours:
+          type: number
+          minimum: 0
+          description: Soma das estimativas temporais planeadas na sprint (RN22).
+        remainingHours:
+          type: number
+          description: capacityHours − plannedHours; negativo em sobrecarga.
+        plannedStoryPoints:
+          type: integer
+          minimum: 0
+          description: Total de story points planeados; nunca convertido em horas (RN06).
+        tasksWithoutStoryPoints:
+          type: integer
+          minimum: 0
+          description: Tarefas planeadas sem story points, contadas como 0 (RN27).
+        overloaded:
+          type: boolean
+          description: Verdadeiro quando plannedHours > capacityHours (CA05.3, RN19).
+        members:
+          type: array
+          description: Dados individuais, filtrados segundo SEC07 (ver a descrição da operação).
+          items:
+            $ref: '#/components/schemas/MemberCapacity'
+
+    MemberCapacity:
+      type: object
+      required: [userId, name, role, allocationPct, capacityHours, availabilityAdjusted,
+                 plannedHours, remainingHours, overloaded]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        role:
+          type: string
+          enum: [leader, member]
+        allocationPct:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: Alocação do membro a esta equipa (RN06).
+        capacityHours:
+          type: number
+          minimum: 0
+        availabilityAdjusted:
+          type: boolean
+          description: Verdadeiro quando a capacidade vem de um ajuste de disponibilidade; o motivo nunca é registado (SEC06).
+        plannedHours:
+          type: number
+          minimum: 0
+        remainingHours:
+          type: number
+        overloaded:
+          type: boolean
+          description: Sobrecarga individual (CA05.4).
+
+    TransferTaskRequest:
+      type: object
+      required: [targetTeamId]
+      additionalProperties: false
+      properties:
+        targetTeamId:
+          type: string
+          format: uuid
+          description: Equipa de destino; ativa e associada ao projeto da tarefa (RN23, RN33).
+
+    TaskTransfer:
+      type: object
+      required: [taskId, previousTeamId, newTeamId, originalTeamId, transferredSubtaskIds,
+                 transferredBy, transferredAt]
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        previousTeamId:
+          type: string
+          format: uuid
+        newTeamId:
+          type: string
+          format: uuid
+        originalTeamId:
+          type: string
+          format: uuid
+          description: Equipa em que a tarefa foi criada; nunca muda (RN14).
+        transferredSubtaskIds:
+          type: array
+          description: Subtarefas transferidas com a tarefa (RN22).
+          items:
+            type: string
+            format: uuid
+        transferredBy:
+          type: string
+          format: uuid
+        transferredAt:
+          type: string
+          format: date-time
+
+    Problem:
+      type: object
+      description: Erro no formato *problem details* (RFC 9457).
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          description: Identificador do tipo de problema.
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+        errors:
+          type: array
+          description: Erros de validação por campo (apenas em 400).
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
+  responses:
+    BadRequest:
+      description: Pedido inválido (p. ex. identificador mal formado ou corpo em falta).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: Sem autenticação válida (SEC01, CAT01).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Forbidden:
+      description: O papel do utilizador não permite a operação ou não tem visibilidade sobre o recurso (SEC02, CAT02, CAT06). Nenhum dado é alterado.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: O recurso não existe.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'

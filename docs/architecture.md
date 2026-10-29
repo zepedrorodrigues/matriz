@@ -1,7 +1,7 @@
 # Matriz — Arquitetura
 
 > **Versão:** 0.1 · **Data:** 2026-10-29 · **Estado:** proposta para revisão (Ficha PL 02, Ex. 1)
-> **Relacionados:** [`requirements.md`](requirements.md) · [`constraints.md`](constraints.md) · [`database.md`](database.md)
+> **Relacionados:** [`requirements.md`](requirements.md) · [`constraints.md`](constraints.md) · [`database.md`](database.md) · [`../openapi.yaml`](../openapi.yaml)
 
 Este documento descreve a arquitetura do MVP. As decisões técnicas (DT) estão registadas em [`constraints.md`](constraints.md) §4; os requisitos prevalecem sobre este documento.
 

@@ -616,6 +616,7 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 |---|---|---|
 | EC09.1 | Transferir uma tarefa já concluída ou entregue. | Não permitido (RN20, CA09.7). |
 | EC09.2 | Tarefa que passa por três ou mais equipas: como apresentar o histórico. | Lista cronológica (RN32). |
+| EC09.3 | Transferir uma tarefa planeada numa sprint da equipa de origem. | D35 |
 
 ---
 

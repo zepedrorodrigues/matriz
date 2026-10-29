@@ -47,7 +47,11 @@ Confirmados na revisão crítica (Ex. 6). Os critérios de aceitação transvers
 
 ### 4.1 Funcionais
 
-Não há decisões funcionais pendentes: D01–D34 estão resolvidas (§4.3).
+D01–D34 estão resolvidas (§4.3). Fica pendente uma questão identificada ao desenhar a API (Ficha PL 02, Ex. 3):
+
+| ID | Questão | Impacto | Afeta | Urgência |
+|---|---|---|---|---|
+| D35 | O que acontece a uma tarefa planeada numa sprint da equipa de origem quando é transferida para outra equipa? Proposta: sai dessa sprint e passa para o backlog da equipa de destino. | Planeamento e rastreabilidade | RN20, RN31, US09 · EC09.3 | Média |
 
 ### 4.2 Técnicas
 
