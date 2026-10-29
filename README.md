@@ -54,6 +54,7 @@ matriz/
     ├── review.md          revisões críticas: problemas encontrados e decisões tomadas
     ├── architecture.md    arquitetura: estilo, módulos, interação, implantação (Ficha PL 02)
     ├── database.md        modelo de dados e diagrama ER em Mermaid (Ficha PL 02)
+    ├── implementation-plan.md  plano de implementação por incrementos (Ficha PL 03)
     └── ui/
         ├── wireframe.svg  wireframe do planeamento da sprint (Ficha PL 02)
         └── wireframe.md   navegação e validação do wireframe face ao MVP
