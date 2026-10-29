@@ -1,11 +1,11 @@
 # Matriz — Revisão crítica do Specification Pack
 
-> **Data:** 2026-10-29 · **Âmbito:** Specification Pack v0.1 (Ficha PL 01, Ex. 6) · **Resultado:** Specification Pack v0.2
+> **Data:** 2026-10-29 · **Âmbito:** Specification Pack v0.1 (Ficha PL 01, Ex. 6) · **Resultado:** Specification Pack v0.2 (1.ª ronda) e v0.3 (2.ª ronda)
 > **Relacionados:** [`requirements.md`](requirements.md) · [`user-stories.md`](user-stories.md) · [`constraints.md`](constraints.md)
 
 Revisão da documentação produzida com apoio de IA, feita por um agente e decidida pelo humano responsável (*human-in-the-loop*). Procuraram-se requisitos ambíguos ou contraditórios, funcionalidades sem justificação, pressupostos apresentados como factos, CA não verificáveis, riscos de segurança e privacidade e inconsistências entre documentos.
 
-Este documento não é normativo: as decisões estão incorporadas nos restantes documentos, onde prevalecem.
+Este documento não é normativo: as decisões estão incorporadas nos restantes documentos, onde prevalecem. As referências da 1.ª ronda usam os IDs da v0.2; a renumeração da v0.3 está em `user-stories.md` §5.2.
 
 ---
 
@@ -67,26 +67,36 @@ Este documento não é normativo: as decisões estão incorporadas nos restantes
 |---|---|---|---|
 | I1 | A precedência do README colocava CA de requisitos Propostos acima desses requisitos. | Precedência por estado e, dentro do Confirmado, RN > requisitos > US/CA. | `README.md`, `AGENTS.md` |
 | I2 | CA06.6 e RF25 (P0) dependem da transferência (US08, P1). | Dependência assinalada para o desenvolvimento. | `user-stories.md` §1, RF25 |
-| I3 | O número inicial de utilizadores (QT06) foi referido mas não registado. | **Por resolver** — o valor não consta do repositório. | D20 |
+| I3 | O número inicial de utilizadores (QT06) foi referido mas não registado. | Resolvido na 2.ª ronda: 100 utilizadores iniciais. | RNF06 |
 | I4 | A US07 não indicava regras de negócio. | Acrescentadas. | US07 |
+
+### 1.7 Segunda ronda
+
+| ID | Questão | Decisão | Registo |
+|---|---|---|---|
+| C5 | Contagem dos dias da sprint. | Confirmado: dias úteis, de segunda a sexta. | RN06 |
+| P05 | Pressuposto sobre capacidade disponível, trabalho planeado e realizado. | Confirmado como resolvido pelos requisitos RF19, RF20 e RF27. | `constraints.md` §4.3 |
+| D28–D30 | Subtarefas: story points, equipa e capacidade. | Story points = soma das subtarefas; a subtarefa tem sempre a equipa da tarefa principal e é transferida com ela; na capacidade contam só as subtarefas, cada uma na sua sprint. | RN22, CA02.8, CA03.8, CA05.9, CA09.5 |
+| D31 | Feriados na capacidade. | Não são descontados automaticamente; ajusta-se a disponibilidade. | RN06 |
+| D20 | Requisitos não funcionais quantitativos. | 100 utilizadores (até 500), ≤ 2 s em 95 % das operações, 99 % em horário de trabalho, pt-PT, computador, WCAG 2.1 AA. | RNF06, RNF08–RNF12 |
+| D14 | Matriz de permissões. | Papéis fixos e acumuláveis; administrador global, gestor por projeto, líder e membro por equipa; visibilidade por participação. | `requirements.md` §3.1, CAT05, CAT06 |
+| US08 | A US juntava dois papéis e dois objetivos. | Dividida em US08 (propor trabalho) e US09 (atribuir e transferir entre equipas). | `user-stories.md` §2, §5.2 |
 
 ## 2. Critérios de validação (Ficha PL 01)
 
 | Critério | Estado | Evidência |
 |---|---|---|
 | O MVP está claramente definido. | Cumprido | `requirements.md` §7–§8; todos os requisitos do MVP confirmados. |
-| Existem pelo menos 5 User Stories. | Cumprido | 8 US (`user-stories.md` §2). |
-| Existem critérios de aceitação verificáveis. | Cumprido | 46 de 66 CA verificáveis (`user-stories.md` §4). |
+| Existem pelo menos 5 User Stories. | Cumprido | 9 US (`user-stories.md` §2). |
+| Existem critérios de aceitação verificáveis. | Cumprido | 51 de 70 CA verificáveis (`user-stories.md` §4). |
 | Os pressupostos estão separados dos requisitos confirmados. | Cumprido | `constraints.md` §2; pressupostos resolvidos em §4.3. |
-| A documentação apresenta consistência. | Cumprido | Problemas C, I e V corrigidos; I3 pendente de informação. |
+| A documentação apresenta consistência. | Cumprido | Problemas C, I e V corrigidos. |
 | O AGENTS.md contém instruções claras e adequadas. | Cumprido | `AGENTS.md`. |
 | Foram analisadas criticamente as respostas da IA. | Cumprido | Este documento. |
-| O projeto está preparado para a próxima fase. | **Parcial** | D20 (requisitos não funcionais quantitativos) e D14 (permissões) têm de ser fechadas antes da Aula 2. |
+| O projeto está preparado para a próxima fase. | Cumprido | Requisitos não funcionais quantitativos (D20) e matriz de permissões (D14) definidos na 2.ª ronda; as decisões técnicas DT01–DT06 têm agora as entradas de que dependem. |
 
 ## 3. Pendente após a revisão
 
-- **I3 / D20:** registar o número inicial de utilizadores referido na QT06.
-- **D14 e D20:** necessárias para a Aula 2.
-- **D01, D04, D05, D18:** ciclo de vida e transição de sprints; bloqueiam 8 CA.
-- **D22–D31:** novas decisões abertas nesta revisão.
-- **US08:** continua candidata a ser dividida (`user-stories.md` §5.3).
+- **D01, D04, D05, D18:** ciclo de vida e transição de sprints; bloqueiam 8 CA. São as primeiras a fechar.
+- **D22–D27:** decisões abertas nesta revisão (nome e desativação de equipas, projetos sem equipas, justificação de atribuições, atrasos por indisponibilidade, transferência de tarefas concluídas).
+- Restantes decisões em `constraints.md` §4.1 (24 no total).

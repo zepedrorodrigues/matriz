@@ -1,6 +1,6 @@
 # Matriz — User Stories do MVP
 
-> **Versão:** 0.2 · **Data:** 2026-10-29 · **Estado:** revisto na revisão crítica (Ficha PL 01, Ex. 6)
+> **Versão:** 0.3 · **Data:** 2026-10-29 · **Estado:** revisto na revisão crítica (Ficha PL 01, Ex. 6)
 > **Fonte:** backlog produzido no Ex. 3, consolidado no Ex. 4 e revisto no Ex. 6. As alterações estão no §5.
 > **Relacionados:** [`requirements.md`](requirements.md) · [`constraints.md`](constraints.md) · [`review.md`](review.md)
 
@@ -9,7 +9,7 @@
 - Formato: *Como [tipo de utilizador], quero [funcionalidade], para [benefício].*
 - Critérios de aceitação (CA) no formato **Given / When / Then**.
 - Cada CA indica se é ***verificável*** hoje ou de que decisão pendente (`Dxx`, ver [`constraints.md`](constraints.md) §4) ***depende***.
-- "Utilizador autorizado" ou "com permissão" significa o papel indicado na US. A matriz de permissões completa está pendente (**D14**); até lá, os testes usam como referência o utilizador principal indicado no §1.
+- "Utilizador autorizado" ou "com permissão" significa um papel ao qual a matriz de permissões ([`requirements.md`](requirements.md) §3.1) atribui essa operação.
 - Salvo indicação em contrário, o que se aplica a tarefas aplica-se também a subtarefas (RN22).
 - Os casos excecionais (EC) sem regra definida **não são critérios de aceitação** — são perguntas em aberto, com a decisão pendente indicada.
 
@@ -20,17 +20,18 @@
 | ID | Título | Utilizador principal | Prior. | Depende de | Requisitos |
 |---|---|---|---|---|---|
 | US01 | Gerir equipas e projetos | Administrador, Gestor de projeto | P0 | — | RF01–RF04 |
-| US02 | Gerir a hierarquia de trabalho | Gestor de projeto | P0 | US01 | RF05–RF08 |
+| US02 | Gerir a hierarquia de trabalho | Gestor de projeto, Líder de equipa | P0 | US01 | RF05–RF08 |
 | US03 | Criar, estimar e atribuir tarefas | Líder de equipa, Gestor de projeto | P0 | US01, US02 | RF09–RF11 |
 | US04 | Gerir backlog e sprints por equipa | Líder de equipa | P0 | US03 | RF12, RF15–RF18 |
 | US05 | Consultar capacidade e carga de trabalho | Líder de equipa | P0 | US04 | RF19–RF21 |
-| US06 | Atualizar o estado e validar a conclusão | Membro da equipa | P0 | US03; **US08 (CA06.6)** | RF22–RF25 |
+| US06 | Atualizar o estado e validar a conclusão | Membro da equipa | P0 | US03; **US09 (CA06.6)** | RF22–RF25 |
 | US07 | Consultar progresso, desvios e alertas | Líder de equipa, Gestor de projeto | P1 | US04–US06 | RF26–RF30 |
-| US08 | Propor trabalho e preservar histórico entre equipas | Membro da equipa, Gestor de projeto | P1 | US03, US04 | RF12–RF14, RF25, RF31 |
+| US08 | Propor trabalho no backlog | Membro da equipa | P1 | US03, US04 | RF12, RF13 |
+| US09 | Atribuir e transferir tarefas entre equipas | Gestor de projeto, Administrador | P1 | US03 | RF14, RF25, RF31 |
 
 **Prioridades:** P0 — crítica · P1 — alta, incluída no MVP numa versão básica.
 
-> **Dependência entre prioridades — atenção no desenvolvimento.** O CA06.6 (US06, P0) e o RF25 (P0) só podem ser validados depois de existir a atribuição e a transferência de tarefas entre equipas (US08 · RF14, RF31, P1). Estas funcionalidades da US08 têm de ser implementadas antes ou em conjunto com a US06, apesar da prioridade P1.
+> **Dependência entre prioridades — atenção no desenvolvimento.** O CA06.6 (US06, P0) e o RF25 (P0) só podem ser validados depois de existir a atribuição e a transferência de tarefas entre equipas (US09 · RF14, RF31, P1). A US09 tem de ser implementada antes ou em conjunto com a US06, apesar da prioridade P1.
 
 ---
 
@@ -97,7 +98,7 @@
 | EC01.2 | Criar um projeto antes de lhe associar qualquer equipa. | D23 |
 | EC01.3 | Desativar uma equipa que ainda tem tarefas atribuídas. | D24 |
 
-**Decisões pendentes:** D14, D22, D23, D24 · **Pressupostos:** P06, P07
+**Decisões pendentes:** D22, D23, D24 · **Pressupostos:** P06, P07
 
 ---
 
@@ -105,7 +106,7 @@
 
 **Prioridade:** P0 — Crítica · **Objetivo:** decompor os objetivos em unidades de trabalho geríveis. · **Regras:** RN12, RN22, RN23
 
-> Como **gestor de projeto** ou **membro autorizado**, quero criar e organizar objetivos, épicos, tarefas e subtarefas, para decompor o trabalho em unidades executáveis e acompanhar a sua contribuição para os objetivos superiores.
+> Como **gestor de projeto** ou **líder de equipa**, quero criar e organizar objetivos, épicos, tarefas e subtarefas, para decompor o trabalho em unidades executáveis e acompanhar a sua contribuição para os objetivos superiores.
 
 #### Critérios de aceitação
 
@@ -127,7 +128,7 @@
 **CA02.4 — Criar subtarefas** · *verificável*
 - **Given** que existe uma tarefa,
 - **When** crio uma subtarefa associada a essa tarefa,
-- **Then** a subtarefa fica subordinada à tarefa principal, pertence ao mesmo projeto e tem os mesmos campos, estados, estimativas e critérios de aceitação de uma tarefa.
+- **Then** a subtarefa fica subordinada à tarefa principal, pertence ao mesmo projeto, tem a mesma equipa responsável e tem os mesmos campos, estados, estimativas e critérios de aceitação de uma tarefa.
 
 **CA02.5 — Criar uma tarefa sem subtarefas** · *verificável*
 - **Given** que existe uma tarefa cujo trabalho não necessita de decomposição,
@@ -144,6 +145,11 @@
 - **When** um utilizador tenta associá-lo a si próprio ou a um elemento que lhe está subordinado,
 - **Then** a aplicação recusa sempre a operação e a hierarquia mantém-se inalterada.
 
+**CA02.8 — Manter a equipa da subtarefa** · *verificável*
+- **Given** que existe uma subtarefa de uma tarefa atribuída a uma equipa,
+- **When** um utilizador autorizado tenta atribuir a subtarefa a outra equipa,
+- **Then** a operação é recusada e a subtarefa mantém a equipa responsável da tarefa principal.
+
 #### Casos excecionais
 
 | ID | Situação | Regra |
@@ -151,9 +157,9 @@
 | EC02.1 | Associar uma tarefa diretamente a um objetivo, sem épico. | D06 |
 | EC02.2 | Criar uma subtarefa sem tarefa principal. | Impossível por definição: uma subtarefa está sempre contida numa tarefa (RN22). |
 | EC02.3 | Associar um elemento a si próprio ou criar uma relação hierárquica circular. | É sempre impedido, sem exceções (RF07, CA02.7). |
-| EC02.4 | Atribuir uma subtarefa a uma equipa diferente da tarefa principal. | D29 |
+| EC02.4 | Atribuir uma subtarefa a uma equipa diferente da tarefa principal. | Não permitido — a subtarefa tem sempre a equipa da tarefa principal (RN22, CA02.8). |
 
-**Decisões pendentes:** D06, D13, D14, D29
+**Decisões pendentes:** D06, D13
 
 ---
 
@@ -180,7 +186,7 @@
 - **When** um líder autorizado atribui a tarefa a um membro dessa equipa,
 - **Then** o indivíduo fica identificado como responsável pela execução, sem eliminar a associação à equipa responsável.
 
-A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está coberta pelo CA08.4.
+A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está coberta pelo CA09.1.
 
 **CA03.4 — Definir estimativas independentes** · *verificável*
 - **Given** que existe uma tarefa,
@@ -202,10 +208,10 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 - **When** um utilizador autorizado tenta atribuir a tarefa a essa equipa,
 - **Then** a operação é recusada e a tarefa mantém a atribuição anterior.
 
-**CA03.8 — Estimativa temporal de uma tarefa com subtarefas** · *verificável*
-- **Given** que uma tarefa tem subtarefas com estimativa temporal,
-- **When** consulto a estimativa temporal da tarefa,
-- **Then** o valor apresentado é a soma das estimativas temporais das subtarefas.
+**CA03.8 — Estimativas de uma tarefa com subtarefas** · *verificável*
+- **Given** que uma tarefa tem subtarefas com estimativa temporal e story points,
+- **When** consulto as estimativas da tarefa,
+- **Then** a estimativa temporal apresentada é a soma das estimativas temporais das subtarefas e os story points são a soma dos story points das subtarefas, apresentados separadamente.
 
 #### Casos excecionais
 
@@ -214,11 +220,11 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 | EC03.1 | Tarefa sem story points ou sem estimativa temporal. | D03 |
 | EC03.2 | Estimativa negativa ou incompatível com a escala definida. | D10 |
 | EC03.3 | Atribuição a alguém de outra equipa: que justificação ou autorização é exigida? | D25 — RN03 define apenas quem pode |
-| EC03.4 | Story points de uma tarefa com subtarefas. | D28 |
+| EC03.4 | Story points de uma tarefa com subtarefas. | Soma dos das subtarefas (RN22, CA03.8). |
 
 **Observação:** RN10 confirma que líderes e membros podem estimar, mas não determina se um membro pode alterar a estimativa de uma tarefa atribuída a outra pessoa, nem se uma estimativa aprovada fica protegida (D11). A US define a capacidade de estimar sem inventar uma política de edição.
 
-**Decisões pendentes:** D03, D10, D11, D14, D16, D25, D28
+**Decisões pendentes:** D03, D10, D11, D16, D25
 
 ---
 
@@ -270,7 +276,7 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 
 **Decisão pendente importante — D01.** A frase "as tarefas passam para a sprint seguinte quando esta se inicia" pode significar que **todo** o backlog transita automaticamente ou que só transitam as tarefas **previamente selecionadas**. A US preserva a intenção de automatizar o processo e assume a segunda leitura (**P01**), mas a regra tem de ser confirmada.
 
-**Decisões pendentes:** D01, D04, D14, D19 · **Pressupostos:** P01
+**Decisões pendentes:** D01, D04, D19 · **Pressupostos:** P01
 
 ---
 
@@ -322,6 +328,11 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 - **When** a sobrecarga é identificada,
 - **Then** recebem um alerta na aplicação: na sobrecarga da equipa, o líder e os membros da equipa; na sobrecarga individual, o próprio e o seu líder de equipa.
 
+**CA05.9 — Contabilizar subtarefas na capacidade** · *verificável*
+- **Given** que uma tarefa está planeada na sprint A e uma das suas subtarefas, estimada em 8 horas, está planeada na sprint B,
+- **When** consulto o planeamento das duas sprints,
+- **Then** as 8 horas contam apenas na sprint B e a estimativa somada da tarefa principal não é contabilizada na capacidade de nenhuma das sprints.
+
 #### Casos excecionais
 
 | ID | Situação | Regra |
@@ -329,12 +340,12 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 | EC05.1 | Equipa sem horas disponíveis registadas. | Resolvido — a capacidade é calculada a partir das datas da sprint (RN06). |
 | EC05.2 | Tarefa com story points mas sem estimativa temporal. | D03 |
 | EC05.3 | Pessoa que participa em sprints de várias equipas (risco de duplicar a capacidade). | D09 |
-| EC05.4 | Subtarefas planeadas numa sprint diferente da tarefa principal (risco de contar as horas duas vezes). | D30 |
-| EC05.5 | Feriados dentro do período da sprint. | D31 |
+| EC05.4 | Subtarefas planeadas numa sprint diferente da tarefa principal (risco de contar as horas duas vezes). | Contam só as subtarefas, cada uma na sua sprint (RN22, CA05.9). |
+| EC05.5 | Feriados dentro do período da sprint. | Não são descontados automaticamente; ajusta-se a disponibilidade (RN06, CA05.5). |
 
 **Nota:** horas e story points nunca são somados nem convertidos; a capacidade mede-se apenas em horas (RN06) e é uma referência, não um limite (RN19).
 
-**Decisões pendentes:** D03, D09, D28, D30, D31 · **Pressupostos:** P07
+**Decisões pendentes:** D03, D09 · **Pressupostos:** P07
 
 ---
 
@@ -371,7 +382,7 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 - **When** um utilizador autorizado reabre a tarefa,
 - **Then** a tarefa deixa de estar no estado «Entregue» e o histórico anterior à reabertura continua consultável.
 
-**CA06.6 — Preservar o responsável pela execução** · *verificável* · *exige a transferência da US08 (ver §1)*
+**CA06.6 — Preservar o responsável pela execução** · *verificável* · *exige a transferência da US09 (ver §1)*
 - **Given** que uma tarefa foi executada por um indivíduo e posteriormente transferida para outra equipa,
 - **When** consulto o histórico da tarefa,
 - **Then** consigo identificar o responsável pela execução anterior e a equipa à qual a tarefa estava originalmente associada.
@@ -458,11 +469,11 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 
 ---
 
-### US08 — Propor trabalho e preservar o histórico entre equipas
+### US08 — Propor trabalho no backlog
 
-**Prioridade:** P1 — Alta · **Objetivo:** permitir que os membros identifiquem trabalho necessário sem lhes atribuir poderes de gestão, e garantir que as transferências não destroem a rastreabilidade. · **Regras:** RN03, RN08, RN09, RN14, RN15, RN20, RN21
+**Prioridade:** P1 — Alta · **Objetivo:** permitir que os membros identifiquem trabalho necessário sem lhes atribuir poderes de gestão. · **Regras:** RN08, RN09, RN21
 
-> Como **membro da equipa**, quero criar tarefas no backlog e, como **gestor autorizado**, quero poder atribuir excecionalmente tarefas a pessoas de outras equipas e transferir tarefas entre equipas, para que o trabalho necessário seja identificado sem comprometer as responsabilidades e o histórico organizacional.
+> Como **membro da equipa**, quero criar tarefas no backlog da minha equipa, para que o trabalho necessário seja identificado sem comprometer as responsabilidades de planeamento.
 
 #### Critérios de aceitação
 
@@ -481,27 +492,7 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 - **When** tento associar diretamente uma nova tarefa a uma sprint,
 - **Then** a aplicação recusa a operação e mantém a tarefa no backlog.
 
-**CA08.4 — Atribuir uma tarefa a alguém de outra equipa** · *verificável*
-- **Given** que sou um gestor de projeto ou administrador,
-- **When** atribuo uma tarefa a um indivíduo de outra equipa,
-- **Then** o indivíduo fica responsável pela execução, a equipa responsável pela tarefa não muda e a alteração fica registada no histórico.
-
-**CA08.5 — Consultar o histórico de transferência** · *verificável*
-- **Given** que uma tarefa foi transferida entre equipas,
-- **When** um utilizador autorizado consulta o histórico,
-- **Then** consegue identificar a equipa original, o responsável pela execução e a transferência efetuada.
-
-**CA08.6 — Transferir uma tarefa para outra equipa** · *verificável*
-- **Given** que sou um gestor de projeto ou administrador,
-- **When** transfiro uma tarefa para outra equipa,
-- **Then** a nova equipa passa a ser a equipa responsável e o histórico mantém a equipa original, o autor e a data/hora da transferência.
-
-**CA08.7 — Impedir transferências não autorizadas** · *verificável*
-- **Given** que sou um membro ou líder de equipa,
-- **When** tento transferir uma tarefa para outra equipa,
-- **Then** a operação é recusada e a equipa responsável mantém-se.
-
-**CA08.8 — Escolher a equipa ao criar uma tarefa** · *depende de D09 (pertença a várias equipas — P07)*
+**CA08.4 — Escolher a equipa ao criar uma tarefa** · *depende de D09 (pertença a várias equipas — P07)*
 - **Given** que sou um membro de mais do que uma equipa,
 - **When** crio uma tarefa no backlog,
 - **Then** escolho uma das minhas equipas e a tarefa fica no backlog dessa equipa.
@@ -511,10 +502,52 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 | ID | Situação | Regra |
 |---|---|---|
 | EC08.1 | Tarefa criada sem um responsável claramente definido para receber o alerta. | D07 |
-| EC08.2 | Transferir uma tarefa já concluída ou entregue. | D27 |
-| EC08.3 | Tarefa que passa por três ou mais equipas: como apresentar o histórico. | D12 |
 
-**Decisões pendentes:** D01, D07, D09, D12, D14, D27 · **Pressupostos:** P07
+**Decisões pendentes:** D01, D07, D09 · **Pressupostos:** P07
+
+---
+
+### US09 — Atribuir e transferir tarefas entre equipas
+
+**Prioridade:** P1 — Alta (ver a dependência da US06 no §1) · **Objetivo:** garantir que as atribuições e transferências entre equipas não destroem a rastreabilidade. · **Regras:** RN03, RN14, RN15, RN20, RN22
+
+> Como **gestor de projeto** ou **administrador**, quero atribuir excecionalmente tarefas a pessoas de outras equipas e transferir tarefas entre equipas, preservando a equipa original e o responsável pela execução, para manter as responsabilidades e o histórico organizacional.
+
+#### Critérios de aceitação
+
+**CA09.1 — Atribuir uma tarefa a alguém de outra equipa** · *verificável*
+- **Given** que sou um gestor de projeto ou administrador,
+- **When** atribuo uma tarefa a um indivíduo de outra equipa,
+- **Then** o indivíduo fica responsável pela execução, a equipa responsável pela tarefa não muda e a alteração fica registada no histórico.
+
+**CA09.2 — Consultar o histórico de transferência** · *verificável*
+- **Given** que uma tarefa foi transferida entre equipas,
+- **When** um utilizador autorizado consulta o histórico,
+- **Then** consegue identificar a equipa original, o responsável pela execução e a transferência efetuada.
+
+**CA09.3 — Transferir uma tarefa para outra equipa** · *verificável*
+- **Given** que sou um gestor de projeto ou administrador,
+- **When** transfiro uma tarefa para outra equipa,
+- **Then** a nova equipa passa a ser a equipa responsável e o histórico mantém a equipa original, o autor e a data/hora da transferência.
+
+**CA09.4 — Impedir transferências não autorizadas** · *verificável*
+- **Given** que sou um membro ou líder de equipa,
+- **When** tento transferir uma tarefa para outra equipa,
+- **Then** a operação é recusada e a equipa responsável mantém-se.
+
+**CA09.5 — Transferir as subtarefas com a tarefa principal** · *verificável*
+- **Given** que uma tarefa tem subtarefas,
+- **When** um gestor de projeto ou administrador transfere a tarefa para outra equipa,
+- **Then** as subtarefas passam também para a nova equipa e o histórico de cada uma regista a transferência.
+
+#### Casos excecionais
+
+| ID | Situação | Regra |
+|---|---|---|
+| EC09.1 | Transferir uma tarefa já concluída ou entregue. | D27 |
+| EC09.2 | Tarefa que passa por três ou mais equipas: como apresentar o histórico. | D12 |
+
+**Decisões pendentes:** D12, D25, D27
 
 ---
 
@@ -542,16 +575,21 @@ Aplicam-se a todas as US e verificam os requisitos de segurança e privacidade (
 - **When** um utilizador tenta editá-lo ou apagá-lo através das funcionalidades da aplicação,
 - **Then** a operação não é possível e o histórico mantém-se.
 
-**CAT05 — Visibilidade dos dados individuais** (SEC07) · *depende de D14 (responsabilidade de gestão)*
-- **Given** que não tenho responsabilidade de gestão sobre um indivíduo e não sou esse indivíduo,
+**CAT05 — Visibilidade dos dados individuais** (SEC07) · *verificável*
+- **Given** que não sou líder da equipa de um indivíduo nem esse indivíduo,
 - **When** tento consultar a capacidade, a sobrecarga ou os alertas desse indivíduo,
+- **Then** a consulta é recusada.
+
+**CAT06 — Visibilidade dos projetos** (§3.1 de `requirements.md`) · *verificável*
+- **Given** que não sou administrador, não sou gestor de um projeto e nenhuma das minhas equipas participa nele,
+- **When** tento consultar esse projeto ou as suas tarefas,
 - **Then** a consulta é recusada.
 
 ---
 
 ## 4. Verificabilidade dos critérios de aceitação
 
-**66 CA no total (61 nas US + 5 transversais): 46 verificáveis hoje, 20 dependentes de decisões pendentes.**
+**70 CA no total (64 nas US + 6 transversais): 51 verificáveis hoje, 19 dependentes de decisões pendentes.**
 
 | Decisão a tomar | CA que desbloqueia |
 |---|---|
@@ -563,9 +601,8 @@ Aplicam-se a todas as US e verificam os requisitos de segurança e privacidade (
 | D22 — Validade e unicidade do nome da equipa | CA01.1, CA01.7 |
 | D05 — Estado após reabertura | CA06.5 |
 | D07 — Destinatários dos alertas de novas tarefas | CA08.2 |
-| D09 — Pertença a várias equipas | CA08.8 |
+| D09 — Pertença a várias equipas | CA08.4 |
 | D11 — Estimativa original vs atual | CA07.2 |
-| D14 — Matriz de permissões | CAT05 |
 | D17 — Eventos que geram alertas | CA07.5 |
 | D19 — Validação das datas da sprint | CA04.1 |
 
@@ -588,8 +625,18 @@ Aplicam-se a todas as US e verificam os requisitos de segurança e privacidade (
 
 Os problemas encontrados, as decisões tomadas e as alterações resultantes estão em [`review.md`](review.md).
 
+A US08 foi dividida em duas, porque juntava dois papéis e dois objetivos. Os CA foram renumerados:
+
+| v0.2 | v0.3 |
+|---|---|
+| CA08.1–CA08.3, EC08.1 | Sem alteração (US08) |
+| CA08.4 — Atribuir a alguém de outra equipa | CA09.1 |
+| CA08.5 — Consultar o histórico de transferência | CA09.2 |
+| CA08.6 — Transferir para outra equipa | CA09.3 |
+| CA08.7 — Impedir transferências não autorizadas | CA09.4 |
+| CA08.8 — Escolher a equipa ao criar uma tarefa | CA08.4 |
+| EC08.2, EC08.3 | EC09.1, EC09.2 |
+
 ### 5.3 Observações em aberto
 
-1. **A US08 junta dois papéis e dois objetivos** (membro propõe trabalho; gestor atribui e transfere entre equipas). Continua candidata a ser dividida.
-2. **CA08.1 vs RN05:** "não é automaticamente incluída numa sprint" só é coerente com a transição automática de RN05 se esta abranger apenas tarefas selecionadas (P01 → D01).
-3. **Quem cria o quê:** a criação de projetos e equipas ficou definida (RN25) e a alteração de critérios de aceitação também (RN24). A criação de objetivos e épicos por um "membro autorizado" (US02) e a criação de tarefas por líderes, gestores e membros (US03, RN08) continuam dependentes da matriz de permissões (D14).
+1. **CA08.1 vs RN05:** "não é automaticamente incluída numa sprint" só é coerente com a transição automática de RN05 se esta abranger apenas tarefas selecionadas (P01 → D01).

@@ -1,6 +1,6 @@
 # Matriz — Restrições, pressupostos e decisões pendentes
 
-> **Versão:** 0.2 · **Data:** 2026-10-29 · **Estado:** revisto na revisão crítica (Ficha PL 01, Ex. 6)
+> **Versão:** 0.3 · **Data:** 2026-10-29 · **Estado:** revisto na revisão crítica (Ficha PL 01, Ex. 6)
 > **Relacionados:** [`requirements.md`](requirements.md) · [`user-stories.md`](user-stories.md) · [`review.md`](review.md)
 
 Este documento separa o que **é sabido** (restrições) do que **foi assumido** (pressupostos) e do que **ainda tem de ser decidido**. Um pressuposto nunca se sobrepõe a uma regra de negócio confirmada (RN).
@@ -40,7 +40,7 @@ Confirmados na revisão crítica (Ex. 6). Os critérios de aceitação transvers
 | ID | Requisito | Base |
 |---|---|---|
 | SEC01 | Só utilizadores internos autenticados acedem à aplicação. | R01, P11 |
-| SEC02 | A autorização por papel é verificada em cada operação, e não apenas escondida na interface. Uma operação recusada não altera dados (cf. CA03.6, CA04.6, CA08.3). | RNF01, D14 |
+| SEC02 | A autorização por papel é verificada em cada operação, e não apenas escondida na interface. Uma operação recusada não altera dados (cf. CA03.6, CA04.6, CA08.3). | RNF01, `requirements.md` §3.1 |
 | SEC03 | As alterações relevantes — responsável, equipa, estado, estimativas, critérios de aceitação, transferências — ficam registadas com autor e data/hora. | RNF04, RN14, RN15, RN24 |
 | SEC04 | O histórico não pode ser editado nem apagado através das funcionalidades comuns da aplicação. | RN14, RN15 |
 | SEC05 | Minimização de dados pessoais: guardar apenas o necessário à gestão do trabalho (p. ex. nome, contacto profissional, papel, equipas, disponibilidade em horas). | P09 (RGPD) |
@@ -54,7 +54,7 @@ Confirmados na revisão crítica (Ex. 6). Os critérios de aceitação transvers
 ### 4.1 Funcionais
 
 D01–D13 vêm da revisão do Ex. 3, D14–D21 da consolidação do Ex. 4 e D22–D31 da revisão crítica do Ex. 6. As decisões resolvidas passam para o §4.3.
-**Urgência** (proposta): fechar primeiro D01 e o ciclo de vida (D04, D05, D18). D14 e D20 também são urgentes: a D14 é referida em quase todos os CA e a D20 é necessária para a arquitetura (Aula 2).
+**Urgência** (proposta): fechar primeiro D01 e o ciclo de vida (D04, D05, D18), que bloqueiam 8 CA.
 
 | ID | Questão | Impacto | Afeta | Urgência |
 |---|---|---|---|---|
@@ -65,29 +65,23 @@ D01–D13 vêm da revisão do Ex. 3, D14–D21 da consolidação do Ex. 4 e D22�
 | D06 | Pode uma tarefa existir diretamente sob um objetivo, sem épico? | Hierarquia | RN12, US02 | Média |
 | D07 | Quem recebe os alertas de novas tarefas criadas por membros? | Notificações | RN09, US08 · CA08.2 | Média |
 | D08 | Pode uma tarefa sem critérios de aceitação ser concluída? Em que condições? | Validação da conclusão | RN13, US06 | Média |
-| D09 | Como se trata a capacidade de uma pessoa que pertence a várias equipas (RN06 soma a capacidade dos membros de cada equipa)? | Planeamento global | RN06, RN21, US05, US08 · CA08.8 | Média |
+| D09 | Como se trata a capacidade de uma pessoa que pertence a várias equipas (RN06 soma a capacidade dos membros de cada equipa)? | Planeamento global | RN06, RN21, US05, US08 · CA08.4 | Média |
 | D10 | A escala comum de story points tem valores fixos ou configuráveis? Qual o procedimento de estimativa? | Estimativas | RN07, US03 | Média |
 | D11 | Quem pode alterar estimativas depois de a tarefa começar? A comparação entre planeado e realizado usa a estimativa original, a atual ou ambas? | Planeamento e histórico | RN10, US03, US07 · CA07.2 | Média |
-| D12 | Como se registam a equipa original e as transferências sucessivas de uma tarefa? (Quando a equipa muda já está definido em RN20.) | Rastreabilidade | RN14, RN15, RN20, US06, US08 | Média |
+| D12 | Como se registam a equipa original e as transferências sucessivas de uma tarefa? (Quando a equipa muda já está definido em RN20.) | Rastreabilidade | RN14, RN15, RN20, US06, US09 | Média |
 | D13 | A estrutura permite vários níveis de objetivos superiores? | Hierarquia | RN12, US02 | Baixa |
-| D14 | Matriz de permissões: que operações cabem a cada papel; papéis fixos ou configuráveis ("permissões equivalentes", RN03); permissões de administração; acumulação de papéis; visibilidade de projetos e tarefas entre equipas. Já decidido: RN20, RN24, RN25. | Segurança; todas as US | RN03, RN10, SEC02, SEC07 · CAT05 | Alta |
 | D15 | «Bloqueada» é um estado do ciclo de vida ou um indicador independente? | Ciclo de vida e acompanhamento | US06, US07 · CA07.1, CA07.4, CA07.6 | Média |
 | D16 | Que campos são obrigatórios numa tarefa? O prazo é um campo da tarefa? | Criação e atrasos | US03, US07 · CA03.1, CA07.3 | Média |
 | D17 | Que eventos geram alertas no MVP? (Canal decidido em RN18; capacidade excedida decidida em RN19.) | Alertas | RN09, US07 · CA07.5 | Média |
 | D18 | Quais as transições permitidas entre estados e quem as pode executar? | Ciclo de vida | RN17, US06 · CA06.2, CA07.1 | Alta |
 | D19 | Regras de validação das sprints: datas válidas, sobreposição de sprints da mesma equipa, sprint sem tarefas. | Planeamento | US04 · CA04.1 | Média |
-| D20 | Requisitos não funcionais quantitativos: número inicial de utilizadores (referido na resposta QT06 do Ex. 3, cujo valor não está registado no repositório), desempenho, disponibilidade, idioma, dispositivos suportados. | Arquitetura | RNF06 | Alta (antes da Aula 2) |
 | D21 | Política de retenção dos dados de colaboradores que saem da empresa e dos registos de auditoria; exercício do direito de retificação face a SEC04. | Privacidade | RN15, SEC03, SEC04, SEC09 | Baixa |
 | D22 | O que é um nome de equipa válido? Pode repetir o de outra equipa? | Estrutura organizacional | US01 · CA01.1, CA01.7 | Média |
 | D23 | Pode existir um projeto sem equipas associadas? | Estrutura organizacional | US01 | Baixa |
 | D24 | Pode desativar-se uma equipa que ainda tem tarefas atribuídas? O que acontece a essas tarefas? | Estrutura organizacional | US01 | Média |
-| D25 | Que justificação ou autorização é exigida para atribuir uma tarefa a alguém de outra equipa? | Atribuição | RN03, US03, US08 | Baixa |
+| D25 | Que justificação ou autorização é exigida para atribuir uma tarefa a alguém de outra equipa? | Atribuição | RN03, US03, US09 | Baixa |
 | D26 | Como se trata um prazo ultrapassado durante a indisponibilidade do responsável, sabendo que o motivo não é registado (SEC06)? | Acompanhamento | US07, SEC06 | Baixa |
-| D27 | Pode transferir-se uma tarefa já concluída ou entregue? | Rastreabilidade | RN20, US08 | Média |
-| D28 | Uma tarefa com subtarefas tem story points próprios ou a soma dos das subtarefas? | Estimativas | RN22, US03, US05 | Média |
-| D29 | Uma subtarefa pode ter uma equipa responsável diferente da tarefa principal? | Atribuição | RN02, RN22, US02 | Média |
-| D30 | Quando as subtarefas estão em sprints diferentes da tarefa principal, como se contabilizam as horas na capacidade de cada sprint, sem as contar duas vezes? | Capacidade | RN06, RN22, US05 | Média |
-| D31 | Os feriados contam como dias úteis no cálculo da capacidade? | Capacidade | RN06, US05 | Baixa |
+| D27 | Pode transferir-se uma tarefa já concluída ou entregue? | Rastreabilidade | RN20, US09 | Média |
 
 ### 4.2 Técnicas
 
@@ -95,12 +89,12 @@ Nenhuma destas decisões foi tomada. Não devem ser antecipadas na documentaçã
 
 | ID | Decisão | Quando | Dependências |
 |---|---|---|---|
-| DT01 | Linguagem e framework | Aula 2 | D20 |
+| DT01 | Linguagem e framework | Aula 2 | RNF06, RNF08–RNF12 |
 | DT02 | Base de dados e modelo de dados, incluindo a modelação do histórico e da auditoria | Aula 2 | D12, SEC03 |
-| DT03 | Arquitetura da aplicação e desenho da API | Aula 2 | D20 |
+| DT03 | Arquitetura da aplicação e desenho da API | Aula 2 | RNF06, RNF08, RNF09 |
 | DT04 | Mecanismo de autenticação (contas próprias ou integração com o diretório da empresa) | Aula 2 | P11, infraestrutura do cliente |
-| DT05 | Tipo de interface (web, móvel, outro) | Aula 2 (prototipagem) | D20 |
-| DT06 | Alojamento (infraestrutura interna ou cloud) | Por definir | P09, D20 |
+| DT05 | Tipo de interface | Aula 2 (prototipagem) | RNF10–RNF12 |
+| DT06 | Alojamento (infraestrutura interna ou cloud) | Por definir | P09, RNF06, RNF09 |
 | DT07 | Mecanismo de entrega de alertas na aplicação | Por definir | RN18, D17 |
 | DT08 | Estratégia de testes de aceitação a partir dos CA | Por definir | user-stories.md §4 |
 
@@ -109,6 +103,12 @@ Nenhuma destas decisões foi tomada. Não devem ser antecipadas na documentaçã
 | ID | Questão | Resolução |
 |---|---|---|
 | D02 | Como se define a capacidade de uma equipa e de cada indivíduo? | RN06 (8 h por dia útil da sprint; equipa = soma dos membros; apenas horas). |
+| D14 | Matriz de permissões. | `requirements.md` §3.1 (papéis fixos e acumuláveis; administrador global, gestor por projeto, líder e membro por equipa; visibilidade por participação). |
+| D20 | Requisitos não funcionais quantitativos. | RNF06 (100 utilizadores iniciais, até 500), RNF08–RNF12 (desempenho, disponibilidade, idioma, dispositivos, acessibilidade). |
+| D28 | Story points de uma tarefa com subtarefas. | RN22 (soma dos das subtarefas). |
+| D29 | Equipa responsável de uma subtarefa. | RN22 (sempre a da tarefa principal; transferir a principal transfere as subtarefas). |
+| D30 | Capacidade com subtarefas em sprints diferentes da tarefa principal. | RN22 (contam só as subtarefas, cada uma na sua sprint; a soma da principal é informativa). |
+| D31 | Feriados no cálculo da capacidade. | RN06 (não são descontados automaticamente; ajusta-se a disponibilidade). |
 | D17 (parcial) | Canal dos alertas. | RN18 (apenas na aplicação). Eventos continuam pendentes em D17. |
 | P03 | Os alertas são apresentados apenas dentro da aplicação. | Confirmado — RN18. |
 | P05 | A gestão de capacidade distingue capacidade disponível, trabalho planeado e trabalho realizado. | Confirmado pelos requisitos RF19, RF20 e RF27. |
@@ -119,8 +119,8 @@ Nenhuma destas decisões foi tomada. Não devem ser antecipadas na documentaçã
 
 | ID | Limitação |
 |---|---|
-| L01 | A especificação cobre apenas o MVP (US01–US08). As funcionalidades excluídas estão em `requirements.md` §8. |
+| L01 | A especificação cobre apenas o MVP (US01–US09). As funcionalidades excluídas estão em `requirements.md` §8. |
 | L02 | As regras marcadas como "Confirmado" foram validadas pela equipa de projeto em representação do cliente (Ex. 2) e na revisão crítica (Ex. 6), o que equivale a validação pelo cliente. |
-| L03 | 20 dos 66 critérios de aceitação dependem de decisões pendentes e ainda não são verificáveis (`user-stories.md` §4). |
-| L04 | Ainda não foram levantados requisitos não funcionais quantitativos (D20). |
+| L03 | 19 dos 70 critérios de aceitação dependem de decisões pendentes e ainda não são verificáveis (`user-stories.md` §4). |
+| L04 | Os valores dos requisitos não funcionais quantitativos (RNF06, RNF08–RNF12) foram definidos sem medições de utilização real. |
 | L05 | Os documentos não definem arquitetura, modelo de dados nem interface (R04). |

@@ -2,7 +2,7 @@
 
 Aplicação interna de gestão de projetos e tarefas para equipas de trabalho, ao estilo de Jira, Azure DevOps ou Trello.
 
-> **Estado atual:** fase de especificação (Ficha PL 01) — Specification Pack v0.2, revisto na revisão crítica (Ex. 6). Ainda não há código nem tecnologia escolhida; essas decisões ficam para a Aula 2.
+> **Estado atual:** fase de especificação (Ficha PL 01) — Specification Pack v0.3, revisto na revisão crítica (Ex. 6) e pronto para a Aula 2. Ainda não há código nem tecnologia escolhida; essas decisões ficam para a Aula 2.
 
 ## Problema
 
@@ -34,7 +34,8 @@ Detalhe em [`docs/requirements.md`](docs/requirements.md) §1.
 | US05 | Consultar capacidade e carga de trabalho | P0 |
 | US06 | Atualizar o estado e validar a conclusão das tarefas | P0 |
 | US07 | Consultar progresso, desvios e alertas (versão básica) | P1 |
-| US08 | Propor trabalho e preservar o histórico entre equipas | P1 |
+| US08 | Propor trabalho no backlog | P1 |
+| US09 | Atribuir e transferir tarefas entre equipas, preservando o histórico | P1 |
 
 O MVP destina-se à utilização interna da empresa. Os critérios de aceitação estão em [`docs/user-stories.md`](docs/user-stories.md).
 
@@ -80,9 +81,9 @@ Os coding agents seguem, além disto, as instruções de [`AGENTS.md`](AGENTS.md
 - [x] Ex. 3 — User stories e critérios de aceitação
 - [x] Ex. 4 — Specification Pack v0.1
 - [x] Ex. 5 — `AGENTS.md`
-- [x] Ex. 6 — Revisão crítica (human-in-the-loop) — Specification Pack v0.2, ver [`docs/review.md`](docs/review.md)
+- [x] Ex. 6 — Revisão crítica (human-in-the-loop) — Specification Pack v0.3, ver [`docs/review.md`](docs/review.md)
 - [ ] Aula 2 — Arquitetura, modelo de dados, API e protótipo
 
-**Em números:** 25 regras de negócio · 31 requisitos funcionais · 8 user stories · 66 critérios de aceitação (61 nas US e 5 transversais; 46 verificáveis, 20 dependentes de decisões) · 30 decisões funcionais pendentes.
+**Em números:** 25 regras de negócio · 31 requisitos funcionais · 12 requisitos não funcionais · 9 user stories · 70 critérios de aceitação (64 nas US e 6 transversais; 51 verificáveis, 19 dependentes de decisões) · 24 decisões funcionais pendentes.
 
-**Decisões a fechar primeiro:** D01 (transição backlog → sprint), D04 / D05 / D18 (ciclo de vida das tarefas), D14 (permissões), D20 (requisitos não funcionais quantitativos, necessários para a Aula 2).
+**Decisões a fechar primeiro:** D01 (transição backlog → sprint) e D04 / D05 / D18 (ciclo de vida das tarefas), que bloqueiam 8 critérios de aceitação.
