@@ -1,6 +1,6 @@
 # Matriz — Arquitetura
 
-> **Versão:** 0.1 · **Data:** 2026-10-29 · **Estado:** proposta para revisão (Ficha PL 02, Ex. 1)
+> **Versão:** 0.2 · **Data:** 2026-10-29 · **Estado:** revisto na revisão cruzada (Ficha PL 02, Ex. 5)
 > **Relacionados:** [`requirements.md`](requirements.md) · [`constraints.md`](constraints.md) · [`database.md`](database.md) · [`../openapi.yaml`](../openapi.yaml)
 
 Este documento descreve a arquitetura do MVP. As decisões técnicas (DT) estão registadas em [`constraints.md`](constraints.md) §4; os requisitos prevalecem sobre este documento.
@@ -93,7 +93,8 @@ flowchart LR
         API --> PLAN[Planeamento]
         API --> TRK[Acompanhamento]
         API --> HIST[Histórico]
-        JOB["Tarefa diária<br/>(prazos)"] --> TRK
+        JOB["Tarefa diária<br/>(prazos e fim das sprints)"] --> TRK
+        JOB --> PLAN
     end
     APP -->|SQL, um schema por módulo| DB[("PostgreSQL")]
 ```
@@ -105,7 +106,7 @@ flowchart LR
 | **Identidade e acesso** | Autenticação OIDC; contas de utilizador; papel de administrador; avaliação da matriz de permissões em cada operação, consultando o módulo Organização para os papéis por equipa e por projeto. | Utilizadores, papel global | SEC01, SEC02, §3.1 | Transversal |
 | **Organização** | Equipas (criação, nome, desativação, líderes); pertenças a equipas com papel e alocação; projetos e respetivos gestores; associação de equipas a projetos. | Equipas, pertenças, projetos, gestores, associações equipa–projeto | RN06 (alocação), RN21, RN23, RN25, RN33, RN34 | US01 |
 | **Trabalho** | Hierarquia (objetivos, épicos, tarefas, subtarefas); campos e prazos; estimativas; atribuição; ciclo de vida e transições; critérios de aceitação; bloqueios; transferências entre equipas. | Elementos da hierarquia, critérios de aceitação, bloqueios | RN02, RN03, RN07, RN10–RN13, RN17, RN20, RN22, RN24, RN26–RN29 | US02, US03, US06, US09 |
-| **Planeamento** | Sprints; backlog; planeamento de tarefas em sprints; início e fim de sprint; capacidade, ajustes de disponibilidade e deteção de sobrecarga; estimativa no início da sprint. | Sprints, planeamento tarefa–sprint, ajustes de disponibilidade, estimativas no início da sprint | RN01, RN04–RN06, RN19, RN22 (capacidade), RN27, RN31 | US04, US05, US08 |
+| **Planeamento** | Sprints (criação, datas, início manual e fim automático); backlog; planear, acrescentar e retirar tarefas de sprints, incluindo a saída das tarefas transferidas; capacidade, ajustes de disponibilidade e deteção de sobrecarga; estimativa no início da sprint. | Sprints, planeamento tarefa–sprint, ajustes de disponibilidade, estimativas no início da sprint | RN01, RN04–RN06, RN19, RN20 (saída da sprint), RN22 (capacidade), RN27, RN31, RN36, RN37 | US04, US05, US08 |
 | **Acompanhamento** | Geração e consulta de alertas; verificação diária de prazos; progresso e desvios por equipa e por sprint. | Alertas | RN09, RN18, RN19, RN30 | US07 |
 | **Histórico** | Registo só de acrescento de todas as alterações relevantes; consulta do histórico de cada elemento; aplicação da política de retenção. | Eventos de histórico | RN14, RN15, RN32, SEC03, SEC04, SEC09 | US06, US09, transversal |
 
@@ -113,7 +114,7 @@ flowchart LR
 
 - **Interfaces públicas.** Cada módulo expõe uma interface (serviços de aplicação) aos restantes. Nenhum módulo lê ou escreve as tabelas de outro.
 - **Dependências num só sentido.** Planeamento → Trabalho → Organização; Identidade e acesso → Organização. Não há dependências circulares.
-- **Eventos de domínio internos.** Os módulos Trabalho, Planeamento e Organização publicam eventos (p. ex. *tarefa transferida*, *tarefa bloqueada*, *sobrecarga detetada*). Acompanhamento e Histórico subscrevem-nos. Os eventos são entregues **dentro do processo e na mesma transação** do pedido, o que garante que uma alteração nunca fica gravada sem o respetivo histórico e alerta (DT07, SEC03), e evita que o Trabalho dependa do Acompanhamento.
+- **Eventos de domínio internos.** Os módulos Trabalho, Planeamento e Organização publicam eventos (p. ex. *tarefa transferida*, *tarefa bloqueada*, *sobrecarga detetada*). Acompanhamento e Histórico subscrevem-nos; o Planeamento subscreve *tarefa transferida*, para retirar a tarefa e as subtarefas da sprint da equipa de origem (RN20, RN22). Os eventos são entregues **dentro do processo e na mesma transação** do pedido, o que garante que uma alteração nunca fica gravada sem o respetivo histórico e alerta (DT07, SEC03), e evita que o Trabalho dependa do Acompanhamento e do Planeamento.
 - **Transações.** Cada pedido é uma transação na base de dados, mesmo quando envolve vários módulos.
 - **Camadas dentro de cada módulo.** API (controladores e DTO) → aplicação (casos de uso) → domínio (entidades e regras) ← infraestrutura (repositórios). As regras de negócio ficam no domínio e não nos controladores nem em SQL.
 - **Evolução planeada (DT11).** A gestão de eventos interna é suficiente para o MVP. Fica por estudar a sua melhoria e, para deployments integrados em larga escala, a adoção de uma plataforma de eventos (p. ex. Kafka). Esse passo acompanha a extração de módulos (DT10): eventos entre serviços deixam de poder ser entregues na mesma transação e passam a exigir, por exemplo, o padrão outbox e consumidores idempotentes.
@@ -126,6 +127,7 @@ flowchart LR
 | Autorização | Verificada no backend em cada operação, segundo a matriz de permissões; uma operação recusada não altera dados. | SEC02, SEC07, CAT02, CAT05, CAT06 |
 | Histórico e auditoria | Módulo Histórico, alimentado por eventos na mesma transação; sem operações de edição ou remoção. | SEC03, SEC04, RN32, CAT03, CAT04 |
 | Alertas | Guardados na base de dados; o frontend consulta-os periodicamente; prazos verificados por uma tarefa diária, executada por uma única instância. | RN18, RN30, DT07 |
+| Fim das sprints | A mesma tarefa diária termina as sprints ativas cuja data de fim já passou e devolve ao backlog as tarefas não concluídas. | RN04, RN36 |
 | Erros da API | Formato único de erro (*problem details*, RFC 9457) com o código HTTP adequado. Suficiente para o MVP; a gestão de erros será melhorada no futuro (DT12). | Ex. 3, DT12 |
 | Validação | Dados de entrada validados na fronteira da API. | RN07, RN29, RN31, RN33 |
 | Privacidade | Minimização de dados; motivos pessoais nunca registados; retenção segundo SEC09. | SEC05, SEC06, SEC09, P12 |
@@ -149,7 +151,7 @@ flowchart LR
 - **Mesma origem:** o proxy encaminha `/api` para o backend e o resto para o frontend, o que evita configurar CORS.
 - **Backend sem estado:** é possível acrescentar instâncias atrás do balanceador sem alterar a arquitetura.
 - **PostgreSQL** gerido ou em contentor, na infraestrutura interna ou numa região cloud da UE (DT06, P09).
-- A tarefa diária de prazos corre numa única instância de cada vez.
+- A tarefa diária (prazos e fim das sprints) corre numa única instância de cada vez.
 - **Limitação conhecida:** com uma única instância do backend e da base de dados, uma falha destes componentes interrompe o serviço. Alternativas mais tolerantes a falhas — várias instâncias do backend com verificações de saúde, réplica e cópias de segurança da base de dados — ficam para estudo (DT13).
 
 ## 9. Riscos e mitigação

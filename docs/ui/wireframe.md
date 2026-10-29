@@ -1,6 +1,6 @@
 # Matriz — Wireframe: planeamento da sprint
 
-> **Versão:** 0.1 · **Data:** 2026-10-29 · **Estado:** proposta para revisão (Ficha PL 02, Ex. 4)
+> **Versão:** 0.2 · **Data:** 2026-10-29 · **Estado:** revisto na revisão cruzada (Ficha PL 02, Ex. 5)
 > **Ficheiro:** [`wireframe.svg`](wireframe.svg) — abrir no browser; se for necessário um PNG, exportar a partir do browser.
 > **Relacionados:** [`../user-stories.md`](../user-stories.md) · [`../architecture.md`](../architecture.md) · [`../../openapi.yaml`](../../openapi.yaml)
 
@@ -25,7 +25,9 @@ As atribuições e transferências entre equipas (US09) fazem-se a partir do det
 
 | Elemento | Requisitos | Validação |
 |---|---|---|
-| Cabeçalho da sprint: datas, dias úteis, estado | US04 · CA04.1, RN31 | Coerente. Sem ações sobre a sprint: ver §3. |
+| Cabeçalho da sprint: datas, dias úteis, estado | US04 · CA04.1, RN31, RN36 | Coerente: a sprint está «Planeada». |
+| «Editar datas» | RN36 · CA04.12, CA04.13 | Coerente: só enquanto a sprint está «Planeada»; depois do início, o botão não aparece. |
+| «Iniciar sprint», com confirmação ou ajuste das datas | RN05, RN36 · CA04.5, CA04.9–CA04.11 | Coerente: disponível ao líder e ao administrador, não ao gestor de projeto nem ao membro. |
 | Aviso de sobrecarga, sem bloqueio | RN19 · CA05.3, CA05.8 | Coerente: o planeamento continua possível e a notificação é indicada. |
 | Indicadores: capacidade, horas planeadas, horas restantes | RN06 · CA05.1, CA05.7, CA05.9 | Coerente com `GET /sprints/{sprintId}/capacity` (`capacityHours`, `plannedHours`, `remainingHours`). |
 | Story points planeados, separados das horas; tarefas sem story points | RN06, RN27 · CA05.2 | Coerente: nunca são convertidos nem somados às horas. |
@@ -38,18 +40,19 @@ As atribuições e transferências entre equipas (US09) fazem-se a partir do det
 | Indicador «Bloqueada», com motivo, ao lado do estado | RN28 · CA07.4, CA07.6 | Coerente: o bloqueio não substitui o estado. O motivo descreve o impedimento (SEC06). |
 | Indicador «Prazo ultrapassado» | RN29, RN30 · CA07.3, CA07.7 | Coerente. |
 | Subtarefa planeada numa sprint diferente da tarefa principal | RN22 · CA05.9 | Coerente: só as horas da subtarefa contam nesta sprint. |
+| «↩ Backlog» em cada tarefa da sprint | RN37 · CA04.6, CA04.14, CA04.15 | Coerente: só o líder retira tarefas. Numa sprint ativa, o mesmo ecrã permite acrescentar tarefas do backlog (CA04.16). |
 
 Totais do exemplo, para conferir: 40 + 24 + 62 + 30 + 16 = 172 h planeadas; 13 + 8 + 8 + 5 = 34 SP (uma tarefa sem SP); capacidade 80 + 80 = 160 h; Ana 24 + 30 + 16 = 70 h; Rui 40 + 62 = 102 h.
 
-## 3. Ações retiradas por não estarem especificadas
+## 3. Ações decididas na revisão cruzada (Ex. 5)
 
-A primeira versão do wireframe incluía três ações que nenhum requisito define. Foram retiradas (`AGENTS.md` §2) e ficam para decisão na revisão crítica (Ex. 5):
+A primeira versão do wireframe incluía três ações que nenhum requisito definia. Foram retiradas (`AGENTS.md` §2), decididas pelo humano na revisão cruzada ([`../review.md`](../review.md) §3) e repostas:
 
-| Ação | O que falta definir |
+| Ação | Decisão |
 |---|---|
-| «Iniciar sprint» | Se a sprint se inicia manualmente (por quem) ou automaticamente na data de início (RN05, CA04.5). |
-| «Editar datas» de uma sprint | Se as datas podem ser alteradas depois de criada a sprint e até quando (RF15 só prevê a criação). |
-| «↩ Backlog» — retirar uma tarefa da sprint | Se uma tarefa planeada pode voltar ao backlog antes do fim da sprint, e por quem (RF16 só prevê planear). |
+| «Iniciar sprint» | Início manual, pelo líder de equipa ou pelo administrador (D36, RN36). |
+| «Editar datas» de uma sprint | Enquanto a sprint está «Planeada» e no momento do início; depois, não (D37, RN36). |
+| «↩ Backlog» — retirar uma tarefa da sprint | Permitido ao líder; numa sprint ativa fica registado e continua a contar como planeado no início (D38, RN37). |
 
 ## 4. Fora deste wireframe
 

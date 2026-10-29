@@ -1,6 +1,6 @@
 # Matriz — Restrições, pressupostos e decisões pendentes
 
-> **Versão:** 0.4 · **Data:** 2026-10-29 · **Estado:** decisões pendentes fechadas (preparação da Ficha PL 02)
+> **Versão:** 0.5 · **Data:** 2026-10-29 · **Estado:** revisão cruzada da Ficha PL 02 (Ex. 5)
 > **Relacionados:** [`requirements.md`](requirements.md) · [`user-stories.md`](user-stories.md) · [`review.md`](review.md)
 
 Este documento separa o que **é sabido** (restrições) do que **foi assumido** (pressupostos) e do que **ainda tem de ser decidido**. Um pressuposto nunca se sobrepõe a uma regra de negócio confirmada (RN).
@@ -47,7 +47,7 @@ Confirmados na revisão crítica (Ex. 6). Os critérios de aceitação transvers
 
 ### 4.1 Funcionais
 
-Não há decisões funcionais pendentes: D01–D35 estão resolvidas (§4.3).
+Não há decisões funcionais pendentes: D01–D40 estão resolvidas (§4.3).
 
 ### 4.2 Técnicas
 
@@ -63,7 +63,7 @@ As decisões técnicas da Aula 2 estão resolvidas no §4.3. Ficam planeadas as 
 
 **Sinais de revisão da arquitetura (DT10):** várias equipas de desenvolvimento a trabalhar em módulos diferentes, com ciclos de entrega independentes; módulos com necessidades de carga ou de disponibilidade muito diferentes; ou crescimento para milhares de utilizadores em que o escalonamento horizontal do monólito (várias instâncias sobre a mesma base de dados) deixe de cumprir RNF08 e RNF09. O número de utilizadores, por si só, não obriga à migração. As fronteiras entre módulos (DT03) são o que torna a extração possível sem reescrever a aplicação.
 
-### 4.3 Resolvidos (Ficha PL 01, Ex. 6, e preparação da Ficha PL 02 — 2026-10-29)
+### 4.3 Resolvidos (Ficha PL 01, Ex. 6, e Ficha PL 02 — 2026-10-29)
 
 **Decisões funcionais**
 
@@ -103,6 +103,11 @@ As decisões técnicas da Aula 2 estão resolvidas no §4.3. Ficam planeadas as 
 | D32 | Equipas sem líder. | RN34 — uma equipa ativa tem sempre pelo menos um líder. |
 | D33 | O líder conta para a capacidade da equipa? | RN06 — sim, como qualquer membro. |
 | D34 | Criação de contas de utilizador. | RN35 — o administrador cria a conta pelo e-mail profissional; a ligação à identidade faz-se no primeiro acesso. |
+| D40 | Acrescentar tarefas a uma sprint já iniciada. | RN37 — permitido ao líder; a tarefa fica identificada como acrescentada depois do início. |
+| D39 | Fim da sprint. | RN36 — automático, no fim do dia da data de fim. |
+| D38 | Retirar uma tarefa de uma sprint. | RN37 — permitido ao líder; numa sprint ativa, a tarefa volta ao backlog, a remoção fica registada e continua a contar como planeada no início (RF27). |
+| D37 | Alteração das datas de uma sprint. | RN36 — enquanto está «Planeada» (pelo líder) e no momento do início (por quem a inicia); depois do início, não. |
+| D36 | Início da sprint. | RN36 — manual, pelo líder de equipa ou pelo administrador. |
 | D35 | Tarefa transferida que está planeada numa sprint da equipa de origem. | RN20 — sai dessa sprint e passa para o backlog da equipa de destino. |
 
 **Pressupostos**

@@ -1,7 +1,7 @@
 # Matriz — Requisitos
 
-> **Versão:** 0.4 · **Data:** 2026-10-29 · **Estado:** decisões pendentes fechadas (preparação da Ficha PL 02)
-> **Fontes:** descrição inicial do cliente; análise de requisitos assistida por IA (Ex. 1–3); decisões da revisão crítica (Ex. 6) e da preparação da Ficha PL 02 ([`review.md`](review.md)).
+> **Versão:** 0.5 · **Data:** 2026-10-29 · **Estado:** revisão cruzada da Ficha PL 02 (Ex. 5)
+> **Fontes:** descrição inicial do cliente; análise de requisitos assistida por IA (Ex. 1–3); decisões da revisão crítica (Ex. 6), da preparação da Ficha PL 02 e da sua revisão cruzada ([`review.md`](review.md)).
 > **Relacionados:** [`user-stories.md`](user-stories.md) · [`constraints.md`](constraints.md)
 
 ## Convenções
@@ -54,7 +54,7 @@ A **Matriz** é uma aplicação interna de gestão de projetos e tarefas (semelh
 | Objetivo · Épico · Tarefa · Subtarefa | Níveis da hierarquia de trabalho, do mais abrangente para o mais concreto (RN12). |
 | Subtarefa | Tarefa contida noutra tarefa, sujeita às mesmas regras (RN22). |
 | Backlog | Trabalho de uma equipa ainda não incluído numa sprint ativa. **Não é uma sprint.** |
-| Sprint | Período, com data de início e de fim, em que uma equipa executa as tarefas planeadas. |
+| Sprint | Período, com data de início e de fim, em que uma equipa executa as tarefas planeadas. Está «Planeada», «Ativa» ou «Terminada» (RN36). |
 | Estimativa temporal | Esforço previsto de uma tarefa, em horas. |
 | Story points | Estimativa relativa de dimensão e complexidade, numa escala comum (RN07). **Não é convertível em horas nem é uma medida de capacidade** (RN06). |
 | Capacidade | Horas de trabalho de que um indivíduo ou uma equipa dispõe numa sprint, calculadas segundo RN06. É uma referência de planeamento, não um limite (RN19). |
@@ -71,9 +71,9 @@ A **Matriz** é uma aplicação interna de gestão de projetos e tarefas (semelh
 
 | Papel | Responsabilidades no MVP | Base |
 |---|---|---|
-| **Administrador** | Papel global. Cria contas de utilizador (RN35); gere utilizadores, papéis e equipas e associa utilizadores a equipas; tem, em todos os projetos, as permissões do gestor de projeto. | US01, US09, RN03, RN20, RN25 |
+| **Administrador** | Papel global. Cria contas de utilizador (RN35); gere utilizadores, papéis e equipas e associa utilizadores a equipas; inicia sprints (RN36); tem, em todos os projetos, as permissões do gestor de projeto. | US01, US04, US09, RN03, RN20, RN25, RN36 |
 | **Gestor de projeto** | Papel por projeto: quem cria um projeto passa a ser o seu gestor. Gere os seus projetos, as equipas associadas e a hierarquia de trabalho; cria e atribui tarefas; atribui excecionalmente tarefas a alguém de outra equipa e transfere tarefas entre equipas; altera critérios de aceitação de tarefas em desenvolvimento; acompanha o progresso. | US01, US02, US03, US07, US09, RN03, RN20, RN24, RN25 |
-| **Líder de equipa** | Papel por equipa. Cria objetivos, épicos, tarefas e subtarefas nos projetos da sua equipa; estima e atribui tarefas na sua equipa; gere o backlog, as sprints e a capacidade da equipa; altera critérios de aceitação de tarefas em desenvolvimento; acompanha o progresso. | US02, US03, US04, US05, US07, RN10, RN24 |
+| **Líder de equipa** | Papel por equipa. Cria objetivos, épicos, tarefas e subtarefas nos projetos da sua equipa; estima e atribui tarefas na sua equipa; gere o backlog, as sprints (criação, datas, início, planeamento e remoção de tarefas) e a capacidade da equipa; altera critérios de aceitação de tarefas em desenvolvimento; acompanha o progresso. | US02, US03, US04, US05, US07, RN10, RN24 |
 | **Membro da equipa** | Papel por equipa. Pertence a pelo menos uma equipa; cria tarefas no backlog da sua equipa, sem as colocar numa sprint; define estimativas; atualiza o estado das tarefas que lhe estão atribuídas e regista o cumprimento dos respetivos critérios de aceitação. | US06, US08, RN08, RN10, RN21, RN24 |
 
 ### 3.1 Matriz de permissões
@@ -95,6 +95,7 @@ Decidida na revisão crítica (Ex. 6, D14).
 | Atribuir a equipa responsável e o indivíduo dentro dela | ✔ | ✔ | só a sua equipa | |
 | Atribuir a alguém de outra equipa (RN03); transferir entre equipas (RN20) | ✔ | ✔ | | |
 | Gerir sprints e planear tarefas; ajustar a disponibilidade | | | ✔ | |
+| Iniciar sprints, confirmando ou ajustando as datas (RN36) | ✔ | | ✔ | |
 | Atualizar o estado; registar o cumprimento de critérios; assinalar bloqueios | ✔ | ✔ | ✔ | só tarefas atribuídas |
 | Alterar critérios após «A desenvolver» (RN24); reabrir tarefas entregues | ✔ | ✔ | ✔ | |
 | Consultar a capacidade e a sobrecarga de um indivíduo | | | ✔ | só os próprios dados |
@@ -139,6 +140,8 @@ Decidida na revisão crítica (Ex. 6, D14).
 | RN33 | O nome de uma equipa é obrigatório, tem até 100 caracteres e é único entre as equipas ativas, sem distinguir maiúsculas de minúsculas. Um projeto pode existir sem equipas associadas. Uma equipa só pode ser desativada se não tiver tarefas por concluir; uma equipa desativada mantém o histórico e não recebe tarefas. | Confirmado (D22, D23, D24) |
 | RN34 | Uma equipa ativa tem sempre pelo menos um líder. O administrador designa-o ao criar a equipa, e não é possível remover o último líder de uma equipa ativa. | Confirmado (D32) |
 | RN35 | As contas de utilizador são criadas pelo administrador a partir do e-mail profissional; a ligação à identidade do colaborador na empresa é feita no seu primeiro acesso. | Confirmado (D34) |
+| RN36 | Uma sprint é criada pelo líder de equipa no estado «Planeada» e passa a «Ativa» e depois a «Terminada». Enquanto está «Planeada», as datas podem ser alteradas pelo líder; o início é manual, feito pelo líder de equipa ou pelo administrador, que confirma ou ajusta as datas nesse momento, e só é possível se a equipa não tiver outra sprint ativa (RN31). Depois do início, as datas não podem ser alteradas. A sprint termina automaticamente no fim do dia da data de fim. A alteração das datas, o início e o fim ficam registados (RN32). | Confirmado (D36, D37, D39) |
+| RN37 | O líder de equipa pode retirar uma tarefa de uma sprint «Planeada» ou «Ativa» e acrescentar tarefas a uma sprint «Ativa» (com estimativa temporal, RN27). Retirada de uma sprint «Planeada», a tarefa deixa de estar planeada nela. Retirada de uma sprint «Ativa», volta ao backlog da equipa, a remoção fica registada (RN32) e a tarefa continua a contar como trabalho planeado no início da sprint na comparação entre planeado e concluído (RF27). Uma tarefa acrescentada a uma sprint «Ativa» fica identificada como acrescentada depois do início. | Confirmado (D38, D40) |
 
 ## 5. Requisitos funcionais
 
@@ -176,10 +179,10 @@ Decidida na revisão crítica (Ex. 6, D14).
 
 | ID | Requisito | Base | Prior. | Estado | Pendências |
 |---|---|---|---|---|---|
-| RF15 | Manter backlog e sprints próprios por equipa; criar sprints com data de início e de fim. | US04 · RN01, RN31 | P0 | Confirmado | — |
-| RF16 | Planear tarefas do backlog numa sprint, apenas por utilizadores com permissão de gestão de sprints e apenas tarefas com estimativa temporal. | US04 · RN08, RN27, CA04.3, CA04.6, CA04.7, §3.1 | P0 | Confirmado | — |
-| RF17 | No fim de uma sprint, devolver ao backlog as tarefas não concluídas, preservando a informação e o histórico. | US04 · RN04, RN26 | P0 | Confirmado | — |
-| RF18 | No início de uma sprint, passar para ela as tarefas do backlog planeadas para essa sprint. | US04 · RN05 | P0 | Confirmado | — |
+| RF15 | Manter backlog e sprints próprios por equipa; criar sprints com data de início e de fim e alterar as datas enquanto a sprint não se iniciar. | US04 · RN01, RN31, RN36 | P0 | Confirmado | — |
+| RF16 | Planear tarefas do backlog numa sprint, acrescentá-las a uma sprint ativa e retirá-las de uma sprint, apenas por utilizadores com permissão de gestão de sprints e, ao planear ou acrescentar, apenas tarefas com estimativa temporal. | US04 · RN08, RN27, RN37, CA04.3, CA04.6, CA04.7, §3.1 | P0 | Confirmado | — |
+| RF17 | Terminar automaticamente cada sprint no fim da sua data de fim e devolver ao backlog as tarefas não concluídas, preservando a informação e o histórico. | US04 · RN04, RN26, RN36 | P0 | Confirmado | — |
+| RF18 | Iniciar manualmente uma sprint (líder de equipa ou administrador), confirmando ou ajustando as datas, e passar para ela as tarefas do backlog planeadas para essa sprint. | US04 · RN05, RN36 | P0 | Confirmado | — |
 
 ### 5.5 Capacidade
 
@@ -203,7 +206,7 @@ Decidida na revisão crítica (Ex. 6, D14).
 | ID | Requisito | Base | Prior. | Estado | Pendências |
 |---|---|---|---|---|---|
 | RF26 | Apresentar o trabalho da equipa distinguindo tarefas planeadas, em execução, concluídas e bloqueadas. | US07 · CA07.1, RN26, RN28 | P1 | Confirmado | — |
-| RF27 | Comparar, por sprint, o trabalho planeado com o trabalho concluído, com a estimativa no início da sprint e a atual. | US07 · CA07.2, RN10 | P1 | Confirmado | — |
+| RF27 | Comparar, por sprint, o trabalho planeado com o trabalho concluído, com a estimativa no início da sprint e a atual, identificando as tarefas retiradas e acrescentadas depois do início. | US07 · CA07.2, RN10, RN37 | P1 | Confirmado | — |
 | RF28 | Identificar como atrasadas as tarefas com prazo ultrapassado e não concluídas. | US07 · CA07.3, RN29 | P1 | Confirmado | — |
 | RF29 | Assinalar tarefas bloqueadas e registar o motivo do bloqueio, que descreve o impedimento ao trabalho e nunca motivos pessoais (SEC06). | US07 · CA07.4, CA07.6, RN28 | P1 | Confirmado | — |
 | RF30 | Apresentar alertas na aplicação a utilizadores com responsabilidade de acompanhamento ou diretamente afetados. | US07 · CA07.5, CA07.7, CA07.8, RN09, RN18, RN19, RN30 | P1 | Confirmado | — |
@@ -237,7 +240,7 @@ O MVP é composto pelas nove User Stories detalhadas em [`user-stories.md`](user
 | US01 | Gerir equipas e projetos | Sem equipas e projetos não há onde organizar o trabalho; é a base de todas as outras US. | P0 |
 | US02 | Gerir a hierarquia de trabalho | Liga o trabalho executável aos objetivos que o justificam (RN12). | P0 |
 | US03 | Criar, estimar e atribuir tarefas | Núcleo do "gerir tarefas" pedido pelo cliente; define a responsabilidade (RN02). | P0 |
-| US04 | Gerir backlog e sprints por equipa | Cada equipa planeia em sprints próprias (RN01, RN04, RN05). | P0 |
+| US04 | Gerir backlog e sprints por equipa | Cada equipa planeia em sprints próprias (RN01, RN04, RN05, RN36, RN37). | P0 |
 | US05 | Consultar capacidade e carga de trabalho | Crítica para validar o problema central: planear com visibilidade sobre a capacidade (RN06, RN19). | P0 |
 | US06 | Atualizar o estado e validar a conclusão | Garante que o progresso reflete trabalho efetivamente cumprido (RN13). | P0 |
 | US07 | Consultar progresso, desvios e alertas (versão básica) | Responde ao "acompanhar o progresso" do pedido inicial, sem análise tarefa a tarefa. | P1 |

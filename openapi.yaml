@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: Matriz API
-  version: 0.1.0
-  summary: Contrato REST simplificado do MVP da Matriz (Ficha PL 02, Ex. 3).
+  version: 0.2.0
+  summary: Contrato REST simplificado do MVP da Matriz (Ficha PL 02, Ex. 3; revisto no Ex. 5).
   description: |
     Duas operações representativas do MVP:
 
@@ -151,6 +151,7 @@ paths:
                     originalTeamId: 0b9e8d7c-6a5b-4c3d-9e2f-1a0b9c8d7e6f
                     transferredSubtaskIds:
                       - 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e
+                    removedFromSprintId: 6f1c2a3e-1b2c-4d5e-8f90-1a2b3c4d5e6f
                     transferredBy: 4f3e2d1c-0b9a-4876-a5b4-c3d2e1f0a9b8
                     transferredAt: '2026-11-05T10:15:00Z'
         '400':
@@ -329,6 +330,13 @@ components:
           items:
             type: string
             format: uuid
+        removedFromSprintId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            Sprint da equipa de origem de que a tarefa saiu por causa da transferência, ou `null` se
+            não estava planeada numa sprint em aberto (RN20, CA09.8). As subtarefas saem da sprint
+            em que estiverem planeadas pela mesma regra (RN22).
         transferredBy:
           type: string
           format: uuid

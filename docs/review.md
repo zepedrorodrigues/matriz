@@ -1,7 +1,7 @@
 # Matriz — Revisão crítica do Specification Pack
 
-> **Data:** 2026-10-29 · **Âmbito:** Specification Pack v0.1 (Ficha PL 01, Ex. 6) · **Resultado:** Specification Pack v0.2 (1.ª ronda) e v0.3 (2.ª ronda)
-> **Relacionados:** [`requirements.md`](requirements.md) · [`user-stories.md`](user-stories.md) · [`constraints.md`](constraints.md)
+> **Data:** 2026-10-29 · **Âmbito:** Specification Pack v0.1 (Ficha PL 01, Ex. 6) e Architecture Pack (Ficha PL 02, Ex. 5) · **Resultado:** Specification Pack v0.2 (1.ª ronda), v0.3 (2.ª ronda), v0.4 (3.ª ronda) e v0.5 com o Architecture Pack revisto (§3)
+> **Relacionados:** [`requirements.md`](requirements.md) · [`user-stories.md`](user-stories.md) · [`constraints.md`](constraints.md) · [`architecture.md`](architecture.md) · [`database.md`](database.md) · [`../openapi.yaml`](../openapi.yaml) · [`ui/wireframe.md`](ui/wireframe.md)
 
 Revisão da documentação produzida com apoio de IA, feita por um agente e decidida pelo humano responsável (*human-in-the-loop*). Procuraram-se requisitos ambíguos ou contraditórios, funcionalidades sem justificação, pressupostos apresentados como factos, CA não verificáveis, riscos de segurança e privacidade e inconsistências entre documentos.
 
@@ -98,6 +98,19 @@ Todas as decisões pendentes foram propostas pelo agente e aprovadas pelo humano
 | D32 | Nova: equipa sem líder. Resolvida: uma equipa ativa tem sempre pelo menos um líder. | RN34, CA01.12 |
 | CA | 16 CA novos para os comportamentos criados pelas decisões; os 19 CA dependentes passaram a verificáveis. | `user-stories.md` |
 
+### 1.9 Decisões durante a elaboração do Architecture Pack (Ficha PL 02, Ex. 1–4)
+
+Propostas pelo agente ao elaborar os artefactos e decididas pelo humano.
+
+| ID | Decisão | Registo |
+|---|---|---|
+| ADR-001 | Monólito modular com seis módulos; eventos de domínio internos entregues na mesma transação; erros no formato RFC 9457; o Planeamento é dono do planeamento tarefa–sprint e da estimativa no início da sprint. Aprovado. | `architecture.md` §3, §5–§7 |
+| DT06 | **Alterado pelo humano:** pelo menos duas imagens de contentor, uma para o frontend e outra para o backend. | `constraints.md` §4.3, `architecture.md` §8 |
+| DT11–DT13 | Novas revisões futuras, pedidas pelo humano: gestão de eventos e plataforma de eventos (p. ex. Kafka), gestão de erros, alta disponibilidade. | `constraints.md` §4.2, `architecture.md` §9 |
+| P06 | Confirmado pelo humano: equipas e projetos em relação N:M. | `constraints.md` §2, `database.md` |
+| D33, D34 | O líder conta para a capacidade da equipa; as contas são criadas pelo administrador a partir do e-mail profissional. Identificadas ao modelar os dados. | RN06, RN35 |
+| D35 | Identificada ao desenhar a API: uma tarefa transferida sai da sprint da equipa de origem e passa para o backlog da equipa de destino. | RN20, CA09.8 |
+
 ## 2. Critérios de validação (Ficha PL 01)
 
 | Critério | Estado | Evidência |
@@ -111,7 +124,59 @@ Todas as decisões pendentes foram propostas pelo agente e aprovadas pelo humano
 | Foram analisadas criticamente as respostas da IA. | Cumprido | Este documento. |
 | O projeto está preparado para a próxima fase. | Cumprido | Requisitos não funcionais quantitativos (D20) e matriz de permissões (D14) definidos na 2.ª ronda; as decisões técnicas DT01–DT06 têm agora as entradas de que dependem. |
 
-## 3. Pendente após a revisão
+## 3. Revisão cruzada do Architecture Pack (Ficha PL 02, Ex. 5)
+
+O agente comparou requisitos, arquitetura, modelo de dados, API e wireframe à procura de omissões e contradições, e apresentou as conclusões com propostas. Nenhuma alteração foi aplicada sem decisão do humano.
+
+### 3.1 Omissões: decisões funcionais
+
+As três primeiras foram encontradas ao validar o wireframe: o agente tinha desenhado ações que nenhum requisito definia e retirou-as (`ui/wireframe.md` §3).
+
+| ID | Omissão | Proposta do agente | Decisão do humano | Registo |
+|---|---|---|---|---|
+| D36 | Como e por quem se inicia uma sprint. | — (perguntado ao humano) | Início manual. A primeira resposta («administrador ou gestor») contrariava a matriz de permissões, em que só o líder gere sprints, e o gestor é de um projeto, não da equipa; reportado ao humano, que decidiu: **líder de equipa ou administrador**. | RN36, §3.1, CA04.5, CA04.9–CA04.11 |
+| D37 | Alteração das datas de uma sprint (RF15 só previa a criação). | Alteráveis enquanto «Planeada» e no momento do início; depois, não. | Aceite. | RN36, RF15, CA04.12, CA04.13 |
+| D38 | Retirar uma tarefa de uma sprint (RF16 só previa planear). | Pelo líder. Numa sprint ativa, a tarefa volta ao backlog, fica registada e continua a contar como planeada no início. | Aceite. O humano sublinhou que retirar uma tarefa de uma sprint ativa revela que se planeou mais do que a capacidade permitia, e que isso deve ficar visível. | RN37, RF16, RF27, CA04.14, CA04.15, CA07.2 |
+| D39 | Com o início manual, como termina a sprint. | Automaticamente, no fim do dia da data de fim. | Aceite. | RN36, RF17, CA04.4 |
+| D40 | Acrescentar tarefas a uma sprint já iniciada. | Permitido ao líder, com a tarefa identificada como acrescentada depois do início. | Aceite. | RN37, RF16, CA04.16 |
+
+### 3.2 Contradições e omissões entre artefactos
+
+Todas aprovadas pelo humano.
+
+| ID | Problema | Correção | Registo |
+|---|---|---|---|
+| I1 | A D35 obriga a transferência (módulo Trabalho) a retirar a tarefa da sprint (módulo Planeamento), mas o Trabalho não depende do Planeamento e o evento *tarefa transferida* só era subscrito pelo Acompanhamento e pelo Histórico. | O Planeamento subscreve *tarefa transferida*, na mesma transação; o sentido das dependências mantém-se. | `architecture.md` §5, §6 |
+| I2 | O modelo de dados não registava a saída de uma tarefa a meio da sprint (D35, D38) nem o início e o fim da sprint. | `sprint.started_at`, `sprint.closed_at`; `sprint_task.left_at` e `left_reason` em vez de `returned_to_backlog_at`. Ao corrigir, o agente verificou que o índice único parcial previsto para «uma tarefa em no máximo uma sprint em aberto» não o podia garantir, porque o estado da sprint está noutra tabela; a regra passou para a aplicação. | `database.md` §2.4, §4–§6 |
+| I3 | A resposta da transferência não mostrava o efeito da D35. | Campo `removedFromSprintId`, que pode ser nulo. | `openapi.yaml` (v0.2.0) |
+| I4 | A tarefa diária só verificava prazos. | Passa também a terminar as sprints (D39). | `architecture.md` §4, §7, §8 |
+| I5 | O wireframe não tinha as ações sobre a sprint. | Repostas «Editar datas», «Iniciar sprint» e «↩ Backlog», coerentes com D36–D38. Ao rever as posições, o agente corrigiu também uma sobreposição entre o motivo de bloqueio e o indicador «Bloqueada». | `ui/wireframe.svg`, `ui/wireframe.md` |
+| I6 | Este documento não registava as decisões da Ficha PL 02. | §1.9 e §3. | Este documento |
+
+### 3.3 Verificações
+
+| Verificação | Resultado |
+|---|---|
+| Contagem dos CA por script | 97 CA (91 nas US e 6 transversais), todos verificáveis. |
+| Referências a IDs e campos removidos (`returned_to_backlog_at`, «por decidir») | Nenhuma referência pendente. |
+| SVG do wireframe | XML válido. A renderização não foi verificada pelo agente. |
+| `openapi.yaml` | Não validado com um parser pelo agente (sem dependências novas); o humano verifica o contrato. |
+| Diagramas Mermaid | Não renderizados pelo agente; a confirmar no GitHub. |
+
+## 4. Critérios de validação (Ficha PL 02)
+
+| Critério | Estado | Evidência |
+|---|---|---|
+| A arquitetura está justificada e é adequada ao MVP. | Cumprido | `architecture.md` §1–§3: características determinantes, comparação de três estilos e ADR-001. |
+| O modelo de dados identifica as principais entidades e relações. | Cumprido | `database.md` §2–§3: 15 tabelas em seis schemas, com relações e cardinalidades. |
+| O diagrama ER é coerente com o modelo. | Cumprido | `database.md` §4, revisto com o modelo (I2). Renderização a confirmar. |
+| A especificação OpenAPI tem pelo menos duas operações REST. | Cumprido | `openapi.yaml`: `GET /sprints/{sprintId}/capacity` e `POST /tasks/{taskId}/transfer`. |
+| Existe um wireframe de um ecrã relevante. | Cumprido | `ui/wireframe.svg` e `ui/wireframe.md`: planeamento e capacidade da sprint, validado face ao MVP. |
+| Os pressupostos e as decisões pendentes estão identificados. | Cumprido | `constraints.md` §2 e §4; `architecture.md` §10; `database.md` §6; D33–D40 decididas pelo humano. |
+| Os artefactos foram revistos e versionados em Git. | Cumprido | Este documento (§1.9, §3) e o histórico Git. |
+
+## 5. Pendente após a revisão
 
 - **P12:** validação jurídica da política de retenção.
-- **Revisões futuras:** DT09 (alertas na base de dados) e DT10 (extração para microservices).
+- **Revisões futuras:** DT09 (alertas na base de dados), DT10 (extração para microservices), DT11 (gestão de eventos), DT12 (gestão de erros) e DT13 (alta disponibilidade).
+- **Verificação visual:** renderização dos diagramas Mermaid e do wireframe.

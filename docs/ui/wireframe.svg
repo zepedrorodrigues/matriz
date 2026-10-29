@@ -40,7 +40,11 @@
   <text x="24" y="84" class="s">Sprints › Equipa Alfa › Sprint 12</text>
   <text x="24" y="114" class="h1">Planeamento da Sprint 12 — Equipa Alfa</text>
   <text x="24" y="138" class="t">02/11/2026 – 13/11/2026 · 10 dias úteis · Estado: Planeada</text>
-  <text x="980" y="138" class="note">Ações sobre a sprint: por decidir (ver docs/ui/wireframe.md §3)</text>
+  <rect class="btn" x="980" y="96" width="120" height="32" rx="4"/>
+  <text x="999" y="117" class="t">Editar datas</text>
+  <rect class="btn-primary" x="1112" y="96" width="144" height="32" rx="4"/>
+  <text x="1136" y="117" class="w">Iniciar sprint</text>
+  <text x="980" y="144" class="note">Datas: só enquanto Planeada (RN36)</text>
 
   <!-- Aviso de sobrecarga -->
   <rect class="warn" x="24" y="156" width="1232" height="40" rx="4"/>
@@ -155,26 +159,34 @@
   <line class="line" x1="656" y1="508" x2="1256" y2="508"/>
 
   <rect class="box" x="672" y="520" width="568" height="64" rx="4"/>
+  <rect class="btn" x="1144" y="530" width="84" height="24" rx="4"/>
+  <text x="1153" y="547" class="t">↩ Backlog</text>
   <text x="688" y="544" class="t" font-weight="bold">Integrar login da empresa</text>
   <text x="688" y="566" class="s">Rui Exemplo · 40 h · 13 SP</text>
   <rect class="chip" x="980" y="530" width="104" height="22" rx="11"/>
   <text x="992" y="545" class="s">A desenvolver</text>
 
   <rect class="box" x="672" y="594" width="568" height="64" rx="4"/>
+  <rect class="btn" x="1144" y="604" width="84" height="24" rx="4"/>
+  <text x="1153" y="621" class="t">↩ Backlog</text>
   <text x="688" y="618" class="t" font-weight="bold">Ecrã de alertas</text>
   <text x="688" y="640" class="s">Ana Exemplo · 24 h · 8 SP</text>
   <rect class="chip" x="980" y="604" width="84" height="22" rx="11"/>
   <text x="992" y="619" class="s">Em testes</text>
 
   <rect class="box" x="672" y="668" width="568" height="64" rx="4"/>
+  <rect class="btn" x="1144" y="678" width="84" height="24" rx="4"/>
+  <text x="1153" y="695" class="t">↩ Backlog</text>
   <text x="688" y="692" class="t" font-weight="bold">Migração de dados</text>
   <text x="688" y="714" class="s">Rui Exemplo · 62 h · 8 SP · motivo: aguarda acesso ao servidor</text>
   <rect class="chip" x="980" y="678" width="140" height="22" rx="11"/>
   <text x="992" y="693" class="s">Pronto a desenvolver</text>
-  <rect x="980" y="704" width="96" height="22" rx="11" fill="#555555"/>
-  <text x="992" y="719" class="w" font-size="11px">🔒 Bloqueada</text>
+  <rect x="1040" y="704" width="96" height="22" rx="11" fill="#555555"/>
+  <text x="1052" y="719" class="w" font-size="11px">🔒 Bloqueada</text>
 
   <rect class="box" x="672" y="742" width="568" height="64" rx="4"/>
+  <rect class="btn" x="1144" y="752" width="84" height="24" rx="4"/>
+  <text x="1153" y="769" class="t">↩ Backlog</text>
   <text x="688" y="766" class="t" font-weight="bold">Documentação da API</text>
   <text x="688" y="788" class="s">Ana Exemplo · 30 h · 5 SP · prazo 30/10/2026</text>
   <rect class="chip" x="980" y="752" width="136" height="22" rx="11"/>
@@ -183,12 +195,16 @@
   <text x="992" y="793" class="w" font-size="11px">Prazo ultrapassado</text>
 
   <rect class="box" x="672" y="816" width="568" height="64" rx="4"/>
+  <rect class="btn" x="1144" y="826" width="84" height="24" rx="4"/>
+  <text x="1153" y="843" class="t">↩ Backlog</text>
   <text x="688" y="840" class="t" font-weight="bold">Testes de carga</text>
   <text x="688" y="862" class="s">Subtarefa de «Preparar ambiente de testes» (Sprint 13) · Ana Exemplo · 16 h · sem SP</text>
   <rect class="chip" x="1012" y="826" width="112" height="22" rx="11"/>
   <text x="1024" y="841" class="s">Em planeamento</text>
 
+  <text x="672" y="894" class="note">«↩ Backlog»: só o líder retira tarefas; numa sprint ativa, a remoção fica registada (RN37, CA04.14, CA04.15)</text>
+
   <!-- Rodapé -->
   <line class="line" x1="24" y1="920" x2="1256" y2="920"/>
-  <text x="24" y="944" class="note">Wireframe de baixa fidelidade · Ficha PL 02, Ex. 4 · ecrã do líder de equipa (US04, US05, US07) · dados fictícios (SEC08) · interface em pt-PT para computador (RNF10, RNF11)</text>
+  <text x="24" y="944" class="note">Wireframe de baixa fidelidade · Ficha PL 02, Ex. 4, revisto no Ex. 5 · ecrã do líder de equipa (US04, US05, US07) · dados fictícios (SEC08) · interface em pt-PT para computador (RNF10, RNF11)</text>
 </svg>

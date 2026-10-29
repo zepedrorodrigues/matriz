@@ -2,7 +2,7 @@
 
 Aplicação interna de gestão de projetos e tarefas para equipas de trabalho, ao estilo de Jira, Azure DevOps ou Trello.
 
-> **Estado atual:** fase de especificação (Ficha PL 01) — Specification Pack v0.4, com as decisões funcionais fechadas; Architecture Pack em preparação (Ficha PL 02). Ainda não há código nem tecnologia escolhida; essas decisões ficam para a Aula 2.
+> **Estado atual:** Specification Pack v0.5 (Ficha PL 01) e Architecture Pack revisto (Ficha PL 02): arquitetura, modelo de dados, API e wireframe. Tecnologias escolhidas (`docs/constraints.md` §4.3); ainda não há código.
 
 ## Problema
 
@@ -88,8 +88,8 @@ Os coding agents seguem, além disto, as instruções de [`AGENTS.md`](AGENTS.md
 - [x] Ex. 4 — Specification Pack v0.1
 - [x] Ex. 5 — `AGENTS.md`
 - [x] Ex. 6 — Revisão crítica (human-in-the-loop) — Specification Pack v0.3, ver [`docs/review.md`](docs/review.md)
-- [ ] Aula 2 (Ficha PL 02) — Architecture Pack: arquitetura, modelo de dados, API e protótipo — decisões fechadas, artefactos em curso
+- [x] Aula 2 (Ficha PL 02) — Architecture Pack: arquitetura, modelo de dados, API e wireframe, com revisão cruzada (human-in-the-loop), ver [`docs/review.md`](docs/review.md) §3
 
-**Em números:** 35 regras de negócio · 31 requisitos funcionais · 12 requisitos não funcionais · 9 user stories · 89 critérios de aceitação (83 nas US e 6 transversais), todos verificáveis · sem decisões funcionais pendentes.
+**Em números:** 37 regras de negócio · 31 requisitos funcionais · 12 requisitos não funcionais · 9 user stories · 97 critérios de aceitação (91 nas US e 6 transversais), todos verificáveis · sem decisões funcionais pendentes.
 
-**Pendentes:** P12 (validação jurídica da retenção). Revisões futuras planeadas: DT09–DT13 (alertas, microservices, eventos, erros, alta disponibilidade).
+**Pendentes:** P12 (validação jurídica da retenção); verificação visual dos diagramas Mermaid e do wireframe. Revisões futuras planeadas: DT09–DT13 (alertas, microservices, eventos, erros, alta disponibilidade).

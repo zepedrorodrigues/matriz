@@ -1,6 +1,6 @@
 # Matriz — Modelo de dados
 
-> **Versão:** 0.1 · **Data:** 2026-10-29 · **Estado:** proposta para revisão (Ficha PL 02, Ex. 2)
+> **Versão:** 0.2 · **Data:** 2026-10-29 · **Estado:** revisto na revisão cruzada (Ficha PL 02, Ex. 5)
 > **Relacionados:** [`requirements.md`](requirements.md) · [`architecture.md`](architecture.md) · [`constraints.md`](constraints.md)
 
 Modelo lógico dos dados essenciais do MVP, para PostgreSQL (DT02). Os requisitos prevalecem sobre este documento; o que estiver marcado **por confirmar** não deve ser implementado sem decisão (`AGENTS.md` §2).
@@ -135,27 +135,30 @@ Modelo lógico dos dados essenciais do MVP, para PostgreSQL (DT02). Os requisito
 
 ### 2.4 Planeamento (`planning`)
 
-**sprint** — período de trabalho de uma equipa (RN01, RN31).
+**sprint** — período de trabalho de uma equipa (RN01, RN31, RN36).
 
 | Atributo | Tipo | Chave | Regra |
 |---|---|---|---|
 | id | uuid | PK | |
 | team_id | uuid | ref. lógica → team | |
-| start_date | date | | ≤ `end_date` (RN31). |
+| start_date | date | | ≤ `end_date` (RN31). Alterável só enquanto `planned` e no início (RN36). |
 | end_date | date | | Sem sobreposição com outras sprints da equipa (RN31). |
-| status | enum (`planned`, `active`, `closed`) | | No máximo uma sprint `active` por equipa (RN31). |
+| status | enum (`planned`, `active`, `closed`) | | No máximo uma sprint `active` por equipa (RN31). Início manual; fim automático no fim da data de fim (RN36). |
+| started_at | timestamptz | nulo | Preenchido no início (RN36). |
+| closed_at | timestamptz | nulo | Preenchido no fim (RN36). |
 | created_at | timestamptz | | |
 
-**sprint_task** — planeamento de uma tarefa numa sprint (RN04, RN05, RN10, RN27).
+**sprint_task** — planeamento de uma tarefa numa sprint (RN04, RN05, RN10, RN20, RN27, RN37). Retirar uma tarefa de uma sprint `planned` remove a linha; a remoção fica no histórico.
 
 | Atributo | Tipo | Chave | Regra |
 |---|---|---|---|
 | sprint_id | uuid | PK, FK → sprint | |
 | task_id | uuid | PK, ref. lógica → task | Só tarefas com estimativa temporal (RN27). Cada tarefa está, no máximo, numa sprint em aberto. |
-| planned_at | timestamptz | | |
-| start_estimate_hours | numeric(6,2) | nulo | Estimativa no início da sprint, para comparação (RN10, RF27). |
+| planned_at | timestamptz | | Posterior a `sprint.started_at` numa tarefa acrescentada depois do início (RN37). |
+| start_estimate_hours | numeric(6,2) | nulo | Estimativa no início da sprint ou, numa tarefa acrescentada depois do início, no momento em que entra; para comparação (RN10, RN37, RF27). |
 | start_story_points | smallint | nulo | Idem. |
-| returned_to_backlog_at | timestamptz | nulo | Preenchido quando a tarefa não concluída volta ao backlog no fim da sprint (RN04). As concluídas ficam associadas à sprint. |
+| left_at | timestamptz | nulo | Preenchido quando a tarefa sai de uma sprint `active`: não concluída no fim da sprint (RN04), retirada pelo líder (RN37) ou transferida para outra equipa (RN20). As concluídas ficam associadas à sprint. As retiradas continuam a contar como planeadas no início (RF27). |
+| left_reason | enum (`sprint_ended`, `removed`, `transferred`) | nulo | Motivo da saída; preenchido com `left_at`. |
 
 **availability_adjustment** — horas disponíveis de um membro numa sprint, quando diferentes do cálculo de RN06 (CA05.5).
 
@@ -304,13 +307,17 @@ erDiagram
         date start_date
         date end_date
         enum status "planned | active | closed"
+        timestamptz started_at
+        timestamptz closed_at
     }
     SPRINT_TASK {
         uuid sprint_id PK, FK
         uuid task_id PK
         numeric start_estimate_hours
         smallint start_story_points
-        timestamptz returned_to_backlog_at
+        timestamptz planned_at
+        timestamptz left_at
+        enum left_reason "sprint_ended | removed | transferred"
     }
     AVAILABILITY_ADJUSTMENT {
         uuid sprint_id PK, FK
@@ -368,10 +375,10 @@ erDiagram
 | Story points na escala fixa (RN07); alocação entre 1 e 100 (RN06); horas ≥ 0 | Base de dados: restrições `CHECK` |
 | Tarefa com exatamente um de `epic_id` / `parent_task_id`; subtarefa sem subtarefas (RN12, RN22) | Base de dados (`CHECK`) e aplicação |
 | Início da sprint ≤ fim; sem sobreposição; no máximo uma sprint ativa por equipa (RN31) | Base de dados: `CHECK`, restrição de exclusão sobre o intervalo de datas e índice único parcial |
-| Uma tarefa em no máximo uma sprint em aberto (RN04, RN05) | Base de dados: índice único parcial em `sprint_task` |
+| Datas da sprint alteráveis só enquanto `planned` (RN36) | Aplicação |
 | `block_reason` obrigatório quando bloqueada (RN28) | Base de dados (`CHECK`) e aplicação |
 | Histórico sem alterações nem remoções (SEC04) | Base de dados: permissões (só `INSERT` e `SELECT`) |
-| Soma das alocações = 100 (RN06); pelo menos um líder por equipa ativa (RN34); equipa da subtarefa igual à da principal (RN22); equipa associada ao projeto (RN23); transições (RN26); critérios e estimativa para planear (RN27); alterações de critérios e estimativas (RN10, RN24); justificação (RN03); tarefas concluídas não transferíveis (RN20) | Aplicação (camada de domínio), porque envolvem várias linhas ou módulos |
+| Uma tarefa em no máximo uma sprint em aberto (RN04, RN05; o estado da sprint está noutra tabela); soma das alocações = 100 (RN06); pelo menos um líder por equipa ativa (RN34); equipa da subtarefa igual à da principal (RN22); equipa associada ao projeto (RN23); transições (RN26); critérios e estimativa para planear (RN27); alterações de critérios e estimativas (RN10, RN24); justificação (RN03); tarefas concluídas não transferíveis (RN20) | Aplicação (camada de domínio), porque envolvem várias linhas ou módulos |
 | Existência de entidades referenciadas entre módulos | Aplicação, através da interface do módulo dono (§1) |
 
 ## 6. Pressupostos e pontos por confirmar
@@ -383,3 +390,4 @@ erDiagram
 | 3 | Criação de contas: o administrador regista o utilizador pelo e-mail profissional e a ligação ao fornecedor de identidade (`external_subject`) faz-se no primeiro acesso. | Confirmado — RN35 (D34). |
 | 4 | Referências lógicas, sem chave estrangeira, entre módulos (§1). | Decisão de modelação desta proposta, decorrente da ADR-001. |
 | 5 | Volume das tabelas `alert` e `history_event`. | Revisão futura: DT09; retenção segundo SEC09 (validação jurídica: P12). |
+| 6 | Ciclo de vida da sprint e saída de tarefas a meio da sprint (`started_at`, `closed_at`, `left_at`, `left_reason`). | Confirmado — RN20, RN36, RN37 (D35–D40). |

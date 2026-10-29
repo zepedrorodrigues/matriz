@@ -1,6 +1,6 @@
 # Matriz — User Stories do MVP
 
-> **Versão:** 0.4 · **Data:** 2026-10-29 · **Estado:** decisões pendentes fechadas (preparação da Ficha PL 02)
+> **Versão:** 0.5 · **Data:** 2026-10-29 · **Estado:** revisão cruzada da Ficha PL 02 (Ex. 5)
 > **Fonte:** backlog produzido no Ex. 3, consolidado no Ex. 4 e revisto no Ex. 6. As alterações estão no §5.
 > **Relacionados:** [`requirements.md`](requirements.md) · [`constraints.md`](constraints.md) · [`review.md`](review.md)
 
@@ -257,7 +257,7 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 
 ### US04 — Gerir backlog e sprints por equipa
 
-**Prioridade:** P0 — Crítica · **Objetivo:** organizar temporalmente o trabalho de cada equipa. · **Regras:** RN01, RN04, RN05, RN08, RN21, RN26, RN27, RN31
+**Prioridade:** P0 — Crítica · **Objetivo:** organizar temporalmente o trabalho de cada equipa. · **Regras:** RN01, RN04, RN05, RN08, RN21, RN26, RN27, RN31, RN36, RN37
 
 > Como **líder de equipa**, quero gerir o backlog e as sprints da minha equipa, selecionando e acompanhando as tarefas previstas para cada período, para planear a execução do trabalho de acordo com os objetivos e a capacidade disponível.
 
@@ -279,19 +279,19 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 - **Then** a tarefa fica associada à sprint selecionada e, enquanto essa sprint não estiver ativa, continua a constar do backlog da equipa.
 
 **CA04.4 — Terminar uma sprint** · *verificável*
-- **Given** que uma sprint chega ao fim e existem tarefas que não estão em «Terminada» nem em «Entregue»,
-- **When** a sprint termina,
-- **Then** as tarefas não concluídas transitam para o backlog, mantendo o estado, as estimativas, a equipa e o indivíduo responsáveis, os critérios de aceitação e o histórico.
+- **Given** que uma sprint ativa chega ao fim da sua data de fim e existem tarefas que não estão em «Terminada» nem em «Entregue»,
+- **When** a sprint termina automaticamente,
+- **Then** a sprint passa a «Terminada» e as tarefas não concluídas transitam para o backlog, mantendo o estado, as estimativas, a equipa e o indivíduo responsáveis, os critérios de aceitação e o histórico.
 
 **CA04.5 — Iniciar a sprint seguinte** · *verificável*
 - **Given** que existe uma nova sprint e, no backlog, tarefas planeadas para ela e tarefas não planeadas,
-- **When** a nova sprint se inicia,
+- **When** o líder de equipa ou o administrador inicia a nova sprint,
 - **Then** só as tarefas planeadas para essa sprint passam a fazer parte dela; as restantes permanecem no backlog.
 
 **CA04.6 — Restringir o planeamento a membros comuns** · *verificável*
 - **Given** que sou um membro sem permissão para gerir sprints,
-- **When** tento adicionar uma tarefa a uma sprint,
-- **Then** a operação é recusada e a tarefa permanece no backlog.
+- **When** tento adicionar uma tarefa a uma sprint ou retirá-la de uma sprint,
+- **Then** a operação é recusada e a tarefa permanece onde estava.
 
 **CA04.7 — Exigir estimativa temporal para planear** · *verificável*
 - **Given** que uma tarefa do backlog não tem estimativa temporal,
@@ -303,6 +303,46 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 - **When** crio outra sprint cujo período se sobrepõe ao dessa sprint,
 - **Then** a operação é recusada.
 
+**CA04.9 — Iniciar uma sprint** · *verificável*
+- **Given** que a minha equipa tem uma sprint «Planeada» e nenhuma sprint ativa,
+- **When** eu, líder dessa equipa ou administrador, inicio a sprint, confirmando ou ajustando as datas,
+- **Then** a sprint passa a «Ativa» com as datas confirmadas e o início fica registado no histórico, com autor e data/hora.
+
+**CA04.10 — Restringir o início de sprints** · *verificável*
+- **Given** que sou gestor de projeto ou membro, sem ser líder da equipa nem administrador,
+- **When** tento iniciar uma sprint dessa equipa,
+- **Then** a operação é recusada e a sprint permanece «Planeada».
+
+**CA04.11 — Impedir duas sprints ativas** · *verificável*
+- **Given** que a minha equipa já tem uma sprint ativa,
+- **When** tento iniciar outra sprint da equipa,
+- **Then** a operação é recusada.
+
+**CA04.12 — Alterar as datas de uma sprint planeada** · *verificável*
+- **Given** que sou líder e a minha equipa tem uma sprint «Planeada»,
+- **When** altero as suas datas, respeitando RN31,
+- **Then** a sprint fica com as novas datas, a capacidade passa a ser calculada sobre elas e a alteração fica registada no histórico.
+
+**CA04.13 — Impedir a alteração das datas de uma sprint ativa** · *verificável*
+- **Given** que uma sprint está «Ativa»,
+- **When** alguém tenta alterar as suas datas,
+- **Then** a operação é recusada e as datas mantêm-se.
+
+**CA04.14 — Retirar uma tarefa de uma sprint planeada** · *verificável*
+- **Given** que uma tarefa está planeada numa sprint «Planeada» da minha equipa,
+- **When** eu, líder, a retiro da sprint,
+- **Then** a tarefa deixa de estar planeada nessa sprint e continua no backlog da equipa.
+
+**CA04.15 — Retirar uma tarefa de uma sprint ativa** · *verificável*
+- **Given** que uma tarefa faz parte de uma sprint «Ativa» da minha equipa,
+- **When** eu, líder, a retiro da sprint,
+- **Then** a tarefa volta ao backlog da equipa, a remoção fica registada no histórico, com autor e data/hora, e a tarefa continua a contar como trabalho planeado no início da sprint (CA07.2).
+
+**CA04.16 — Acrescentar uma tarefa a uma sprint ativa** · *verificável*
+- **Given** que uma tarefa do backlog da minha equipa tem estimativa temporal e a equipa tem uma sprint «Ativa»,
+- **When** eu, líder, a acrescento a essa sprint,
+- **Then** a tarefa passa a fazer parte da sprint e fica identificada como acrescentada depois do início.
+
 #### Casos excecionais
 
 | ID | Situação | Regra |
@@ -310,6 +350,7 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 | EC04.1 | Uma tarefa concluída permanece associada à sprint original quando as restantes transitam para o backlog? | Sim — só as não concluídas transitam (RN04, RN26). |
 | EC04.2 | Há mais tarefas elegíveis no backlog do que capacidade disponível na nova sprint. | Só transitam as planeadas (RN05); a sobrecarga não impede o planeamento e é notificada (RN19). |
 | EC04.3 | Iniciar uma sprint sem trabalho planeado. | Permitido (RN31). |
+| EC04.4 | Uma sprint chega à data de início sem ter sido iniciada. | Mantém-se «Planeada» até ser iniciada; ao iniciar, as datas confirmam-se ou ajustam-se (RN36). |
 
 ---
 
@@ -473,7 +514,7 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 
 ### US07 — Consultar progresso, desvios e alertas
 
-**Prioridade:** P1 — Alta, com funcionalidades básicas incluídas no MVP · **Objetivo:** acompanhar o trabalho sem ter de analisar individualmente todas as tarefas. · **Regras:** RN06, RN09, RN13, RN17, RN18, RN19, RN26, RN28, RN29, RN30
+**Prioridade:** P1 — Alta, com funcionalidades básicas incluídas no MVP · **Objetivo:** acompanhar o trabalho sem ter de analisar individualmente todas as tarefas. · **Regras:** RN06, RN09, RN13, RN17, RN18, RN19, RN26, RN28, RN29, RN30, RN37
 
 > Como **líder de equipa** ou **gestor de projeto**, quero consultar o progresso das tarefas, sprints e projetos, incluindo os desvios relativamente ao planeamento e os alertas relevantes, para identificar problemas e agir antes que comprometam os objetivos.
 
@@ -487,7 +528,7 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 **CA07.2 — Comparar planeamento e execução** · *verificável*
 - **Given** que existem estimativas iniciais e tarefas concluídas numa sprint,
 - **When** consulto essa sprint,
-- **Then** consigo comparar a estimativa do trabalho planeado com a do trabalho concluído, em horas e em story points apresentados separadamente, com a estimativa registada no início da sprint e a atual.
+- **Then** consigo comparar a estimativa do trabalho planeado com a do trabalho concluído, em horas e em story points apresentados separadamente, com a estimativa registada no início da sprint e a atual; as tarefas retiradas depois do início continuam a contar no trabalho planeado e as acrescentadas depois do início aparecem identificadas (RN37).
 
 **CA07.3 — Identificar tarefas atrasadas** · *verificável*
 - **Given** que uma tarefa tem um prazo definido e não está concluída,
@@ -663,7 +704,7 @@ Aplicam-se a todas as US e verificam os requisitos de segurança e privacidade (
 
 ## 4. Verificabilidade dos critérios de aceitação
 
-**89 CA no total (83 nas US + 6 transversais), todos verificáveis.** Não há decisões funcionais pendentes que bloqueiem critérios de aceitação ([`constraints.md`](constraints.md) §4.1).
+**97 CA no total (91 nas US + 6 transversais), todos verificáveis.** Não há decisões funcionais pendentes que bloqueiem critérios de aceitação ([`constraints.md`](constraints.md) §4.1).
 
 ---
 
@@ -682,7 +723,7 @@ Aplicam-se a todas as US e verificam os requisitos de segurança e privacidade (
 
 ### 5.2 Alterações na revisão crítica (Ex. 6)
 
-Os problemas encontrados, as decisões tomadas e as alterações resultantes estão em [`review.md`](review.md). Na preparação da Ficha PL 02 foram fechadas as decisões funcionais pendentes (3.ª ronda).
+Os problemas encontrados, as decisões tomadas e as alterações resultantes estão em [`review.md`](review.md). Na preparação da Ficha PL 02 foram fechadas as decisões funcionais pendentes (3.ª ronda); a revisão cruzada da Ficha PL 02 (Ex. 5) acrescentou o ciclo de vida da sprint (CA04.9–CA04.16).
 
 A US08 foi dividida em duas, porque juntava dois papéis e dois objetivos. Os CA foram renumerados:
 
