@@ -159,9 +159,9 @@ Todas aprovadas pelo humano.
 |---|---|
 | Contagem dos CA por script | 97 CA (91 nas US e 6 transversais), todos verificáveis. |
 | Referências a IDs e campos removidos (`returned_to_backlog_at`, «por decidir») | Nenhuma referência pendente. |
-| SVG do wireframe | XML válido. A renderização não foi verificada pelo agente. |
+| SVG do wireframe | XML válido (agente); renderização confirmada pelo humano. |
 | `openapi.yaml` | Não validado com um parser pelo agente (sem dependências novas); o humano verifica o contrato. |
-| Diagramas Mermaid | Não renderizados pelo agente; a confirmar no GitHub. |
+| Diagramas Mermaid | Renderização confirmada pelo humano. |
 
 ## 4. Critérios de validação (Ficha PL 02)
 
@@ -169,7 +169,7 @@ Todas aprovadas pelo humano.
 |---|---|---|
 | A arquitetura está justificada e é adequada ao MVP. | Cumprido | `architecture.md` §1–§3: características determinantes, comparação de três estilos e ADR-001. |
 | O modelo de dados identifica as principais entidades e relações. | Cumprido | `database.md` §2–§3: 15 tabelas em seis schemas, com relações e cardinalidades. |
-| O diagrama ER é coerente com o modelo. | Cumprido | `database.md` §4, revisto com o modelo (I2). Renderização a confirmar. |
+| O diagrama ER é coerente com o modelo. | Cumprido | `database.md` §4, revisto com o modelo (I2); renderização confirmada pelo humano. |
 | A especificação OpenAPI tem pelo menos duas operações REST. | Cumprido | `openapi.yaml`: `GET /sprints/{sprintId}/capacity` e `POST /tasks/{taskId}/transfer`. |
 | Existe um wireframe de um ecrã relevante. | Cumprido | `ui/wireframe.svg` e `ui/wireframe.md`: planeamento e capacidade da sprint, validado face ao MVP. |
 | Os pressupostos e as decisões pendentes estão identificados. | Cumprido | `constraints.md` §2 e §4; `architecture.md` §10; `database.md` §6; D33–D40 decididas pelo humano. |
@@ -179,4 +179,3 @@ Todas aprovadas pelo humano.
 
 - **P12:** validação jurídica da política de retenção.
 - **Revisões futuras:** DT09 (alertas na base de dados), DT10 (extração para microservices), DT11 (gestão de eventos), DT12 (gestão de erros) e DT13 (alta disponibilidade).
-- **Verificação visual:** renderização dos diagramas Mermaid e do wireframe.

@@ -92,4 +92,4 @@ Os coding agents seguem, além disto, as instruções de [`AGENTS.md`](AGENTS.md
 
 **Em números:** 37 regras de negócio · 31 requisitos funcionais · 12 requisitos não funcionais · 9 user stories · 97 critérios de aceitação (91 nas US e 6 transversais), todos verificáveis · sem decisões funcionais pendentes.
 
-**Pendentes:** P12 (validação jurídica da retenção); verificação visual dos diagramas Mermaid e do wireframe. Revisões futuras planeadas: DT09–DT13 (alertas, microservices, eventos, erros, alta disponibilidade).
+**Pendentes:** P12 (validação jurídica da retenção). Revisões futuras planeadas: DT09–DT13 (alertas, microservices, eventos, erros, alta disponibilidade).
