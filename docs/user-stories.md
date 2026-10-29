@@ -118,8 +118,6 @@
 | EC01.2 | Criar um projeto antes de lhe associar qualquer equipa. | Permitido (RN33). |
 | EC01.3 | Desativar uma equipa que ainda tem tarefas atribuídas. | Só sem tarefas por concluir (RN33, CA01.10). |
 
-**Pressupostos:** P06
-
 ---
 
 ### US02 — Gerir a hierarquia de trabalho

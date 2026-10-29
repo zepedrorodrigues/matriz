@@ -70,7 +70,7 @@ Modelo lógico dos dados essenciais do MVP, para PostgreSQL (DT02). Os requisito
 | project_id | uuid | PK, FK → project | |
 | user_id | uuid | PK, ref. lógica → user | |
 
-**project_team** — participação de uma equipa num projeto (RF03, RN23, P06).
+**project_team** — participação de uma equipa num projeto (RF03, RN23; relação N:M confirmada, P06).
 
 | Atributo | Tipo | Chave | Regra |
 |---|---|---|---|
@@ -208,7 +208,7 @@ Sem `UPDATE` nem `DELETE` para a aplicação (SEC04); as retificações são nov
 | Relação | Cardinalidade | Regra |
 |---|---|---|
 | Equipa — pertença — utilizador | Equipa 1 : N pertenças (pelo menos um líder se ativa); utilizador 1 : N pertenças (pelo menos uma se for membro) | RN21, RN34 |
-| Projeto — equipa | N : M (via `project_team`); um projeto pode ter 0 equipas | P06, RN33 |
+| Projeto — equipa | N : M (via `project_team`); um projeto pode ter 0 equipas | P06 (confirmado), RN33 |
 | Projeto — gestor | Projeto 1 : N gestores (pelo menos um); utilizador 0 : N projetos geridos | §3.1 |
 | Projeto — objetivo | 1 : N | RN23 |
 | Objetivo — épico | 1 : N | RN12 |
@@ -378,7 +378,7 @@ erDiagram
 
 | # | Ponto | Estado |
 |---|---|---|
-| 1 | Equipas e projetos em relação N:M (`project_team`). | Pressuposto **P06** — por validar com o cliente. Se for 1:N, a tabela de associação dá lugar a uma coluna em `team`. |
+| 1 | Equipas e projetos em relação N:M (`project_team`). | Confirmado — P06. |
 | 2 | O líder de equipa conta para a capacidade da equipa. | Confirmado — RN06 (D33). |
 | 3 | Criação de contas: o administrador regista o utilizador pelo e-mail profissional e a ligação ao fornecedor de identidade (`external_subject`) faz-se no primeiro acesso. | Confirmado — RN35 (D34). |
 | 4 | Referências lógicas, sem chave estrangeira, entre módulos (§1). | Decisão de modelação desta proposta, decorrente da ADR-001. |

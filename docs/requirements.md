@@ -148,7 +148,7 @@ Decidida na revisão crítica (Ex. 6, D14).
 |---|---|---|---|---|---|
 | RF01 | Criar, editar, consultar e desativar equipas. | US01 · RN01, RN25, RN33, RN34 | P0 | Confirmado | — |
 | RF02 | Criar, editar e consultar projetos, com nome e objetivo. | US01 · RN25, RN33 | P0 | Confirmado | — |
-| RF03 | Associar equipas a projetos, sem associações duplicadas, e consultar as equipas de um projeto. | US01 · CA01.3–CA01.5 | P0 | Confirmado | P06 |
+| RF03 | Associar equipas a projetos, sem associações duplicadas, e consultar as equipas de um projeto. | US01 · CA01.3–CA01.5 | P0 | Confirmado | — |
 | RF04 | Associar utilizadores a equipas, com uma percentagem de alocação; cada membro pertence a pelo menos uma equipa. | US01 · CA01.9, RN06, RN21 | P0 | Confirmado | — |
 
 ### 5.2 Hierarquia de trabalho

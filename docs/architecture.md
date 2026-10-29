@@ -166,6 +166,6 @@ flowchart LR
 
 ## 10. Pressupostos e decisões pendentes
 
-- **Pressupostos em aberto** que afetam a arquitetura: P06 (equipas e projetos N:M), P09 (RGPD), P12 (retenção). Ver [`constraints.md`](constraints.md) §2.
+- **Pressupostos em aberto** que afetam a arquitetura: P09 (RGPD) e P12 (retenção). Ver [`constraints.md`](constraints.md) §2.
 - **Revisões futuras** ([`constraints.md`](constraints.md) §4.2): DT09 (alertas na base de dados), DT10 (extração de módulos), DT11 (gestão de eventos e plataforma de eventos), DT12 (gestão de erros) e DT13 (alta disponibilidade).
 - Não há decisões funcionais ou técnicas pendentes que bloqueiem esta arquitetura.

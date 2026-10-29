@@ -23,7 +23,6 @@ Cada pressuposto deve ser confirmado ou rejeitado através da decisão indicada.
 
 | ID | Pressuposto | Porque foi assumido | Validar em |
 |---|---|---|---|
-| P06 | Uma equipa pode participar em vários projetos e um projeto pode ter várias equipas. | Formulação da US01 ("projetos em que participam"). | Cliente |
 | P09 | A empresa opera na UE e está sujeita ao RGPD. | Contexto do projeto; a localização da empresa não foi indicada. | Cliente |
 | P10 | As funcionalidades não discutidas na análise ficam fora do MVP (ver `requirements.md` §8). | Manter o MVP mínimo e não inventar âmbito. | Cliente |
 | P12 | A política de retenção e retificação de dados pessoais (SEC09) é adequada ao RGPD. | Proposta pela análise; não foi validada juridicamente. | Encarregado de proteção de dados |
@@ -114,6 +113,7 @@ As decisões técnicas da Aula 2 estão resolvidas no §4.3. Ficam planeadas as 
 | P03 | Alertas apenas na aplicação. | Confirmado — RN18. |
 | P04 | Lista de eventos que geram alertas. | Confirmado — RN30. |
 | P05 | Capacidade disponível, trabalho planeado e realizado distinguidos. | Confirmado — RF19, RF20, RF27. |
+| P06 | Uma equipa pode participar em vários projetos e um projeto pode ter várias equipas. | Confirmado pelo humano (N:M) — RF03. |
 | P07 | Um utilizador pode pertencer a várias equipas. | Confirmado — RN06, RN21. |
 | P08 | Uma tarefa sem critérios pode ser concluída. | **Rejeitado** — RN27. |
 | P11 | Todos os utilizadores são colaboradores internos autenticados. | Confirmado — DT04. |
