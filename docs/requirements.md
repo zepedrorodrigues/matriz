@@ -229,6 +229,7 @@ Os critérios transversais QT01–QT07 do Ex. 3 passam a RNF01–RNF07.
 | RNF10 | A interface está em português (pt-PT) no MVP. | Idioma. | Confirmado (Ex. 6, D20) |
 | RNF11 | A utilização principal é em computadores de secretária e portáteis; uma versão dedicada a dispositivos móveis está fora do MVP. | Dispositivos suportados. | Confirmado (Ex. 6, D20) |
 | RNF12 | A interface cumpre as WCAG 2.1, nível AA. | Acessibilidade. | Confirmado (Ex. 6, D20) |
+| RNF13 | Perante uma falha, perdem-se no máximo 5 minutos de dados (RPO) e o serviço é reposto em 1 hora ou menos em horário de trabalho (RTO). | Recuperação de falhas, sem perda de informação relevante. | Confirmado (DT13) |
 
 Os requisitos de **segurança e privacidade** estão em [`constraints.md`](constraints.md) §3 (SEC01–SEC09); os respetivos critérios de aceitação transversais estão em [`user-stories.md`](user-stories.md) §3.
 ## 7. Âmbito do MVP

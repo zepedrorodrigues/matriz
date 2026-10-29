@@ -131,7 +131,8 @@ flowchart LR
 | Erros da API | Formato único de erro (*problem details*, RFC 9457) com o código HTTP adequado. Suficiente para o MVP; a gestão de erros será melhorada no futuro (DT12). | Ex. 3, DT12 |
 | Validação | Dados de entrada validados na fronteira da API. | RN07, RN29, RN31, RN33 |
 | Privacidade | Minimização de dados; motivos pessoais nunca registados; retenção segundo SEC09. | SEC05, SEC06, SEC09, P12 |
-| Observabilidade | Logs estruturados com identificador de pedido; métricas de tempo de resposta para verificar RNF08. | RNF08, RNF09 |
+| Observabilidade | Logs estruturados com identificador de pedido; métricas de tempo de resposta para verificar RNF08; medição da disponibilidade em horário de trabalho para verificar RNF09. | RNF08, RNF09 |
+| Cópias de segurança e recuperação | Cópia base diária e arquivo contínuo das alterações (WAL) do PostgreSQL, na UE e cifrados; reposição num momento anterior a um erro; testes de reposição periódicos. Uma réplica não substitui as cópias, porque replica também os erros. | RNF13, DT13 |
 | Interface | pt-PT, para computador, WCAG 2.1 AA. | RNF10–RNF12 |
 | Testes | Um teste automático por CA ao nível da API; testes de arquitetura que verificam as dependências entre módulos. | DT08 |
 
@@ -141,18 +142,20 @@ flowchart LR
 flowchart LR
     B[Browser] -->|HTTPS| P["Proxy / balanceador<br/>(TLS)"]
     P -->|"/ (páginas)"| F["Contentor frontend<br/>(ficheiros estáticos)"]
-    P -->|"/api"| A1["Contentor backend<br/>(API NestJS)"]
-    P -.->|"/api (instância adicional, DT13)"| A2["Contentor backend"]
-    A1 --> D[("PostgreSQL")]
-    A2 -.-> D
+    P -->|"/api"| A1["Contentor backend<br/>(instância 1)"]
+    P -->|"/api"| A2["Contentor backend<br/>(instância 2)"]
+    A1 --> D[("PostgreSQL<br/>principal")]
+    A2 --> D
+    D -->|replicação| R[("PostgreSQL<br/>réplica")]
+    D -->|"cópia diária e WAL"| C[("Cópias de segurança<br/>(UE, cifradas)")]
 ```
 
 - **Duas imagens de contentor:** frontend (ficheiros estáticos servidos por um servidor web) e backend (API). Cada uma é versionada, atualizada e reiniciada sem afetar a outra, e o frontend continua disponível — podendo informar o utilizador — se a API falhar.
 - **Mesma origem:** o proxy encaminha `/api` para o backend e o resto para o frontend, o que evita configurar CORS.
-- **Backend sem estado:** é possível acrescentar instâncias atrás do balanceador sem alterar a arquitetura.
-- **PostgreSQL** gerido ou em contentor, na infraestrutura interna ou numa região cloud da UE (DT06, P09).
-- A tarefa diária (prazos e fim das sprints) corre numa única instância de cada vez.
-- **Limitação conhecida:** com uma única instância do backend e da base de dados, uma falha destes componentes interrompe o serviço. Alternativas mais tolerantes a falhas — várias instâncias do backend com verificações de saúde, réplica e cópias de segurança da base de dados — ficam para estudo (DT13).
+- **Duas instâncias do backend** (DT13), sem estado, atrás do balanceador, com verificações de saúde e reinício automático. Uma falha de uma instância ou de uma máquina não interrompe o serviço, e as correções urgentes publicam-se uma instância de cada vez.
+- **PostgreSQL com réplica e cópias de segurança** (DT13, RNF13: RPO 5 min, RTO 1 h), na infraestrutura interna ou numa região cloud da UE (DT06, P09). Numa cloud, PostgreSQL gerido com mudança automática para a réplica; em infraestrutura interna, mudança manual segundo um procedimento escrito.
+- A tarefa diária (prazos e fim das sprints) corre numa única instância de cada vez: antes de começar, obtém um trinco no PostgreSQL (*advisory lock*), sem dependências novas.
+- **Limitação conhecida:** o proxy/balanceador e a mudança manual para a réplica (em infraestrutura interna) são pontos a vigiar; se a disponibilidade medida se aproximar de 99 %, passa-se a um cluster com mudança automática (DT13).
 
 ## 9. Riscos e mitigação
 
@@ -161,13 +164,14 @@ flowchart LR
 | Com processo e base de dados partilhados, um módulo acede às tabelas de outro e as fronteiras degradam-se. | Um schema por módulo; testes de arquitetura que falham perante dependências proibidas. |
 | Crescimento das tabelas de alertas e de histórico. | Revisão planeada (DT09); retenção segundo SEC09. |
 | Dependências npm (risco na cadeia de fornecimento, atualizações). | Versões fixadas num lockfile; dependências novas só com aprovação (`AGENTS.md` §2). |
-| Uma falha grave do backend afeta todas as funcionalidades. | Frontend e backend em imagens separadas; alta disponibilidade em estudo (DT13); extração de módulos segundo DT10. |
+| Uma falha grave do backend afeta todas as funcionalidades. | Frontend e backend em imagens separadas; duas instâncias do backend e réplica da base de dados (DT13); extração de módulos segundo DT10. |
 | A gestão de eventos interna não serve para deployments distribuídos em larga escala. | Estudo da melhoria da gestão de eventos e de uma plataforma de eventos (DT11), em conjunto com DT10. |
 | A gestão de erros é básica (formato único, sem catálogo nem monitorização dedicada). | Melhoria planeada (DT12). |
+| Perda de dados por falha da base de dados ou erro humano. | Réplica e cópias de segurança com reposição num momento anterior; testes de reposição (DT13, RNF13). |
 | Política de retenção não validada juridicamente. | P12 — validação por um encarregado de proteção de dados antes da produção. |
 
 ## 10. Pressupostos e decisões pendentes
 
 - **Pressupostos em aberto** que afetam a arquitetura: P09 (RGPD) e P12 (retenção). Ver [`constraints.md`](constraints.md) §2.
-- **Revisões futuras** ([`constraints.md`](constraints.md) §4.2): DT09 (alertas na base de dados), DT10 (extração de módulos), DT11 (gestão de eventos e plataforma de eventos), DT12 (gestão de erros) e DT13 (alta disponibilidade).
+- **Revisões futuras** ([`constraints.md`](constraints.md) §4.2): DT09 (alertas na base de dados), DT10 (extração de módulos), DT11 (gestão de eventos e plataforma de eventos) e DT12 (gestão de erros).
 - Não há decisões funcionais ou técnicas pendentes que bloqueiem esta arquitetura.

@@ -59,7 +59,6 @@ As decisões técnicas da Aula 2 estão resolvidas no §4.3. Ficam planeadas as 
 | DT10 | Extração de módulos do monólito para serviços independentes (microservices) | Quando se verificarem os sinais de revisão abaixo | DT03 |
 | DT11 | Melhoria da gestão de eventos interna e estudo de uma plataforma de eventos (p. ex. Kafka) para deployments integrados em larga escala | Em conjunto com DT10 | DT03, DT07, DT10 |
 | DT12 | Melhoria da gestão de erros (p. ex. catálogo de códigos de erro, mensagens localizadas, monitorização e alarmística) | Depois do MVP | DT03 |
-| DT13 | Alternativas de implantação mais tolerantes a falhas: várias instâncias do backend com verificações de saúde, réplica e cópias de segurança da base de dados | A estudar; antes da entrada em produção | DT06, RNF09 |
 
 **Sinais de revisão da arquitetura (DT10):** várias equipas de desenvolvimento a trabalhar em módulos diferentes, com ciclos de entrega independentes; módulos com necessidades de carga ou de disponibilidade muito diferentes; ou crescimento para milhares de utilizadores em que o escalonamento horizontal do monólito (várias instâncias sobre a mesma base de dados) deixe de cumprir RNF08 e RNF09. O número de utilizadores, por si só, não obriga à migração. As fronteiras entre módulos (DT03) são o que torna a extração possível sem reescrever a aplicação.
 
@@ -133,9 +132,10 @@ As decisões técnicas da Aula 2 estão resolvidas no §4.3. Ficam planeadas as 
 | DT03 | Arquitetura e API | Monólito modular; API REST/JSON documentada em OpenAPI 3.1; comunicação síncrona. Módulos: Identidade e acesso, Organização, Trabalho, Planeamento, Acompanhamento, Histórico. Cada módulo é dono das suas tabelas e expõe uma interface pública aos restantes. |
 | DT04 | Autenticação | OpenID Connect com o fornecedor de identidade da empresa em produção e um fornecedor local em desenvolvimento; papéis geridos na Matriz (`requirements.md` §3.1). |
 | DT05 | Interface | Aplicação web, pensada primeiro para computador; versão móvel numa fase futura. |
-| DT06 | Alojamento | Contentores — pelo menos duas imagens, uma para o frontend e outra para o backend —, em infraestrutura interna ou numa região cloud da UE; o fornecedor é escolhido pelo cliente. Alternativas mais tolerantes a falhas: DT13. |
+| DT06 | Alojamento | Contentores — pelo menos duas imagens, uma para o frontend e outra para o backend —, em infraestrutura interna ou numa região cloud da UE; o fornecedor é escolhido pelo cliente. Alta disponibilidade: DT13. |
 | DT07 | Entrega de alertas | Alertas guardados na base de dados, criados na mesma transação que o evento que os origina; a aplicação web consulta-os periodicamente; os prazos ultrapassados são verificados por uma tarefa diária. Revisão futura: DT09. |
 | DT08 | Testes de aceitação | Um teste automático por CA ao nível da API, com o ID do CA no nome; testes end-to-end apenas nos fluxos críticos. |
+| DT13 | Alta disponibilidade e recuperação | Duas instâncias do backend atrás do balanceador, com verificações de saúde e reinício automático; a tarefa diária corre numa só instância de cada vez, garantido por um trinco no PostgreSQL. PostgreSQL com réplica e cópias de segurança: cópia base diária e arquivo contínuo das alterações (WAL), que permite repor a base de dados num momento anterior a um erro, com testes de reposição periódicos. As cópias ficam na UE e cifradas; prazo de conservação por decidir. Cumpre RNF09 e RNF13 (RPO 5 min, RTO 1 h). Duas variantes, conforme o fornecedor (DT06): numa cloud da UE, PostgreSQL gerido com réplica e mudança automática para ela; em infraestrutura interna, réplica com mudança manual segundo um procedimento escrito. Alternativas analisadas: só cópias de segurança, com uma instância (a recuperação de uma falha da base de dados gastaria quase toda a margem mensal de RNF09), e cluster com mudança automática em várias zonas (desproporcionado). Rever (passar ao cluster) se a disponibilidade medida se aproximar de 99 %. |
 
 ## 5. Limitações de âmbito
 
@@ -144,5 +144,5 @@ As decisões técnicas da Aula 2 estão resolvidas no §4.3. Ficam planeadas as 
 | L01 | A especificação cobre apenas o MVP (US01–US09). As funcionalidades excluídas estão em `requirements.md` §8. |
 | L02 | As regras marcadas como "Confirmado" foram validadas pela equipa de projeto em representação do cliente (Ex. 2) e na revisão crítica (Ex. 6), o que equivale a validação pelo cliente. |
 | L03 | A política de retenção (SEC09) carece de validação jurídica (P12). |
-| L04 | Os valores dos requisitos não funcionais quantitativos (RNF06, RNF08–RNF12) foram definidos sem medições de utilização real. |
+| L04 | Os valores dos requisitos não funcionais quantitativos (RNF06, RNF08–RNF13) foram definidos sem medições de utilização real. |
 | L05 | Os documentos de requisitos não definem arquitetura, modelo de dados nem interface; estes constam do Architecture Pack (Ficha PL 02). |

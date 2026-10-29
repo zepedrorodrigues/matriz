@@ -163,6 +163,16 @@ Todas aprovadas pelo humano.
 | `openapi.yaml` | Não validado com um parser pelo agente (sem dependências novas); o humano verifica o contrato. |
 | Diagramas Mermaid | Renderização confirmada pelo humano. |
 
+### 3.4 Alta disponibilidade (DT13)
+
+Pedida pelo humano depois da revisão cruzada. O agente analisou as falhas possíveis face à margem de RNF09 (cerca de 2,5 h de indisponibilidade por mês em horário de trabalho) e propôs três opções: A — uma instância e cópias de segurança; B — duas instâncias do backend, réplica e cópias de segurança; C — cluster com mudança automática em várias zonas.
+
+| Decisão | Registo |
+|---|---|
+| Opção B, com duas variantes conforme o fornecedor: mudança automática para a réplica numa cloud, manual em infraestrutura interna. | DT13 (`constraints.md` §4.3), `architecture.md` §7–§9 |
+| Objetivos de recuperação: RPO 5 min, RTO 1 h. | RNF13 |
+| Prazo de conservação das cópias de segurança. | Por decidir |
+
 ## 4. Critérios de validação (Ficha PL 02)
 
 | Critério | Estado | Evidência |
@@ -178,4 +188,5 @@ Todas aprovadas pelo humano.
 ## 5. Pendente após a revisão
 
 - **P12:** validação jurídica da política de retenção. Mantida em aberto pelo humano: não é relevante no âmbito do projeto; necessária antes de uma entrada em produção.
-- **Revisões futuras:** DT09 (alertas na base de dados; até lá, sem apagar nem arquivar alertas, por decisão do humano), DT10 (extração para microservices), DT11 (gestão de eventos), DT12 (gestão de erros) e DT13 (alta disponibilidade).
+- **Revisões futuras:** DT09 (alertas na base de dados; até lá, sem apagar nem arquivar alertas, por decisão do humano), DT10 (extração para microservices), DT11 (gestão de eventos) e DT12 (gestão de erros).
+- **Prazo de conservação das cópias de segurança** (DT13).
