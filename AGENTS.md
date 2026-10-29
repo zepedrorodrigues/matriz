@@ -11,7 +11,7 @@ O humano responsável pelo projeto (*human-in-the-loop*) aprova os planos, as de
 Antes de iniciar qualquer tarefa:
 
 1. Ler o `README.md` e a documentação em `docs/`. A ordem de leitura, a precedência entre fontes e o tratamento das decisões pendentes estão definidos em `README.md` › *Utilização como contexto*.
-2. Identificar os elementos da especificação abrangidos pela tarefa (US, CA, RN, RF, RNF, SEC, R) e as decisões pendentes (D, DT) ou pressupostos (P) de que depende.
+2. Identificar os elementos da especificação abrangidos pela tarefa (US, CA, CAT, RN, RF, RNF, SEC, R) e as decisões pendentes (D, DT) ou pressupostos (P) de que depende.
 3. Confirmar que a tarefa respeita as restrições (`docs/constraints.md` §1) e a fase atual do projeto.
 
 A documentação é a fonte de verdade. As lacunas não se preenchem com suposições, conhecimento genérico ou o comportamento de outras ferramentas semelhantes.

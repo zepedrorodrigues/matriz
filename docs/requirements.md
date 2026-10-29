@@ -1,19 +1,21 @@
 # Matriz — Requisitos
 
-> **Versão:** 0.1 · **Data:** 2026-10-22 · **Estado:** rascunho para revisão crítica (Ficha PL 01, Ex. 6)
-> **Fontes:** descrição inicial do cliente; análise de requisitos assistida por IA (Ex. 1–3).
+> **Versão:** 0.2 · **Data:** 2026-10-29 · **Estado:** revisto na revisão crítica (Ficha PL 01, Ex. 6)
+> **Fontes:** descrição inicial do cliente; análise de requisitos assistida por IA (Ex. 1–3); decisões da revisão crítica (Ex. 6, [`review.md`](review.md)).
 > **Relacionados:** [`user-stories.md`](user-stories.md) · [`constraints.md`](constraints.md)
 
 ## Convenções
 
 | Estado | Significado |
 |---|---|
-| **Confirmado** | Validado nas respostas às perguntas de clarificação (Ex. 2–3). Prevalece sobre qualquer proposta ou pressuposto. |
-| **Proposto** | Derivado pela análise (User Stories, critérios de aceitação, recomendações da IA). Ainda não validado — não tratar como facto. |
+| **Confirmado** | Validado nas respostas às perguntas de clarificação (Ex. 2–3) ou na revisão crítica (Ex. 6). Prevalece sobre qualquer proposta ou pressuposto. |
+| **Proposto** | Derivado pela análise e ainda não validado — não tratar como facto. |
 | `Dxx` | Decisão pendente que afeta o requisito — ver [`constraints.md`](constraints.md) §4. |
 | `Pxx` | Pressuposto assumido — ver [`constraints.md`](constraints.md) §2. |
 
-Prioridades: **P0** — crítica, sem ela o MVP não resolve o problema · **P1** — alta, incluída no MVP numa versão básica · **Futuro** — fora do MVP.
+Prioridades: **P0** — crítica, sem ela o MVP não resolve o problema · **P1** — alta, incluída no MVP numa versão básica · **Futuro** — fora do MVP. As prioridades resultam da análise de requisitos e foram validadas pelo cliente.
+
+Salvo indicação em contrário, o que se aplica a tarefas aplica-se também a subtarefas (RN22).
 
 ---
 
@@ -29,7 +31,7 @@ O cliente não definiu funcionalidades, regras de negócio, requisitos técnicos
 
 ### 1.2 Visão
 
-A **Matriz** é uma aplicação interna de gestão de projetos e tarefas (semelhante a Jira, Azure DevOps ou Trello) que permite a cada equipa planear o seu trabalho em sprints de acordo com a sua capacidade, e que dá às lideranças visibilidade sobre o progresso, os desvios e a responsabilidade histórica de cada entrega.
+A **Matriz** é uma aplicação interna de gestão de projetos e tarefas (semelhante a Jira, Azure DevOps ou Trello) que permite a cada equipa planear o seu trabalho em sprints com visibilidade sobre a sua capacidade, e que dá às lideranças visibilidade sobre o progresso, os desvios e a responsabilidade histórica de cada entrega.
 
 ### 1.3 Objetivos
 
@@ -38,8 +40,8 @@ A **Matriz** é uma aplicação interna de gestão de projetos e tarefas (semelh
 | OBJ01 | Organizar o trabalho por equipas e projetos, com responsabilidades claras. | US01 |
 | OBJ02 | Decompor o trabalho em Objetivos → Épicos → Tarefas → Subtarefas. | US02 |
 | OBJ03 | Distribuir e estimar o trabalho, em horas e em story points, como métricas independentes. | US03 |
-| OBJ04 | Planear o trabalho de cada equipa em sprints, respeitando a capacidade disponível. | US04, US05 |
-| OBJ05 | Garantir que uma tarefa só é dada como cumprida quando satisfaz os critérios de aceitação. | US06 |
+| OBJ04 | Planear o trabalho de cada equipa em sprints, com visibilidade sobre a capacidade disponível e notificação quando esta é excedida. | US04, US05 |
+| OBJ05 | Garantir que uma tarefa só é dada como cumprida quando satisfaz todos os critérios de aceitação. | US06 |
 | OBJ06 | Dar visibilidade sobre progresso, desvios e alertas. | US07 |
 | OBJ07 | Preservar a rastreabilidade: equipa original e responsável pela execução de cada tarefa. | US08 |
 
@@ -48,27 +50,30 @@ A **Matriz** é uma aplicação interna de gestão de projetos e tarefas (semelh
 | Termo | Definição |
 |---|---|
 | Equipa | Unidade organizacional que executa trabalho. Tem backlog e sprints próprios (RN01). |
-| Projeto | Iniciativa com nome e objetivo, na qual participam uma ou mais equipas. |
+| Projeto | Iniciativa com nome e objetivo, na qual participam uma ou mais equipas. Contém a hierarquia de trabalho, a partir dos objetivos (RN23). |
 | Objetivo · Épico · Tarefa · Subtarefa | Níveis da hierarquia de trabalho, do mais abrangente para o mais concreto (RN12). |
+| Subtarefa | Tarefa contida noutra tarefa, sujeita às mesmas regras (RN22). |
 | Backlog | Trabalho de uma equipa ainda não incluído numa sprint ativa. **Não é uma sprint.** |
 | Sprint | Período, com data de início e de fim, em que uma equipa executa as tarefas planeadas. |
 | Estimativa temporal | Esforço previsto de uma tarefa, em horas. |
-| Story points | Estimativa relativa de dimensão e complexidade, numa escala comum (RN07). **Não é convertível em horas** (RN06). |
-| Capacidade | Trabalho que uma equipa ou indivíduo pode assumir numa sprint, em horas disponíveis e em story points, sem conversão entre ambos (RN06). |
+| Story points | Estimativa relativa de dimensão e complexidade, numa escala comum (RN07). **Não é convertível em horas nem é uma medida de capacidade** (RN06). |
+| Capacidade | Horas de trabalho de que um indivíduo ou uma equipa dispõe numa sprint, calculadas segundo RN06. É uma referência de planeamento, não um limite (RN19). |
+| Sobrecarga | Situação em que a estimativa temporal do trabalho planeado excede a capacidade. |
+| Transferência | Mudança explícita da equipa responsável por uma tarefa (RN20). |
 | Critério de aceitação | Condição verificável que determina se uma tarefa está cumprida (RN13). |
 | Responsável pela execução | Indivíduo que executou e entregou a tarefa; permanece identificado no histórico (RN15). |
-| Alerta | Aviso apresentado na aplicação a utilizadores com responsabilidade de acompanhamento. |
+| Alerta | Aviso apresentado na aplicação (RN18) a utilizadores com responsabilidade de acompanhamento ou diretamente afetados. |
 
 ## 3. Tipos de utilizadores
 
 | Papel | Responsabilidades no MVP | Base |
 |---|---|---|
-| **Administrador** | Cria e gere equipas e projetos; associa equipas a projetos; pode reatribuir excecionalmente tarefas a alguém de outra equipa. | US01, RN03 |
-| **Gestor de projeto** | Gere projetos e a hierarquia de trabalho; cria e atribui tarefas; pode reatribuir excecionalmente tarefas a alguém de outra equipa; acompanha o progresso. | US02, US03, US07, RN03 |
-| **Líder de equipa** | Cria, estima e atribui tarefas na sua equipa; gere o backlog, as sprints e a capacidade da equipa; acompanha o progresso. | US03, US04, US05, US07, RN10 |
-| **Membro da equipa** | Cria tarefas no backlog, sem as colocar numa sprint; define estimativas; atualiza o estado e os critérios de aceitação das tarefas que lhe estão atribuídas. | US06, US08, RN08, RN10 |
+| **Administrador** | Cria e gere equipas; cria e gere projetos; associa equipas a projetos; pode atribuir excecionalmente tarefas a alguém de outra equipa e transferir tarefas entre equipas. Tem permissões de administração adicionais (D14). | US01, RN03, RN20, RN25 |
+| **Gestor de projeto** | Cria e gere projetos e a hierarquia de trabalho; cria e atribui tarefas; pode atribuir excecionalmente tarefas a alguém de outra equipa e transferir tarefas entre equipas; altera critérios de aceitação de tarefas em desenvolvimento; acompanha o progresso. | US01, US02, US03, US07, RN03, RN20, RN24, RN25 |
+| **Líder de equipa** | Cria, estima e atribui tarefas na sua equipa; gere o backlog, as sprints e a capacidade da equipa; altera critérios de aceitação de tarefas em desenvolvimento; acompanha o progresso. | US03, US04, US05, US07, RN10, RN24 |
+| **Membro da equipa** | Pertence a pelo menos uma equipa; cria tarefas no backlog da sua equipa, sem as colocar numa sprint; define estimativas; atualiza o estado das tarefas que lhe estão atribuídas e regista o cumprimento dos respetivos critérios de aceitação. | US06, US08, RN08, RN10, RN21, RN24 |
 
-O detalhe das permissões — incluindo o "utilizador com permissões equivalentes" (RN03), o "membro autorizado" (US02) e a possibilidade de um utilizador acumular papéis — está por definir: **D14**.
+O detalhe das permissões — incluindo o "utilizador com permissões equivalentes" (RN03), o "membro autorizado" (US02), as permissões de administração e a possibilidade de um utilizador acumular papéis — está por definir: **D14**.
 
 ## 4. Regras de negócio
 
@@ -79,18 +84,26 @@ O detalhe das permissões — incluindo o "utilizador com permissões equivalent
 | RN03 | Um gestor de projeto, administrador ou utilizador com permissões equivalentes pode, excecionalmente, atribuir uma tarefa a alguém de outra equipa. | Confirmado — "permissões equivalentes": D14 |
 | RN04 | No final de uma sprint, as tarefas não concluídas transitam para o backlog. | Confirmado — o que conta como "concluída": D04 |
 | RN05 | As tarefas transitam do backlog para a sprint seguinte quando esta se inicia. | Confirmado — âmbito da transição por definir: D01 |
-| RN06 | A capacidade é medida em horas disponíveis e em story points, sem conversão entre as duas unidades. | Confirmado |
-| RN07 | A escala de story points é comum, com estimativas fundamentadas em tempo e dificuldade/complexidade. | Confirmado como intenção — escala e procedimento: D10 |
+| RN06 | A capacidade mede-se apenas em horas. A capacidade de um indivíduo numa sprint é de 8 horas por cada dia útil (segunda a sexta) da data de início à data de fim da sprint (p. ex. 2 semanas = 10 dias úteis = 80 horas) e pode ser ajustada por sprint; a capacidade de uma equipa é a soma da dos seus membros. Os story points são uma estimativa independente: nunca são convertidos em horas nem somados a elas. | Confirmado — revisto no Ex. 6; D09, D30, D31 |
+| RN07 | A escala de story points é comum, com estimativas fundamentadas em tempo e dificuldade/complexidade. | Confirmado — escala e procedimento: D10 |
 | RN08 | Os membros podem criar tarefas no backlog, mas não as podem adicionar diretamente a uma sprint. | Confirmado |
 | RN09 | A criação de uma tarefa por um membro deve alertar os responsáveis relevantes. | Confirmado — destinatários: D07 |
 | RN10 | Lideranças e membros podem definir estimativas. | Confirmado — sujeito a permissões: D11, D14 |
-| RN11 | Uma tarefa entregue que apresenta problemas não necessita de um estado específico de reparação. | Confirmado como orientação |
-| RN12 | A hierarquia de trabalho é Objetivos → Épicos → Tarefas → Subtarefas. | Confirmado como modelo conceptual — D06, D13 |
-| RN13 | Os critérios de aceitação determinam se uma tarefa está cumprida. | Confirmado — tarefas sem critérios: D08 |
+| RN11 | Uma tarefa entregue que apresenta problemas não necessita de um estado específico de reparação. | Confirmado |
+| RN12 | A hierarquia de trabalho é Objetivos → Épicos → Tarefas → Subtarefas. | Confirmado — D06, D13 |
+| RN13 | Uma tarefa só está cumprida quando **todos** os seus critérios de aceitação estão cumpridos. Não existem critérios de aceitação opcionais. | Confirmado — revisto no Ex. 6; tarefas sem critérios: D08 |
 | RN14 | As tarefas históricas permanecem associadas à equipa original, mesmo após migração para outra equipa. | Confirmado |
 | RN15 | O responsável pela execução e entrega permanece identificado no histórico. | Confirmado |
 | RN16 | O MVP destina-se inicialmente à utilização interna da empresa. | Confirmado |
-| RN17 | Os estados do ciclo de vida de uma tarefa são: Em planeamento, Em análise técnica, Pronto a desenvolver, A desenvolver, Em testes, Terminada, Entregue. | Confirmado (lista de estados) — transições: D04, D18. ID atribuído no Ex. 4. |
+| RN17 | Os estados do ciclo de vida de uma tarefa são: Em planeamento, Em análise técnica, Pronto a desenvolver, A desenvolver, Em testes, Terminada, Entregue. | Confirmado — transições: D04, D18 |
+| RN18 | No MVP, os alertas são apresentados apenas dentro da aplicação. | Confirmado (Ex. 6) — outros canais: §8 |
+| RN19 | Exceder a capacidade não é impedido. Quando a estimativa temporal planeada excede a capacidade, são notificados: na sobrecarga de uma equipa, o líder e os membros dessa equipa; na sobrecarga de um indivíduo, o próprio e o seu líder de equipa. | Confirmado (Ex. 6) |
+| RN20 | Uma tarefa só muda de equipa por transferência explícita, efetuada por um gestor de projeto ou administrador. Atribuir a tarefa a alguém de outra equipa (RN03), ou a mudança de equipa de quem a executa, não altera a equipa responsável. | Confirmado (Ex. 6) — registo: D12 |
+| RN21 | Cada membro pertence a pelo menos uma equipa. Uma tarefa criada por um membro fica no backlog da sua equipa; se pertencer a várias, escolhe uma delas. | Confirmado (Ex. 6) — várias equipas: P07, D09 |
+| RN22 | Uma subtarefa é uma tarefa contida noutra tarefa, com os mesmos campos, estados, estimativas e critérios de aceitação. Quando uma tarefa tem subtarefas, a sua estimativa temporal é a soma das estimativas temporais das subtarefas. A conclusão da tarefa principal não depende da conclusão das subtarefas, e as subtarefas podem ser planeadas em sprints diferentes da tarefa principal. | Confirmado (Ex. 6) — D28, D29, D30 |
+| RN23 | Cada elemento da hierarquia de trabalho pertence a um único projeto, herdado do elemento superior; os objetivos são o nível de topo de um projeto. Uma tarefa só pode ter como equipa responsável uma equipa associada ao seu projeto. | Confirmado (Ex. 6) |
+| RN24 | Os critérios de aceitação são definidos por quem cria a tarefa. Depois de a tarefa entrar em «A desenvolver», só o líder de equipa ou o gestor de projeto os pode alterar, e cada alteração fica registada. Os membros registam apenas o seu cumprimento. | Confirmado (Ex. 6) |
+| RN25 | As equipas são criadas e geridas pelo administrador. Os projetos são criados e geridos pelo administrador e pelo gestor de projeto. | Confirmado (Ex. 6) — restantes permissões: D14 |
 
 ## 5. Requisitos funcionais
 
@@ -98,30 +111,31 @@ O detalhe das permissões — incluindo o "utilizador com permissões equivalent
 
 | ID | Requisito | Base | Prior. | Estado | Pendências |
 |---|---|---|---|---|---|
-| RF01 | Criar, editar e consultar equipas. | US01 · RN01, RN02 | P0 | Confirmado | EC01.1, EC01.3 |
-| RF02 | Criar, editar e consultar projetos, com nome e objetivo. | US01 · enunciado | P0 | Confirmado | EC01.2 |
-| RF03 | Associar equipas a projetos, sem associações duplicadas, e consultar as equipas de um projeto. | US01 · CA01.3–CA01.5 | P0 | Proposto | P06 |
-| RF04 | Associar utilizadores a equipas. | US01 · CA01.1, RN02 | P0 | Proposto | P07, D09 |
+| RF01 | Criar, editar e consultar equipas. | US01 · RN01, RN25 | P0 | Confirmado | D22, D24 |
+| RF02 | Criar, editar e consultar projetos, com nome e objetivo. | US01 · RN25 | P0 | Confirmado | D23 |
+| RF03 | Associar equipas a projetos, sem associações duplicadas, e consultar as equipas de um projeto. | US01 · CA01.3–CA01.5 | P0 | Confirmado | P06 |
+| RF04 | Associar utilizadores a equipas; cada membro pertence a pelo menos uma equipa. | US01 · CA01.9, RN21 | P0 | Confirmado | P07, D09 |
 
 ### 5.2 Hierarquia de trabalho
 
 | ID | Requisito | Base | Prior. | Estado | Pendências |
 |---|---|---|---|---|---|
-| RF05 | Criar objetivos, épicos, tarefas e subtarefas, respeitando a hierarquia Objetivo → Épico → Tarefa → Subtarefa. | US02 · RN12 | P0 | Confirmado | D06, D13 |
-| RF06 | Permitir tarefas sem subtarefas. | US02 · CA02.5 | P0 | Proposto | — |
-| RF07 | Impedir a associação de um elemento a si próprio e relações hierárquicas circulares. | US02 · EC02.3 | P0 | Proposto | — |
-| RF08 | Consultar a hierarquia de trabalho de um projeto. | US02 · CA02.6 | P0 | Proposto | — |
+| RF05 | Criar objetivos, épicos, tarefas e subtarefas, respeitando a hierarquia Objetivo → Épico → Tarefa → Subtarefa; cada elemento pertence ao projeto do elemento superior. | US02 · RN12, RN22, RN23 | P0 | Confirmado | D06, D13 |
+| RF06 | Permitir tarefas sem subtarefas. | US02 · CA02.5 | P0 | Confirmado | — |
+| RF07 | Impedir sempre a associação de um elemento a si próprio e relações hierárquicas circulares. | US02 · CA02.7 | P0 | Confirmado | — |
+| RF08 | Consultar a hierarquia de trabalho de um projeto. | US02 · CA02.6 | P0 | Confirmado | — |
 
 ### 5.3 Tarefas, estimativas e atribuição
 
 | ID | Requisito | Base | Prior. | Estado | Pendências |
 |---|---|---|---|---|---|
 | RF09 | Criar tarefas com os campos obrigatórios definidos. | US03 · CA03.1 | P0 | Confirmado | D16 |
-| RF10 | Atribuir uma tarefa a uma única equipa responsável e, dentro dela, a um indivíduo. | US03 · RN02, CA03.2–CA03.3 | P0 | Confirmado | — |
-| RF11 | Registar e alterar a estimativa temporal (horas) e os story points como valores independentes. | US03 · RN06, RN07, RN10 | P0 | Confirmado | D03, D10, D11 |
-| RF12 | Permitir que membros criem tarefas no backlog e impedir que as coloquem numa sprint. | US04, US08 · RN08 | P0 | Confirmado | — |
+| RF10 | Atribuir uma tarefa a uma única equipa responsável, associada ao projeto da tarefa, e, dentro dela, a um indivíduo. | US03 · RN02, RN23, CA03.2, CA03.3, CA03.7 | P0 | Confirmado | — |
+| RF11 | Registar e alterar a estimativa temporal (horas) e os story points como valores independentes; numa tarefa com subtarefas, a estimativa temporal é a soma das subtarefas. | US03 · RN06, RN07, RN10, RN22 | P0 | Confirmado | D03, D10, D11, D28 |
+| RF12 | Permitir que membros criem tarefas no backlog da sua equipa e impedir que as coloquem numa sprint. | US04, US08 · RN08, RN21 | P0 | Confirmado | — |
 | RF13 | Alertar os responsáveis quando um membro cria uma tarefa. | US08 · RN09 | P1 | Confirmado | D07 |
-| RF14 | Permitir a gestores de projeto e administradores reatribuir excecionalmente uma tarefa a alguém de outra equipa, mantendo a associação à equipa original. | US08 · RN03, RN14 | P1 | Confirmado | D12, EC03.3 |
+| RF14 | Permitir a gestores de projeto e administradores atribuir excecionalmente uma tarefa a alguém de outra equipa, sem alterar a equipa responsável. | US08 · RN03, RN20 | P1 | Confirmado | D25 |
+| RF31 | Permitir a gestores de projeto e administradores transferir uma tarefa para outra equipa, mantendo no histórico a equipa original. | US08 · RN14, RN20 | P1 | Confirmado | D12, D27 |
 
 ### 5.4 Backlog e sprints
 
@@ -136,28 +150,28 @@ O detalhe das permissões — incluindo o "utilizador com permissões equivalent
 
 | ID | Requisito | Base | Prior. | Estado | Pendências |
 |---|---|---|---|---|---|
-| RF19 | Registar e alterar a disponibilidade, em horas, de equipas e indivíduos por sprint. | US05 · RN06 | P0 | Confirmado | D02, D09 |
-| RF20 | Apresentar as horas disponíveis, as horas estimadas e a diferença entre ambas, e o total de story points planeados, sem conversão entre unidades. | US05 · RN06 | P0 | Confirmado | D03 |
-| RF21 | Identificar a sobrecarga temporal da equipa e de cada indivíduo. | US05 · CA05.3–CA05.4 | P0 | Proposto | — |
+| RF19 | Calcular a capacidade de cada indivíduo e de cada equipa por sprint segundo RN06, e permitir ajustar a de cada indivíduo. | US05 · RN06 | P0 | Confirmado | D09, D31 |
+| RF20 | Apresentar as horas disponíveis, as horas estimadas e a diferença entre ambas, e o total de story points planeados, sem conversão entre unidades. | US05 · RN06 | P0 | Confirmado | D03, D28, D30 |
+| RF21 | Identificar a sobrecarga temporal da equipa e de cada indivíduo, sem impedir o planeamento, e notificar segundo RN19. | US05 · RN19, CA05.3, CA05.4, CA05.8 | P0 | Confirmado | — |
 
 ### 5.6 Execução, conclusão e histórico
 
 | ID | Requisito | Base | Prior. | Estado | Pendências |
 |---|---|---|---|---|---|
-| RF22 | Gerir o estado de cada tarefa segundo o ciclo de vida confirmado. | US06 · RN17 | P0 | Confirmado | D04, D18 |
-| RF23 | Registar os critérios de aceitação de cada tarefa e o seu cumprimento; impedir a conclusão enquanto houver critérios obrigatórios por cumprir. | US06 · RN13 | P0 | Confirmado | D08 |
+| RF22 | Gerir o estado de cada tarefa entre os estados de RN17. | US06 · RN17 | P0 | Confirmado | D04, D18 |
+| RF23 | Registar os critérios de aceitação de cada tarefa e o seu cumprimento; impedir a conclusão enquanto algum critério estiver por cumprir; controlar a alteração dos critérios segundo RN24. | US06 · RN13, RN24 | P0 | Confirmado | D08 |
 | RF24 | Reabrir tarefas entregues, sem estado específico de reparação, preservando o histórico. | US06 · RN11 | P0 | Confirmado | D05 |
-| RF25 | Manter o histórico de responsáveis pela execução, equipas e transferências de cada tarefa. | US06, US08 · RN14, RN15 | P0 | Confirmado | D12 |
+| RF25 | Manter o histórico de responsáveis pela execução, equipas e transferências de cada tarefa. | US06, US08 · RN14, RN15 | P0 | Confirmado | D12 — depende de RF14 e RF31 (P1), ver `user-stories.md` §1 |
 
 ### 5.7 Acompanhamento e alertas
 
 | ID | Requisito | Base | Prior. | Estado | Pendências |
 |---|---|---|---|---|---|
-| RF26 | Apresentar o trabalho da equipa distinguindo tarefas planeadas, em execução, concluídas e bloqueadas. | US07 · CA07.1 | P1 | Proposto | D04, D15, D18 |
-| RF27 | Comparar, por sprint, o trabalho planeado com o trabalho concluído. | US07 · CA07.2 | P1 | Proposto | D11 |
-| RF28 | Identificar como atrasadas as tarefas com prazo ultrapassado e não concluídas. | US07 · CA07.3 | P1 | Proposto | D16 |
-| RF29 | Assinalar tarefas bloqueadas e registar o motivo do bloqueio. | US07 · CA07.4 | P1 | Proposto | D15, P02 |
-| RF30 | Apresentar alertas na aplicação a utilizadores com responsabilidade de acompanhamento. | US07 · CA07.5, RN09 | P1 | Proposto | D17, P03, P04 |
+| RF26 | Apresentar o trabalho da equipa distinguindo tarefas planeadas, em execução, concluídas e bloqueadas. | US07 · CA07.1 | P1 | Confirmado | D04, D15, D18 |
+| RF27 | Comparar, por sprint, o trabalho planeado com o trabalho concluído. | US07 · CA07.2 | P1 | Confirmado | D11 |
+| RF28 | Identificar como atrasadas as tarefas com prazo ultrapassado e não concluídas. | US07 · CA07.3 | P1 | Confirmado | D16 |
+| RF29 | Assinalar tarefas bloqueadas e registar o motivo do bloqueio, que descreve o impedimento ao trabalho e nunca motivos pessoais (SEC06). | US07 · CA07.4, CA07.6 | P1 | Confirmado | D15, P02 |
+| RF30 | Apresentar alertas na aplicação a utilizadores com responsabilidade de acompanhamento ou diretamente afetados. | US07 · CA07.5, RN09, RN18, RN19 | P1 | Confirmado | D17, P04 |
 
 ## 6. Requisitos não funcionais
 
@@ -165,15 +179,15 @@ Os critérios transversais QT01–QT07 do Ex. 3 passam a RNF01–RNF07.
 
 | ID | Requisito | Finalidade | Estado |
 |---|---|---|---|
-| RNF01 | As permissões são aplicadas de forma consistente em todas as operações relevantes. | Evitar alterações não autorizadas. | Proposto |
-| RNF02 | As alterações às tarefas preservam a integridade das associações a projetos e equipas. | Evitar inconsistências organizacionais. | Proposto |
+| RNF01 | As permissões são aplicadas de forma consistente em todas as operações relevantes. | Evitar alterações não autorizadas. | Confirmado |
+| RNF02 | As alterações às tarefas preservam a integridade das associações a projetos e equipas. | Evitar inconsistências organizacionais. | Confirmado |
 | RNF03 | Horas e story points são apresentados como métricas distintas. | Evitar interpretações incorretas. | Confirmado (decorre de RN06) |
 | RNF04 | O histórico permite identificar alterações relevantes de responsáveis e equipas. | Garantir rastreabilidade. | Confirmado (decorre de RN14, RN15) |
-| RNF05 | Os indicadores de progresso refletem os dados operacionais registados. | Evitar discrepâncias entre a execução e a informação de gestão. | Proposto |
+| RNF05 | Os indicadores de progresso refletem os dados operacionais registados. | Evitar discrepâncias entre a execução e a informação de gestão. | Confirmado |
 | RNF06 | A aplicação suporta o volume inicial previsto de utilizadores e permite crescimento sem impor um limite funcional artificial. | Utilização interna e evolução. | Confirmado como necessidade — valores: D20 |
 | RNF07 | As tarefas não concluídas no fim de uma sprint conservam a informação necessária ao planeamento seguinte. | Evitar perda de contexto. | Confirmado (decorre de RN04) |
 
-Os requisitos de **segurança e privacidade** estão em [`constraints.md`](constraints.md) §3 (SEC01–SEC09).
+Os requisitos de **segurança e privacidade** estão em [`constraints.md`](constraints.md) §3 (SEC01–SEC09); os respetivos critérios de aceitação transversais estão em [`user-stories.md`](user-stories.md) §3.
 
 Ainda **não foram levantados** requisitos de desempenho, disponibilidade, acessibilidade, idioma ou dispositivos suportados — ver D20.
 
@@ -187,12 +201,12 @@ O MVP é composto pelas oito User Stories detalhadas em [`user-stories.md`](user
 | US02 | Gerir a hierarquia de trabalho | Liga o trabalho executável aos objetivos que o justificam (RN12). | P0 |
 | US03 | Criar, estimar e atribuir tarefas | Núcleo do "gerir tarefas" pedido pelo cliente; define a responsabilidade (RN02). | P0 |
 | US04 | Gerir backlog e sprints por equipa | Cada equipa planeia em sprints próprias (RN01, RN04, RN05). | P0 |
-| US05 | Consultar capacidade e carga de trabalho | Crítica para validar o problema central: planear de acordo com a capacidade (RN06). | P0 |
+| US05 | Consultar capacidade e carga de trabalho | Crítica para validar o problema central: planear com visibilidade sobre a capacidade (RN06, RN19). | P0 |
 | US06 | Atualizar o estado e validar a conclusão | Garante que o progresso reflete trabalho efetivamente cumprido (RN13). | P0 |
 | US07 | Consultar progresso, desvios e alertas (versão básica) | Responde ao "acompanhar o progresso" do pedido inicial, sem análise tarefa a tarefa. | P1 |
-| US08 | Propor trabalho e preservar histórico entre equipas | Membros sinalizam trabalho sem poderes de gestão (RN08, RN09); rastreabilidade entre equipas (RN14, RN15). | P1 |
+| US08 | Propor trabalho e preservar histórico entre equipas | Membros sinalizam trabalho sem poderes de gestão (RN08, RN09); rastreabilidade entre equipas (RN14, RN15, RN20). | P1 |
 
-**Critério de conclusão do MVP** *(Proposto)*: todas as US01–US08 cumprem os respetivos critérios de aceitação, depois de resolvidas as decisões pendentes que os bloqueiam ([`user-stories.md`](user-stories.md) §3).
+**Critério de conclusão do MVP** *(Confirmado)*: todas as US01–US08 e os critérios transversais cumprem os respetivos critérios de aceitação, depois de resolvidas as decisões pendentes que os bloqueiam ([`user-stories.md`](user-stories.md) §4).
 
 ## 8. Funcionalidades fora do âmbito inicial
 
@@ -200,10 +214,12 @@ O MVP é composto pelas oito User Stories detalhadas em [`user-stories.md`](user
 |---|---|---|
 | Estado autónomo «Em reparação» | O retrabalho faz-se reabrindo a tarefa (RN11). | Confirmado |
 | Conversão entre horas e story points, ou soma das duas métricas | Métricas independentes (RN06). | Confirmado |
+| Impedir o planeamento quando a capacidade é excedida | A capacidade é uma referência; a sobrecarga é notificada (RN19). | Confirmado |
+| Alertas por e-mail ou outros canais de mensagens | No MVP, os alertas são apresentados apenas na aplicação (RN18). A considerar numa fase futura. | Confirmado — Futuro |
 | Acesso de utilizadores externos à empresa (clientes, parceiros) | O MVP é para utilização interna (RN16). | Confirmado |
-| Previsões automáticas e avaliação de risco | Exigem dados históricos que ainda não existem. | Proposto (recomendação da análise) |
-| Modelos avançados de produtividade | A separação entre horas e story points é suficiente para o MVP. | Proposto (recomendação da análise) |
+| Previsões automáticas e avaliação de risco | Exigem dados históricos que ainda não existem. | Confirmado |
+| Modelos avançados de produtividade | A separação entre horas e story points é suficiente para o MVP. | Confirmado |
 | Integrações com ferramentas externas (repositórios de código, chat, e-mail, calendário) | Não discutido. | Pressuposto P10 |
-| Registo do tempo efetivamente gasto (timesheets) | Não discutido; a US05 usa estimativas e disponibilidade. | Pressuposto P10 |
+| Registo do tempo efetivamente gasto (timesheets) | Não discutido; a US05 usa estimativas e capacidade. | Pressuposto P10 |
 | Aplicação móvel nativa | Não discutido. | Pressuposto P10 |
 | Relatórios exportáveis e dashboards configuráveis | Não discutido; a US07 cobre a consulta básica. | Pressuposto P10 |

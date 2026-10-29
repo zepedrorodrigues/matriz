@@ -2,7 +2,7 @@
 
 Aplicação interna de gestão de projetos e tarefas para equipas de trabalho, ao estilo de Jira, Azure DevOps ou Trello.
 
-> **Estado atual:** fase de especificação (Ficha PL 01). Ainda não há código nem tecnologia escolhida; essas decisões ficam para a Aula 2.
+> **Estado atual:** fase de especificação (Ficha PL 01) — Specification Pack v0.2, revisto na revisão crítica (Ex. 6). Ainda não há código nem tecnologia escolhida; essas decisões ficam para a Aula 2.
 
 ## Problema
 
@@ -10,14 +10,14 @@ O pedido inicial do cliente foi:
 
 > "Precisamos de uma aplicação onde as nossas equipas possam organizar projetos, gerir tarefas e acompanhar o progresso do trabalho."
 
-O cliente não definiu funcionalidades, regras de negócio, requisitos técnicos nem prioridades. A análise de requisitos (Ex. 1–3) transformou este pedido numa especificação verificável.
+O cliente não definiu funcionalidades, regras de negócio, requisitos técnicos nem prioridades. A análise de requisitos (Ex. 1–3) transformou este pedido numa especificação verificável, revista criticamente no Ex. 6.
 
 ## Objetivos principais
 
 - Organizar o trabalho por **equipas e projetos**, com responsabilidades claras.
 - **Decompor o trabalho** em objetivos, épicos, tarefas e subtarefas.
-- **Planear em sprints por equipa** sem ultrapassar a capacidade disponível, medida em horas e em story points, sem conversão entre ambos.
-- Saber objetivamente **quando uma tarefa está cumprida**, com base em critérios de aceitação.
+- **Planear em sprints por equipa** com visibilidade sobre a capacidade disponível, medida em horas, e notificação quando esta é excedida; os story points são uma estimativa independente, sem conversão.
+- Saber objetivamente **quando uma tarefa está cumprida**, com base em todos os seus critérios de aceitação.
 - Dar **visibilidade** sobre progresso, desvios e alertas.
 - Garantir **rastreabilidade**: quem executou cada tarefa e a que equipa pertencia, mesmo após transferências.
 
@@ -47,15 +47,16 @@ matriz/
 └── docs/
     ├── requirements.md    visão, utilizadores, regras de negócio, RF, RNF, âmbito do MVP
     ├── user-stories.md    user stories, prioridades, critérios de aceitação, casos excecionais
-    └── constraints.md     restrições, pressupostos, segurança e privacidade, decisões pendentes
+    ├── constraints.md     restrições, pressupostos, segurança e privacidade, decisões pendentes
+    └── review.md          revisão crítica (Ex. 6): problemas encontrados e decisões tomadas
 ```
 
 ### Utilização como contexto
 
-1. Ordem de leitura: `requirements.md` → `user-stories.md` → `constraints.md`.
-2. Precedência: regras de negócio **Confirmadas** (RN) > User Stories e CA > requisitos **Propostos** > **Pressupostos**.
+1. Ordem de leitura: `requirements.md` → `user-stories.md` → `constraints.md`. O `review.md` regista a revisão crítica e não é normativo: as decisões nele tomadas estão incorporadas nos restantes documentos.
+2. Precedência por estado: **Confirmado** > **Proposto** > **Pressupostos**. Dentro do conteúdo Confirmado: regras de negócio (RN) > requisitos (RF, RNF, SEC) > User Stories e CA. Conteúdo Proposto e Pressupostos só são usados depois de aprovados.
 3. Comportamento que dependa de uma decisão pendente (`Dxx`) não é implementado enquanto a decisão não estiver registada.
-4. Quando uma decisão é tomada, regista-se no documento respetivo e retira-se da lista de pendentes.
+4. Quando uma decisão é tomada, regista-se no documento respetivo e passa da lista de pendentes para a de resolvidos (`constraints.md` §4.3).
 
 Os coding agents seguem, além disto, as instruções de [`AGENTS.md`](AGENTS.md).
 
@@ -67,6 +68,7 @@ Os coding agents seguem, além disto, as instruções de [`AGENTS.md`](AGENTS.md
 | RN | Regra de negócio | requirements.md |
 | RF / RNF | Requisito funcional / não funcional | requirements.md |
 | US / CA / EC | User story / critério de aceitação / caso excecional | user-stories.md |
+| CAT | Critério de aceitação transversal | user-stories.md |
 | R / P / L | Restrição / pressuposto / limitação de âmbito | constraints.md |
 | SEC | Requisito de segurança e privacidade | constraints.md |
 | D / DT | Decisão pendente funcional / técnica | constraints.md |
@@ -76,11 +78,11 @@ Os coding agents seguem, além disto, as instruções de [`AGENTS.md`](AGENTS.md
 - [x] Ex. 1 — Prompt engineering
 - [x] Ex. 2 — Análise de requisitos e âmbito do MVP
 - [x] Ex. 3 — User stories e critérios de aceitação
-- [x] Ex. 4 — Specification Pack v0.1 (em revisão)
+- [x] Ex. 4 — Specification Pack v0.1
 - [x] Ex. 5 — `AGENTS.md`
-- [ ] Ex. 6 — Revisão crítica (human-in-the-loop)
+- [x] Ex. 6 — Revisão crítica (human-in-the-loop) — Specification Pack v0.2, ver [`docs/review.md`](docs/review.md)
 - [ ] Aula 2 — Arquitetura, modelo de dados, API e protótipo
 
-**Em números:** 17 regras de negócio · 30 requisitos funcionais · 8 user stories · 44 critérios de aceitação (29 verificáveis, 15 dependentes de decisões) · 21 decisões funcionais pendentes.
+**Em números:** 25 regras de negócio · 31 requisitos funcionais · 8 user stories · 66 critérios de aceitação (61 nas US e 5 transversais; 46 verificáveis, 20 dependentes de decisões) · 30 decisões funcionais pendentes.
 
 **Decisões a fechar primeiro:** D01 (transição backlog → sprint), D04 / D05 / D18 (ciclo de vida das tarefas), D14 (permissões), D20 (requisitos não funcionais quantitativos, necessários para a Aula 2).
