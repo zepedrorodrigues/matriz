@@ -137,6 +137,7 @@ Decidida na revisão crítica (Ex. 6, D14).
 | RN31 | Uma sprint tem data de início igual ou anterior à data de fim. As sprints da mesma equipa não se sobrepõem e cada equipa tem, no máximo, uma sprint ativa. Uma sprint pode iniciar-se sem tarefas planeadas. | Confirmado (D19) |
 | RN32 | O histórico de cada elemento é um registo só de acrescento: cada evento indica o tipo, o valor anterior, o valor novo, o autor e a data/hora. A passagem por várias equipas apresenta-se como lista cronológica. | Confirmado (D12) |
 | RN33 | O nome de uma equipa é obrigatório, tem até 100 caracteres e é único entre as equipas ativas, sem distinguir maiúsculas de minúsculas. Um projeto pode existir sem equipas associadas. Uma equipa só pode ser desativada se não tiver tarefas por concluir; uma equipa desativada mantém o histórico e não recebe tarefas. | Confirmado (D22, D23, D24) |
+| RN34 | Uma equipa ativa tem sempre pelo menos um líder. O administrador designa-o ao criar a equipa, e não é possível remover o último líder de uma equipa ativa. | Confirmado (D32) |
 
 ## 5. Requisitos funcionais
 
@@ -144,7 +145,7 @@ Decidida na revisão crítica (Ex. 6, D14).
 
 | ID | Requisito | Base | Prior. | Estado | Pendências |
 |---|---|---|---|---|---|
-| RF01 | Criar, editar, consultar e desativar equipas. | US01 · RN01, RN25, RN33 | P0 | Confirmado | — |
+| RF01 | Criar, editar, consultar e desativar equipas. | US01 · RN01, RN25, RN33, RN34 | P0 | Confirmado | — |
 | RF02 | Criar, editar e consultar projetos, com nome e objetivo. | US01 · RN25, RN33 | P0 | Confirmado | — |
 | RF03 | Associar equipas a projetos, sem associações duplicadas, e consultar as equipas de um projeto. | US01 · CA01.3–CA01.5 | P0 | Confirmado | P06 |
 | RF04 | Associar utilizadores a equipas, com uma percentagem de alocação; cada membro pertence a pelo menos uma equipa. | US01 · CA01.9, RN06, RN21 | P0 | Confirmado | — |

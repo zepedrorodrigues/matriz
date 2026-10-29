@@ -48,8 +48,9 @@ matriz/
 └── docs/
     ├── requirements.md    visão, utilizadores, regras de negócio, RF, RNF, âmbito do MVP
     ├── user-stories.md    user stories, prioridades, critérios de aceitação, casos excecionais
-    ├── constraints.md     restrições, pressupostos, segurança e privacidade, decisões pendentes
-    └── review.md          revisão crítica (Ex. 6): problemas encontrados e decisões tomadas
+    ├── constraints.md     restrições, pressupostos, segurança e privacidade, decisões
+    ├── review.md          revisões críticas: problemas encontrados e decisões tomadas
+    └── architecture.md    arquitetura: estilo, módulos, interação, implantação (Ficha PL 02)
 ```
 
 ### Utilização como contexto
@@ -84,6 +85,6 @@ Os coding agents seguem, além disto, as instruções de [`AGENTS.md`](AGENTS.md
 - [x] Ex. 6 — Revisão crítica (human-in-the-loop) — Specification Pack v0.3, ver [`docs/review.md`](docs/review.md)
 - [ ] Aula 2 (Ficha PL 02) — Architecture Pack: arquitetura, modelo de dados, API e protótipo — decisões fechadas, artefactos em curso
 
-**Em números:** 33 regras de negócio · 31 requisitos funcionais · 12 requisitos não funcionais · 9 user stories · 85 critérios de aceitação (79 nas US e 6 transversais), todos verificáveis · 1 decisão funcional pendente (D32).
+**Em números:** 34 regras de negócio · 31 requisitos funcionais · 12 requisitos não funcionais · 9 user stories · 86 critérios de aceitação (80 nas US e 6 transversais), todos verificáveis · sem decisões funcionais pendentes.
 
-**Pendentes:** D32 (equipas sem líder), DT01 (linguagem e framework, em análise) e P12 (validação jurídica da retenção). DT09 e DT10 são revisões futuras planeadas.
+**Pendentes:** P12 (validação jurídica da retenção). DT09 e DT10 são revisões futuras planeadas.

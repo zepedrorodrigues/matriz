@@ -39,7 +39,7 @@
 
 ### US01 — Gerir equipas e projetos
 
-**Prioridade:** P0 — Crítica · **Objetivo:** estabelecer a estrutura organizacional mínima para gerir o trabalho. · **Regras:** RN01, RN02, RN06, RN21, RN25, RN33
+**Prioridade:** P0 — Crítica · **Objetivo:** estabelecer a estrutura organizacional mínima para gerir o trabalho. · **Regras:** RN01, RN02, RN06, RN21, RN25, RN33, RN34
 
 > Como **administrador** — e, no caso dos projetos, também como **gestor de projeto** —, quero criar e gerir equipas e projetos, associando as equipas aos projetos em que participam, para organizar o trabalho e identificar as responsabilidades de cada unidade.
 
@@ -47,7 +47,7 @@
 
 **CA01.1 — Criar uma equipa** · *verificável*
 - **Given** que sou um administrador,
-- **When** crio uma equipa com um nome não vazio, com até 100 caracteres e não usado por outra equipa ativa (sem distinguir maiúsculas de minúsculas),
+- **When** crio uma equipa com um nome não vazio, com até 100 caracteres e não usado por outra equipa ativa (sem distinguir maiúsculas de minúsculas), e designo pelo menos um líder,
 - **Then** a equipa fica registada, consta da lista de equipas e pode ser associada a projetos e a utilizadores.
 
 **CA01.2 — Criar um projeto** · *verificável*
@@ -99,6 +99,11 @@
 - **Given** que sou um administrador e uma equipa não tem tarefas por concluir,
 - **When** desativo a equipa,
 - **Then** a equipa deixa de poder receber tarefas e o seu histórico continua consultável.
+
+**CA01.12 — Manter pelo menos um líder** · *verificável*
+- **Given** que sou um administrador e uma equipa ativa tem um único líder,
+- **When** tento remover esse líder da equipa,
+- **Then** a operação é recusada e a equipa mantém o líder.
 
 #### Casos excecionais
 
@@ -550,7 +555,7 @@ A atribuição a alguém de outra equipa é a exceção prevista em RN03 e está
 
 | ID | Situação | Regra |
 |---|---|---|
-| EC08.1 | Equipa sem líder para receber o alerta. | D32 |
+| EC08.1 | Equipa sem líder para receber o alerta. | Impossível: uma equipa ativa tem sempre pelo menos um líder (RN34, CA01.12). |
 
 ---
 
@@ -644,7 +649,7 @@ Aplicam-se a todas as US e verificam os requisitos de segurança e privacidade (
 
 ## 4. Verificabilidade dos critérios de aceitação
 
-**85 CA no total (79 nas US + 6 transversais), todos verificáveis.** Não há decisões funcionais pendentes que bloqueiem critérios de aceitação ([`constraints.md`](constraints.md) §4.1).
+**86 CA no total (80 nas US + 6 transversais), todos verificáveis.** Não há decisões funcionais pendentes que bloqueiem critérios de aceitação ([`constraints.md`](constraints.md) §4.1).
 
 ---
 

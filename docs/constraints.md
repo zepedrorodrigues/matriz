@@ -48,19 +48,14 @@ Confirmados na revisão crítica (Ex. 6). Os critérios de aceitação transvers
 
 ### 4.1 Funcionais
 
-D01–D31 estão resolvidas (§4.3). Fica pendente uma questão identificada ao fechar D07 e D17:
-
-| ID | Questão | Impacto | Afeta | Urgência |
-|---|---|---|---|---|
-| D32 | Pode uma equipa ativa existir sem líder? Se sim, quem recebe os alertas dirigidos ao líder? | Alertas | RN09, RN19, RN30, US08 · EC08.1 | Média |
+Não há decisões funcionais pendentes: D01–D32 estão resolvidas (§4.3).
 
 ### 4.2 Técnicas
 
-As decisões técnicas da Aula 2 estão resolvidas no §4.3, exceto a DT01. A DT09 e a DT10 são revisões futuras planeadas.
+As decisões técnicas da Aula 2 estão resolvidas no §4.3. Ficam planeadas duas revisões futuras.
 
 | ID | Decisão | Quando | Dependências |
 |---|---|---|---|
-| DT01 | Linguagem e framework | Aula 2 — em análise (TypeScript, Go ou Rust) | RNF06, RNF08–RNF12 |
 | DT09 | Revisão do peso dos alertas na base de dados: volume, retenção e arquivo dos alertas antigos | Médio a longo prazo, com dados reais de utilização | DT07, RN30 |
 | DT10 | Extração de módulos do monólito para serviços independentes (microservices) | Quando se verificarem os sinais de revisão abaixo | DT03 |
 
@@ -103,6 +98,7 @@ As decisões técnicas da Aula 2 estão resolvidas no §4.3, exceto a DT01. A DT
 | D29 | Equipa de uma subtarefa. | RN22 — sempre a da tarefa principal. |
 | D30 | Capacidade com subtarefas noutras sprints. | RN22 — contam só as subtarefas, cada uma na sua sprint. |
 | D31 | Feriados na capacidade. | RN06 — ajusta-se a disponibilidade. |
+| D32 | Equipas sem líder. | RN34 — uma equipa ativa tem sempre pelo menos um líder. |
 
 **Pressupostos**
 
@@ -121,6 +117,7 @@ As decisões técnicas da Aula 2 estão resolvidas no §4.3, exceto a DT01. A DT
 
 | ID | Decisão | Resolução |
 |---|---|---|
+| DT01 | Linguagem e framework | TypeScript em toda a aplicação: NestJS no backend e React no frontend. Alternativas analisadas: Go (viável, mas com duas linguagens e modelação de regras mais verbosa) e Rust (custo de desenvolvimento desproporcionado para um MVP ligado a dados). Escolhido por simplificar o desenvolvimento, os deployments e a atualização de versões com uma única linguagem e um único ecossistema. |
 | DT02 | Base de dados | PostgreSQL, relacional, com um schema por módulo. |
 | DT03 | Arquitetura e API | Monólito modular; API REST/JSON documentada em OpenAPI 3.1; comunicação síncrona. Módulos: Identidade e acesso, Organização, Trabalho, Planeamento, Acompanhamento, Histórico. Cada módulo é dono das suas tabelas e expõe uma interface pública aos restantes. |
 | DT04 | Autenticação | OpenID Connect com o fornecedor de identidade da empresa em produção e um fornecedor local em desenvolvimento; papéis geridos na Matriz (`requirements.md` §3.1). |
