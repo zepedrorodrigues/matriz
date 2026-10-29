@@ -132,7 +132,7 @@ flowchart LR
 | Validação | Dados de entrada validados na fronteira da API. | RN07, RN29, RN31, RN33 |
 | Privacidade | Minimização de dados; motivos pessoais nunca registados; retenção segundo SEC09. | SEC05, SEC06, SEC09, P12 |
 | Observabilidade | Logs estruturados com identificador de pedido; métricas de tempo de resposta para verificar RNF08; medição da disponibilidade em horário de trabalho para verificar RNF09. | RNF08, RNF09 |
-| Cópias de segurança e recuperação | Cópia base diária e arquivo contínuo das alterações (WAL) do PostgreSQL, na UE e cifrados; reposição num momento anterior a um erro; testes de reposição periódicos. Uma réplica não substitui as cópias, porque replica também os erros. | RNF13, DT13 |
+| Cópias de segurança e recuperação | Cópia base diária e arquivo contínuo das alterações (WAL) do PostgreSQL, na UE, cifrados e conservados durante 30 dias; reposição num momento anterior a um erro; testes de reposição periódicos. Uma réplica não substitui as cópias, porque replica também os erros. | RNF13, DT13 |
 | Interface | pt-PT, para computador, WCAG 2.1 AA. | RNF10–RNF12 |
 | Testes | Um teste automático por CA ao nível da API; testes de arquitetura que verificam as dependências entre módulos. | DT08 |
 

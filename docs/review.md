@@ -171,7 +171,7 @@ Pedida pelo humano depois da revisão cruzada. O agente analisou as falhas poss�
 |---|---|
 | Opção B, com duas variantes conforme o fornecedor: mudança automática para a réplica numa cloud, manual em infraestrutura interna. | DT13 (`constraints.md` §4.3), `architecture.md` §7–§9 |
 | Objetivos de recuperação: RPO 5 min, RTO 1 h. | RNF13 |
-| Prazo de conservação das cópias de segurança. | Por decidir |
+| Cópias de segurança conservadas durante 30 dias, proposto pelo agente e aceite. | DT13 |
 
 ## 4. Critérios de validação (Ficha PL 02)
 
@@ -189,4 +189,3 @@ Pedida pelo humano depois da revisão cruzada. O agente analisou as falhas poss�
 
 - **P12:** validação jurídica da política de retenção. Mantida em aberto pelo humano: não é relevante no âmbito do projeto; necessária antes de uma entrada em produção.
 - **Revisões futuras:** DT09 (alertas na base de dados; até lá, sem apagar nem arquivar alertas, por decisão do humano), DT10 (extração para microservices), DT11 (gestão de eventos) e DT12 (gestão de erros).
-- **Prazo de conservação das cópias de segurança** (DT13).
