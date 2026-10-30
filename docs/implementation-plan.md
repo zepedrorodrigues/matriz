@@ -27,9 +27,9 @@ Cada incremento segue os mesmos passos, com o humano a validar antes de se escre
 | Autenticação | OIDC com Keycloak local; Authorization Code + PKCE; token *bearer* validado pelo backend. | DT04 |
 | Ambiente | Sem Docker: PostgreSQL 17 (winget), JDK 21 e Keycloak em zip. | DT15 |
 
-**Por confirmar pelo humano** (marcado «Proposto» em `requirements.md` §4): quem altera a prioridade (RN39) e que os participantes não ganham permissões sobre a tarefa (RN40).
+**Confirmado pelo humano:** quem altera a prioridade (RN39) e que os participantes não ganham permissões sobre a tarefa (RN40).
 
-**Pressupostos do contrato (Ex. 1):** a listagem de tarefas de um projeto e as contagens do painel não incluem subtarefas; os limites de RN42 contam-se depois de retirar os espaços no início e no fim; um elemento eliminado responde 404.
+**Regras do contrato (Ex. 1), confirmadas pelo humano:** a listagem de tarefas de um projeto e as contagens do painel não incluem subtarefas; os limites de RN42 contam-se depois de retirar os espaços no início e no fim; um projeto ou tarefa eliminado (RN38), e o que dele depende, responde 404, como um identificador inexistente.
 
 ## 3. Estrutura prevista
 
@@ -98,5 +98,5 @@ A interface de cada funcionalidade é feita no respetivo incremento (Ex. 7), com
 
 | # | Estado | Notas |
 |---|---|---|
-| I0 | Por iniciar | Aguarda a instalação do software e a autorização das dependências (§5). |
+| I0 | Em curso | Software instalado (PostgreSQL 17, JDK 21, Keycloak 26.8.1 fora do repositório) e dependências npm instaladas, com o TypeScript fixado em 6.0.3 (o 7 não traz a API do compilador usada pelo `ts-node`, `ts-jest` e `@nestjs/cli`). Criados, ainda sem commit: `package.json` (raiz, `backend/`, `frontend/`), `.gitignore`, `keycloak/realm-matriz.json` e `scripts/keycloak-dev.ps1`. **Decidido pelo humano:** NestJS 11 + TypeORM 0.3, em CommonJS, em vez do NestJS 12 (só ESM), com as versões a fixar no `backend/package.json`; o humano cria o role `matriz` e as bases `matriz` e `matriz_test` e põe a palavra-passe num `.env` local; o agente fica autorizado a correr as migrations e o seed na base `matriz` e os testes que recriam a `matriz_test`. **Conhecido:** `npm audit` com 6 vulnerabilidades baixas (`deepmerge`, só via Jest), não corrigidas por exigirem `--force`. |
 | I1–I14 | Por iniciar | |

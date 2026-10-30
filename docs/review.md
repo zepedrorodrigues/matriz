@@ -187,7 +187,6 @@ Pedida pelo humano depois da revisão cruzada. O agente analisou as falhas poss�
 
 ## 5. Pendente após a revisão
 
-- **Permissões propostas pelo agente na conciliação com a Ficha PL 03** (§6): quem altera a prioridade (RN39) e o facto de os participantes não ganharem permissões sobre a tarefa (RN40).
 - **P12:** validação jurídica da política de retenção. Mantida em aberto pelo humano: não é relevante no âmbito do projeto; necessária antes de uma entrada em produção.
 - **Revisões futuras:** DT09 (alertas na base de dados; até lá, sem apagar nem arquivar alertas, por decisão do humano), DT10 (extração para microservices), DT11 (gestão de eventos) e DT12 (gestão de erros).
 
@@ -210,4 +209,4 @@ O agente comparou o âmbito funcional da Ficha PL 03 com o MVP aprovado e report
 
 **Discrepância reportada depois das respostas:** o Keycloak (F2) precisa de Docker ou de Java 17/21, mas F10 excluía o Docker e só existia o Java 8. O humano decidiu: JDK 21 com a distribuição zip do Keycloak. Decidiu também a forma da sessão (aplicação React com Authorization Code + PKCE e token *bearer*, coerente com `architecture.md` §7) e que o contrato OpenAPI se completa por incremento, antes do código de cada um.
 
-**Propostas do agente por confirmar:** ao redigir as regras novas, o agente propôs quem altera a prioridade (RN39) e que os participantes não ganham permissões sobre a tarefa (RN40). Estão marcadas como «Proposto» em `requirements.md` §4.
+**Propostas do agente, confirmadas pelo humano:** ao redigir as regras novas, o agente propôs que a prioridade seja alterada pelo líder de equipa, pelo gestor de projeto e pelo administrador (RN39) e que os participantes não ganhem permissões sobre a tarefa (RN40). Propôs também três pressupostos do contrato: a listagem de tarefas de um projeto e as contagens do painel não incluem subtarefas; os limites de RN42 contam-se depois de retirar os espaços no início e no fim; um projeto ou tarefa eliminado (RN38), e o que dele depende, responde 404, como um identificador inexistente. O humano confirmou tudo.
