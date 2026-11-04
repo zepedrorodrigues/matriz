@@ -1,0 +1,112 @@
+{
+  "realm": "matriz",
+  "displayName": "Matriz (desenvolvimento)",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "clients": [
+    {
+      "clientId": "matriz-web",
+      "name": "Matriz (aplicação web)",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://localhost:5173/*"],
+      "webOrigins": ["http://localhost:5173"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5173/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "matriz-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "matriz-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "matriz-dev-cli",
+      "name": "Matriz (pedidos diretos à API, só desenvolvimento)",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "protocolMappers": [
+        {
+          "name": "matriz-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "matriz-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "email": "admin@matriz.example",
+      "firstName": "Alice",
+      "lastName": "Admin",
+      "enabled": true,
+      "emailVerified": true
+    },
+    {
+      "username": "gestor",
+      "email": "gestor@matriz.example",
+      "firstName": "Gonçalo",
+      "lastName": "Gestor",
+      "enabled": true,
+      "emailVerified": true
+    },
+    {
+      "username": "ana",
+      "email": "ana@matriz.example",
+      "firstName": "Ana",
+      "lastName": "Exemplo",
+      "enabled": true,
+      "emailVerified": true
+    },
+    {
+      "username": "rui",
+      "email": "rui@matriz.example",
+      "firstName": "Rui",
+      "lastName": "Exemplo",
+      "enabled": true,
+      "emailVerified": true
+    },
+    {
+      "username": "bruno",
+      "email": "bruno@matriz.example",
+      "firstName": "Bruno",
+      "lastName": "Beta",
+      "enabled": true,
+      "emailVerified": true
+    },
+    {
+      "username": "sem-conta",
+      "email": "sem-conta@matriz.example",
+      "firstName": "Sofia",
+      "lastName": "Semconta",
+      "enabled": true,
+      "emailVerified": true
+    }
+  ]
+}

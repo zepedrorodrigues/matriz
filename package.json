@@ -1,0 +1,23 @@
+{
+  "name": "matriz",
+  "private": true,
+  "description": "Matriz — gestão interna de projetos e tarefas por equipas",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev:backend": "npm run start:dev -w backend",
+    "dev:frontend": "npm run dev -w frontend",
+    "db:migrate": "npm run migration:run -w backend",
+    "db:seed": "npm run seed -w backend",
+    "build": "npm run build -w backend && npm run build -w frontend",
+    "test": "npm test -w backend"
+  },
+  "overrides": {
+    "multer": "2.5.0"
+  }
+}

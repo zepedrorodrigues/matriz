@@ -82,6 +82,35 @@ Os coding agents seguem, além disto, as instruções de [`AGENTS.md`](AGENTS.md
 | SEC | Requisito de segurança e privacidade | constraints.md |
 | D / DT | Decisão pendente funcional / técnica | constraints.md |
 
+## Desenvolvimento
+
+Ambiente sem Docker (DT15). Nenhuma palavra-passe é guardada no repositório (SEC08): ficam no `.env` local, fora do Git.
+
+**Requisitos** (versões usadas): Node.js ≥ 22 (24.18.0), npm 11; PostgreSQL 17 (17.11, `winget`); JDK 21 (Temurin 21.0.12) e Keycloak 26.8.1 (zip), ambos fora do repositório.
+
+**Preparação, uma vez:**
+
+```powershell
+npm install
+# Role matriz e bases matriz e matriz_test; pede a palavra-passe do postgres e define a do role matriz
+& 'C:\Program Files\PostgreSQL\17\bin\psql.exe' -U postgres -h localhost -f scripts\db-setup.sql
+Copy-Item .env.example .env   # preencher DB_PASSWORD, as pastas do Keycloak/JDK e as palavras-passe do Keycloak
+npm run db:migrate            # schemas e tabelas (backend/migrations)
+npm run db:seed               # dados de demonstração fictícios; idempotente
+```
+
+**Execução** (um terminal para cada):
+
+```powershell
+./scripts/keycloak-dev.ps1    # Keycloak em http://localhost:8080 (realm matriz); define as palavras-passe das contas fictícias
+npm run dev:backend           # API em http://localhost:3000/api (GET /api/health)
+npm run dev:frontend          # aplicação em http://localhost:5173; /api encaminhado para o backend
+```
+
+**Outros comandos:** `npm test` (testes de API; recria a base `matriz_test`), `npm run build`, `npm run migration:revert -w backend`.
+
+As contas fictícias do Keycloak (`admin`, `gestor`, `ana`, `rui`, `bruno`, `sem-conta`, com e-mail `@matriz.example`) usam a palavra-passe `MATRIZ_DEMO_PASSWORD` do `.env`. A `sem-conta` não existe na Matriz: serve para testar um token válido sem conta (CAT02).
+
 ## Estado atual
 
 - [x] Ex. 1 — Prompt engineering

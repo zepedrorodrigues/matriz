@@ -42,6 +42,8 @@ servers:
 security:
   - bearerAuth: []
 tags:
+  - name: Sistema
+    description: Estado do serviço, para o balanceador e o arranque local (sem autenticação).
   - name: Identidade e acesso
     description: Utilizador autenticado (módulo Identidade e acesso).
   - name: Organização
@@ -211,6 +213,30 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+
+  /health:
+    get:
+      tags: [Sistema]
+      operationId: getHealth
+      summary: Verificar o estado do serviço
+      description: |
+        Indica se o backend está em execução e consegue usar a base de dados. Serve as verificações
+        de saúde do balanceador (`docs/architecture.md` §8). Não exige token nem devolve dados de
+        utilizadores.
+      security: []
+      responses:
+        '200':
+          description: Serviço e base de dados disponíveis.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '503':
+          description: A base de dados não está disponível.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
 
   /me:
     get:
@@ -1172,6 +1198,17 @@ components:
           type: integer
           minimum: 0
           description: Número de elementos do conjunto filtrado, e não só da página.
+
+    Health:
+      type: object
+      required: [status, database]
+      properties:
+        status:
+          type: string
+          enum: [ok, unavailable]
+        database:
+          type: string
+          enum: [ok, unavailable]
 
     UserSummary:
       type: object
