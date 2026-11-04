@@ -2,7 +2,7 @@ import { DataSource, QueryRunner } from 'typeorm';
 import { buildDataSourceOptions, databaseName } from '../src/shared/database/database.config';
 
 /**
- * Dados de demonstração (I0), fictícios (SEC08) e idempotentes: só acrescenta o que falta;
+ * Dados de demonstração (I0, Ficha PL 03 Ex. 2), fictícios (SEC08) e idempotentes: só acrescenta o que falta;
  * nunca altera nem apaga dados existentes. As contas correspondem às do realm
  * keycloak/realm-matriz.json, exceto `sem-conta`, que existe só no Keycloak (token válido sem
  * conta na Matriz → 403, CAT02). A ligação ao fornecedor (external_subject) faz-se no primeiro
@@ -51,13 +51,145 @@ const PROJECTS = [
   },
 ];
 
+/** Identificadores fixos dos dados de trabalho, para o seed ser idempotente. */
+const id = (n: number) => `7d1f3c2a-0000-4000-8000-${String(n).padStart(12, '0')}`;
+
+interface SeedTask {
+  id: string;
+  title: string;
+  state: string;
+  priority: 'low' | 'medium' | 'high';
+  createdBy: string;
+  assignee?: string;
+  hours?: number;
+  storyPoints?: number;
+  blockReason?: string;
+  criteria?: { id: string; text: string; met: boolean }[];
+  participants?: string[];
+  comments?: { id: string; author: string; body: string }[];
+  subtasks?: SeedTask[];
+}
+
+/**
+ * Hierarquia de demonstração (Ex. 2): objetivo → épico → tarefas e subtarefas, com estados,
+ * prioridades, critérios, participantes (atribuições) e comentários. Coerente com RN13 (tarefa
+ * terminada com os critérios cumpridos), RN27 (critérios e estimativa a partir de «Pronta»)
+ * e RN28 (motivo do bloqueio, sem motivos pessoais — SEC06).
+ */
+const WORK: {
+  projectId: string;
+  team: string;
+  objective: { id: string; title: string };
+  epic: { id: string; title: string };
+  tasks: SeedTask[];
+}[] = [
+  {
+    projectId: PROJECTS[0].id,
+    team: 'Equipa Alfa',
+    objective: { id: id(101), title: 'Lançar a primeira versão do portal' },
+    epic: { id: id(201), title: 'Página inicial e pesquisa' },
+    tasks: [
+      {
+        id: id(301),
+        title: 'Desenhar a página inicial',
+        state: 'done',
+        priority: 'high',
+        createdBy: 'gestor@matriz.example',
+        assignee: 'ana@matriz.example',
+        hours: 16,
+        storyPoints: 5,
+        criteria: [{ id: id(401), text: 'O desenho foi validado pelo gestor do projeto.', met: true }],
+      },
+      {
+        id: id(302),
+        title: 'Implementar a pesquisa de ferramentas',
+        state: 'in_development',
+        priority: 'high',
+        createdBy: 'ana@matriz.example',
+        assignee: 'rui@matriz.example',
+        hours: 24,
+        storyPoints: 8,
+        criteria: [{ id: id(402), text: 'A pesquisa encontra ferramentas pelo nome.', met: false }],
+        participants: ['ana@matriz.example'],
+        comments: [
+          { id: id(501), author: 'rui@matriz.example', body: 'Comecei pela pesquisa por nome; os filtros ficam para depois.' },
+          { id: id(502), author: 'ana@matriz.example', body: 'Combinado. Revejo o código quando estiver em testes.' },
+        ],
+      },
+      {
+        id: id(303),
+        title: 'Rever a acessibilidade da página inicial',
+        state: 'in_planning',
+        priority: 'medium',
+        createdBy: 'ana@matriz.example',
+      },
+      {
+        id: id(304),
+        title: 'Configurar atalhos para as ferramentas mais usadas',
+        state: 'in_technical_analysis',
+        priority: 'low',
+        createdBy: 'rui@matriz.example',
+        subtasks: [
+          {
+            id: id(305),
+            title: 'Levantar as ferramentas mais usadas',
+            state: 'in_planning',
+            priority: 'low',
+            createdBy: 'rui@matriz.example',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    projectId: PROJECTS[1].id,
+    team: 'Equipa Beta',
+    objective: { id: id(102), title: 'Digitalizar o arquivo de contratos' },
+    epic: { id: id(202), title: 'Digitalização em lote' },
+    tasks: [
+      {
+        id: id(311),
+        title: 'Definir o formato dos ficheiros digitalizados',
+        state: 'ready_for_development',
+        priority: 'medium',
+        createdBy: 'admin@matriz.example',
+        assignee: 'bruno@matriz.example',
+        hours: 8,
+        storyPoints: 3,
+        criteria: [{ id: id(411), text: 'O formato e a resolução estão documentados.', met: false }],
+      },
+      {
+        id: id(312),
+        title: 'Indexar as pastas de contratos',
+        state: 'in_planning',
+        priority: 'high',
+        createdBy: 'bruno@matriz.example',
+        blockReason: 'A aguardar acesso ao arquivo físico.',
+      },
+    ],
+  },
+];
+
 async function insertCount(q: QueryRunner, sql: string, params: unknown[]): Promise<number> {
   const rows: unknown[] = await q.query(sql, params);
   return rows.length;
 }
 
 async function seed(q: QueryRunner): Promise<Record<string, number>> {
-  const added = { users: 0, teams: 0, memberships: 0, projects: 0, managers: 0, projectTeams: 0 };
+  const added = {
+    users: 0,
+    teams: 0,
+    memberships: 0,
+    projects: 0,
+    managers: 0,
+    projectTeams: 0,
+    objectives: 0,
+    epics: 0,
+    tasks: 0,
+    criteria: 0,
+    participants: 0,
+    comments: 0,
+  };
   const userId = new Map<string, string>();
   const teamId = new Map<string, string>();
 
@@ -122,6 +254,76 @@ async function seed(q: QueryRunner): Promise<Record<string, number>> {
         [p.id, teamId.get(team)],
       );
     }
+  }
+
+  const user = (email: string) => userId.get(email);
+
+  async function insertTask(t: SeedTask, team: string, epicId: string | null, parentId: string | null) {
+    added.tasks += await insertCount(
+      q,
+      `INSERT INTO work.task (id, epic_id, parent_task_id, title, team_id, original_team_id, assignee_id,
+                              state, estimate_hours, story_points, priority, is_blocked, block_reason, created_by)
+       VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       ON CONFLICT (id) DO NOTHING RETURNING id`,
+      [
+        t.id,
+        epicId,
+        parentId,
+        t.title,
+        teamId.get(team),
+        t.assignee ? user(t.assignee) : null,
+        t.state,
+        t.hours ?? null,
+        t.storyPoints ?? null,
+        t.priority,
+        Boolean(t.blockReason),
+        t.blockReason ?? null,
+        user(t.createdBy),
+      ],
+    );
+    for (const c of t.criteria ?? []) {
+      const metBy = c.met ? user(t.assignee ?? t.createdBy) : null;
+      added.criteria += await insertCount(
+        q,
+        `INSERT INTO work.acceptance_criterion (id, task_id, description, is_met, met_by, met_at, created_by)
+         VALUES ($1, $2, $3, $4, $5::uuid, CASE WHEN $4 THEN now() END, $6)
+         ON CONFLICT (id) DO NOTHING RETURNING id`,
+        [c.id, t.id, c.text, c.met, metBy, user(t.createdBy)],
+      );
+    }
+    for (const email of t.participants ?? []) {
+      added.participants += await insertCount(
+        q,
+        `INSERT INTO work.task_participant (task_id, user_id, added_by) VALUES ($1, $2, $3)
+         ON CONFLICT DO NOTHING RETURNING user_id`,
+        [t.id, user(email), user(t.createdBy)],
+      );
+    }
+    for (const c of t.comments ?? []) {
+      added.comments += await insertCount(
+        q,
+        `INSERT INTO work.comment (id, task_id, author_id, body) VALUES ($1, $2, $3, $4)
+         ON CONFLICT (id) DO NOTHING RETURNING id`,
+        [c.id, t.id, user(c.author), c.body],
+      );
+    }
+    for (const s of t.subtasks ?? []) await insertTask(s, team, null, t.id);
+  }
+
+  for (const w of WORK) {
+    added.objectives += await insertCount(
+      q,
+      `INSERT INTO work.objective (id, project_id, title) VALUES ($1, $2, $3)
+       ON CONFLICT (id) DO NOTHING RETURNING id`,
+      [w.objective.id, w.projectId, w.objective.title],
+    );
+    added.epics += await insertCount(
+      q,
+      `INSERT INTO work.epic (id, objective_id, title) VALUES ($1, $2, $3)
+       ON CONFLICT (id) DO NOTHING RETURNING id`,
+      [w.epic.id, w.objective.id, w.epic.title],
+    );
+    for (const t of w.tasks) await insertTask(t, w.team, w.epic.id, null);
   }
   return added;
 }
