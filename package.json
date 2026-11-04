@@ -15,7 +15,7 @@
     "db:migrate": "npm run migration:run -w backend",
     "db:seed": "npm run seed -w backend",
     "build": "npm run build -w backend && npm run build -w frontend",
-    "test": "npm test -w backend"
+    "test": "npm test -w backend && npm test -w frontend"
   },
   "overrides": {
     "multer": "2.5.0"

@@ -1,5 +1,6 @@
 import { Controller, Get, HttpStatus, Res } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import { Public } from '../auth/auth.decorators';
 
 /** O que o controlador usa da resposta HTTP (evita depender dos tipos do Express). */
 interface StatusSettable {
@@ -12,6 +13,7 @@ export interface Health {
 }
 
 /** `GET /api/health` (openapi.yaml: getHealth) — sem autenticação; não devolve dados de utilizadores. */
+@Public()
 @Controller('health')
 export class HealthController {
   constructor(private readonly dataSource: DataSource) {}

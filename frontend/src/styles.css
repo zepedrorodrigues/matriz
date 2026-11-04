@@ -1,0 +1,102 @@
+/* Estilos partilhados (I1). A linguagem visual completa do wireframe chega com os ecrãs do Ex. 7 (D47). */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --text: #1c2430;
+  --muted: #5b6573;
+  --border: #d5dae1;
+  --accent: #1f5fbf;
+  --info-bg: #eaf1fb;
+  --warning-bg: #fff4e0;
+  --warning-text: #7a4b00;
+  --error-bg: #fdeceb;
+  --error-text: #9b1c1c;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+button {
+  font: inherit;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+button:focus-visible {
+  outline: 3px solid #f2b705;
+  outline-offset: 2px;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.app-header__brand {
+  font-weight: 700;
+  margin-right: auto;
+}
+
+.app-header__user {
+  color: var(--muted);
+}
+
+.page,
+.status-screen {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.notice {
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  background: var(--info-bg);
+}
+
+.notice--warning {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.notice--error {
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+.profile {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 1.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.profile dt {
+  color: var(--muted);
+}
+
+.profile dd {
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .profile {
+    grid-template-columns: 1fr;
+  }
+}

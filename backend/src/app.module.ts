@@ -1,19 +1,30 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { IdentityModule } from './modules/identity/identity.module';
+import { OrganizationModule } from './modules/organization/organization.module';
 import { buildDataSourceOptions } from './shared/database/database.config';
+import { ProblemDetailsFilter } from './shared/errors/problem-details.filter';
+import { apiValidationPipe } from './shared/errors/validation.pipe';
 import { HealthController } from './shared/health/health.controller';
 
 /**
- * Módulo raiz. Os módulos de domínio (identity, organization, work, planning, tracking, history —
- * DT03) entram a partir do I1, cada um em `src/modules/<módulo>`.
+ * Módulo raiz. Módulos de domínio em `src/modules/<módulo>` (DT03); os restantes (work, planning,
+ * tracking, history) entram nos incrementos respetivos.
  */
 @Module({
   imports: [
     // O .env da raiz é carregado por loadRootEnv (database.config); aqui só se expõe o ambiente.
     ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true }),
-    TypeOrmModule.forRootAsync({ useFactory: buildDataSourceOptions }),
+    TypeOrmModule.forRootAsync({ useFactory: () => ({ ...buildDataSourceOptions(), autoLoadEntities: true }) }),
+    OrganizationModule,
+    IdentityModule,
   ],
   controllers: [HealthController],
+  providers: [
+    { provide: APP_FILTER, useClass: ProblemDetailsFilter },
+    { provide: APP_PIPE, useFactory: apiValidationPipe },
+  ],
 })
 export class AppModule {}

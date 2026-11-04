@@ -1805,7 +1805,13 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
     Unauthorized:
-      description: Sem autenticação válida (SEC01, CAT01).
+      description: Sem autenticação válida (SEC01, CAT01) — token em falta, com assinatura inválida, de outro emissor ou audiência, ou expirado.
+      headers:
+        WWW-Authenticate:
+          description: Esquema de autenticação esperado (RFC 6750).
+          schema:
+            type: string
+            example: Bearer
       content:
         application/problem+json:
           schema:

@@ -107,9 +107,24 @@ npm run dev:backend           # API em http://localhost:3000/api (GET /api/healt
 npm run dev:frontend          # aplicação em http://localhost:5173; /api encaminhado para o backend
 ```
 
-**Outros comandos:** `npm test` (testes de API; recria a base `matriz_test`), `npm run build`, `npm run migration:revert -w backend`.
+**Outros comandos:** `npm test` (testes de API do backend, que recriam a base `matriz_test`, e testes do frontend), `npm run build`, `npm run migration:revert -w backend`.
 
 As contas fictícias do Keycloak (`admin`, `gestor`, `ana`, `rui`, `bruno`, `sem-conta`, com e-mail `@matriz.example`) usam a palavra-passe `MATRIZ_DEMO_PASSWORD` do `.env`. A `sem-conta` não existe na Matriz: serve para testar um token válido sem conta (CAT02).
+
+Se o Keycloak correr noutra porta (`./scripts/keycloak-dev.ps1 -Port 8180`), `OIDC_ISSUER` e `VITE_OIDC_AUTHORITY` no `.env` têm de usar essa porta.
+
+### Sessão e autenticação (DT04)
+
+1. **Início de sessão.** Sem sessão, a aplicação encaminha para o Keycloak (Authorization Code + PKCE, cliente público `matriz-web`). As palavras-passe só existem no Keycloak, guardadas como hash (argon2); a Matriz nunca as recebe.
+2. **Pedidos à API.** A aplicação envia `Authorization: Bearer <token de acesso>`. O backend valida a assinatura (chaves públicas do Keycloak, obtidas pela descoberta OIDC), o emissor (`OIDC_ISSUER`), a audiência (`matriz-api`) e a validade; não há sessão no servidor.
+3. **Conta da Matriz.** A identidade vem só do token. No primeiro acesso, a conta criada para o e-mail profissional fica ligada à identidade do Keycloak (`sub`), se o e-mail estiver verificado (RN35); depois, a ligação faz-se pelo `sub`. Sem conta ativa, a API responde 403.
+4. **Renovação.** O token de acesso dura 5 minutos e é renovado antes de expirar com o refresh token, enquanto a sessão do Keycloak estiver ativa (30 minutos sem atividade, 10 horas no máximo).
+5. **Sessão inválida.** Se a renovação falhar, o token expirar ou a API responder 401, a aplicação termina a sessão local e mostra «A sua sessão expirou ou deixou de ser válida», com o botão para iniciar sessão de novo.
+6. **Fim de sessão.** «Terminar sessão» termina a sessão no Keycloak e regressa à aplicação.
+
+Erros da API: *problem details* (RFC 9457, `application/problem+json`); o 401 inclui `WWW-Authenticate: Bearer`.
+
+Pedidos diretos à API em desenvolvimento: o cliente `matriz-dev-cli` do realm aceita utilizador e palavra-passe (*direct grant*) para obter um token, só no Keycloak local.
 
 ## Estado atual
 

@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Só para o Jest: CommonJS clássico, para o ts-jest poder transpilar o jose (só ESM).
+    "module": "commonjs",
+    "moduleResolution": "node10",
+    "ignoreDeprecations": "6.0",
+    "allowJs": true
+  }
+}

@@ -7,6 +7,8 @@ const apiTarget = 'http://localhost:3000'; // PORT do backend no .env.example
 
 export default defineConfig({
   plugins: [react()],
+  // Lê as variáveis VITE_* do .env da raiz (o mesmo do backend); só essas chegam ao browser.
+  envDir: '..',
   server: {
     port: 5173,
     strictPort: true, // o realm Keycloak só aceita redirecionamentos para a porta 5173

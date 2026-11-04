@@ -3,7 +3,10 @@ module.exports = {
   rootDir: '.',
   testEnvironment: 'node',
   testRegex: '.*\\.(spec|e2e-spec)\\.ts$',
-  transform: { '^.+\\.ts$': ['ts-jest', { tsconfig: 'tsconfig.json' }] },
+  // O jose 6 só é publicado em ESM; o carregador do Jest não faz require() de ESM, por isso o
+  // ts-jest transpila-o para CommonJS (tsconfig.spec.json). Em execução, o Node 22+ carrega-o direto.
+  transform: { '^.+\\.[tj]s$': ['ts-jest', { tsconfig: 'tsconfig.spec.json' }] },
+  transformIgnorePatterns: ['/node_modules/(?!jose/)'],
   moduleFileExtensions: ['ts', 'js', 'json'],
   // Recria a base de testes pelas migrations antes de cada execução (implementation-plan.md §5).
   globalSetup: '<rootDir>/test/global-setup.ts',
