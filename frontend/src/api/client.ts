@@ -1,4 +1,7 @@
 import { readAccessToken } from '../auth/access-token';
+import type { Priority, TaskState } from '../domain/tasks';
+
+export type { Priority, TaskState };
 
 /**
  * Cliente da API. O endereço base fica centralizado aqui: em desenvolvimento o Vite encaminha
@@ -112,3 +115,111 @@ export const createProject = (input: ProjectInput) => apiRequest<Project>('POST'
 export const updateProject = (id: string, input: Partial<ProjectInput>) =>
   apiRequest<Project>('PATCH', `/projects/${encodeURIComponent(id)}`, input);
 export const deleteProject = (id: string) => apiRequest<void>('DELETE', `/projects/${encodeURIComponent(id)}`);
+
+export interface UserSummary {
+  id: string;
+  name: string;
+}
+
+/** openapi.yaml: Epic e Objective (RN12). */
+export interface Epic {
+  id: string;
+  objectiveId: string;
+  title: string;
+  description: string | null;
+}
+
+export interface Objective {
+  id: string;
+  projectId: string;
+  title: string;
+  description: string | null;
+  epics: Epic[];
+}
+
+/** openapi.yaml: TaskSummary */
+export interface TaskSummary {
+  id: string;
+  title: string;
+  state: TaskState;
+  priority: Priority;
+  teamId: string;
+  assignee: UserSummary | null;
+  estimateHours: number | null;
+  storyPoints: number | null;
+  isBlocked: boolean;
+  isOverdue: boolean;
+  subtaskCount: number;
+}
+
+/** openapi.yaml: Task */
+export interface Task extends Omit<TaskSummary, 'subtaskCount'> {
+  projectId: string;
+  epicId: string | null;
+  parentTaskId: string | null;
+  description: string | null;
+  originalTeamId: string;
+  dueDate: string | null;
+  blockReason: string | null;
+  acceptanceCriteria: { id: string; description: string; isMet: boolean; metBy: UserSummary | null; metAt: string | null }[];
+  participants: { user: UserSummary; addedBy: UserSummary; addedAt: string }[];
+  subtasks: TaskSummary[];
+  createdBy: UserSummary;
+  createdAt: string;
+}
+
+/** openapi.yaml: TaskPage */
+export interface TaskPage {
+  page: number;
+  pageSize: number;
+  total: number;
+  items: TaskSummary[];
+}
+
+export interface ElementInput {
+  title: string;
+  description?: string;
+}
+
+/** openapi.yaml: TaskCreate — `epicId` e `teamId` numa tarefa, ou `parentTaskId` numa subtarefa. */
+export interface TaskCreate {
+  epicId?: string;
+  teamId?: string;
+  parentTaskId?: string;
+  title: string;
+  description?: string;
+  priority?: Priority;
+}
+
+/** openapi.yaml: TaskUpdate (no I4: título, descrição e prioridade). */
+export interface TaskUpdate {
+  title?: string;
+  description?: string | null;
+  priority?: Priority;
+}
+
+const id = (value: string) => encodeURIComponent(value);
+
+export const listObjectives = (projectId: string) => apiGet<Objective[]>(`/projects/${id(projectId)}/objectives`);
+export const createObjective = (projectId: string, input: ElementInput) =>
+  apiRequest<Objective>('POST', `/projects/${id(projectId)}/objectives`, input);
+export const createEpic = (objectiveId: string, input: ElementInput) =>
+  apiRequest<Epic>('POST', `/objectives/${id(objectiveId)}/epics`, input);
+
+export function listTasks(projectId: string, params: { state?: TaskState; priority?: Priority; page?: number; pageSize?: number }) {
+  const search = new URLSearchParams();
+  if (params.state) search.set('state', params.state);
+  if (params.priority) search.set('priority', params.priority);
+  if (params.page) search.set('page', String(params.page));
+  if (params.pageSize) search.set('pageSize', String(params.pageSize));
+  const qs = search.toString();
+  return apiGet<TaskPage>(`/projects/${id(projectId)}/tasks${qs ? `?${qs}` : ''}`);
+}
+
+export const createTask = (projectId: string, input: TaskCreate) =>
+  apiRequest<Task>('POST', `/projects/${id(projectId)}/tasks`, input);
+export const getTask = (taskId: string) => apiGet<Task>(`/tasks/${id(taskId)}`);
+export const updateTask = (taskId: string, input: TaskUpdate) => apiRequest<Task>('PATCH', `/tasks/${id(taskId)}`, input);
+export const changeTaskState = (taskId: string, state: TaskState) =>
+  apiRequest<Task>('POST', `/tasks/${id(taskId)}/state`, { state });
+export const deleteTask = (taskId: string) => apiRequest<void>('DELETE', `/tasks/${id(taskId)}`);

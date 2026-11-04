@@ -47,7 +47,7 @@ Confirmados na revisão crítica (Ex. 6). Os critérios de aceitação transvers
 
 ### 4.1 Funcionais
 
-Não há decisões funcionais pendentes: D01–D48 estão resolvidas (§4.3).
+Não há decisões funcionais pendentes: D01–D49 estão resolvidas (§4.3).
 
 ### 4.2 Técnicas
 
@@ -104,6 +104,7 @@ As decisões técnicas da Aula 2 estão resolvidas no §4.3. Ficam planeadas as 
 | D34 | Criação de contas de utilizador. | RN35 — o administrador cria a conta pelo e-mail profissional; a ligação à identidade faz-se no primeiro acesso. |
 | D47 | Ecrãs pedidos pela Ficha PL 03 face ao wireframe aprovado. | Os novos ecrãs (início de sessão, painel inicial, projetos, detalhe do projeto e detalhe da tarefa) seguem a navegação e a linguagem visual do wireframe. |
 | D48 | Quem cria projetos: o gestor de projeto é um papel por projeto obtido ao criar o projeto, o que tornava circular a criação do primeiro projeto. | O administrador e os líderes de equipa criam projetos; quem cria passa a ser gestor, sem associação automática de equipas (RN25). Decidido pelo humano em 2026-11-04 (I2). |
+| D49 | Quem edita o título e a descrição de uma tarefa: a matriz de permissões (§3.1) não o indicava. | O administrador, o gestor do projeto e qualquer membro da equipa responsável (incluindo o líder). A prioridade continua a seguir RN39 e o estado RN26. Decidido pelo humano em 2026-11-04 (I4). |
 | D46 | Limites dos campos de texto e paginação. | RN42; listagens paginadas (`page`, `pageSize` 20 por omissão e no máximo 100) que indicam o total (`openapi.yaml`). |
 | D45 | Comentários, pedidos pela Ficha PL 03. | RN41, RF35, US10. |
 | D44 | Vários responsáveis por tarefa, pedidos pela Ficha PL 03. | RN40 — um responsável pela execução (RN15) e vários participantes, que não contam para a capacidade. |

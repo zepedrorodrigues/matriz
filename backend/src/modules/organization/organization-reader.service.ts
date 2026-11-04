@@ -93,6 +93,40 @@ export class OrganizationReader {
     );
     return row.leader === true;
   }
+
+  /** Papel do utilizador numa equipa ativa, ou null se não pertencer a ela (RN21). */
+  async teamRole(userId: string, teamId: string): Promise<TeamRole | null> {
+    const [row] = await this.db.query(
+      `SELECT m.role FROM organization.team_membership m JOIN organization.team t ON t.id = m.team_id AND t.active
+       WHERE m.user_id = $1 AND m.team_id = $2`,
+      [userId, teamId],
+    );
+    return (row?.role as TeamRole | undefined) ?? null;
+  }
+
+  /** É líder de uma equipa ativa associada ao projeto (§3.1: criar objetivos e épicos). */
+  async leadsTeamOnProject(userId: string, projectId: string): Promise<boolean> {
+    const [row] = await this.db.query(
+      `SELECT EXISTS (
+         SELECT 1 FROM organization.project_team pt
+         JOIN organization.team t ON t.id = pt.team_id AND t.active
+         JOIN organization.team_membership m ON m.team_id = t.id AND m.user_id = $1 AND m.role = 'leader'
+         WHERE pt.project_id = $2) AS leader`,
+      [userId, projectId],
+    );
+    return row.leader === true;
+  }
+
+  /** A equipa está ativa e associada ao projeto: só assim pode ser responsável por tarefas (RN23, RN33). */
+  async isActiveTeamOfProject(teamId: string, projectId: string): Promise<boolean> {
+    const [row] = await this.db.query(
+      `SELECT EXISTS (
+         SELECT 1 FROM organization.project_team pt JOIN organization.team t ON t.id = pt.team_id AND t.active
+         WHERE pt.project_id = $2 AND pt.team_id = $1) AS ok`,
+      [teamId, projectId],
+    );
+    return row.ok === true;
+  }
 }
 
 export const ORGANIZATION_ENTITIES = [Team, TeamMembership, Project, ProjectManager, ProjectTeam];

@@ -302,3 +302,100 @@ button:disabled {
     flex-wrap: wrap;
   }
 }
+
+/* I4 — tarefas: filtros, listas de escolha, indicadores de estado e prioridade, hierarquia. */
+.field select {
+  font: inherit;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.field select[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.form__row,
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 1rem;
+  align-items: end;
+}
+
+.filters {
+  margin: 1rem 0;
+}
+
+.form--inline {
+  margin: 0.75rem 0;
+}
+
+.panel h3 {
+  margin-top: 0;
+}
+
+.badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  font-size: 0.875rem;
+}
+
+.badge--priority-high {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.badge--priority-low {
+  color: var(--muted);
+}
+
+.badge--warning {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border-color: var(--warning-text);
+}
+
+.tree,
+.checklist {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.tree > li + li {
+  margin-top: 0.75rem;
+}
+
+.checklist li + li {
+  margin-top: 0.35rem;
+}
+
+.breadcrumbs {
+  margin-top: 0;
+}
+
+.page > .badges {
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding: 1rem;
+  }
+
+  .page__header h1 {
+    font-size: 1.5rem;
+    overflow-wrap: anywhere;
+  }
+}

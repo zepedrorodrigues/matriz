@@ -522,7 +522,8 @@ paths:
       description: |
         Tarefas do projeto, sem as subtarefas (que aparecem no detalhe da tarefa principal), filtradas
         por estado e por prioridade (CA03.19). O total corresponde a todas as tarefas filtradas, e não
-        só à página. As tarefas eliminadas não aparecem (RN38).
+        só à página. As tarefas eliminadas não aparecem (RN38). Ordenadas da mais recente para a mais
+        antiga.
       parameters:
         - $ref: '#/components/parameters/ProjectId'
         - $ref: '#/components/parameters/StateFilter'
@@ -553,6 +554,9 @@ paths:
         tarefa principal e herda a sua equipa (RN22). A equipa tem de estar associada ao projeto
         (RN23). Um membro cria tarefas só no backlog da sua equipa (RN08, RN21). O estado inicial é
         `in_planning` e a prioridade, se omitida, é `medium` (RN39, CA03.11). O criador vem do token.
+        Responde 422 quando o épico não é do projeto, a equipa não está associada ao projeto ou está
+        desativada, a tarefa principal é de outro projeto ou é ela própria uma subtarefa (RN12), ou a
+        equipa indicada numa subtarefa difere da da tarefa principal (CA02.8).
       parameters:
         - $ref: '#/components/parameters/ProjectId'
       requestBody:
@@ -614,7 +618,8 @@ paths:
       operationId: updateTask
       summary: Editar uma tarefa
       description: |
-        Altera os campos indicados, com registo no histórico (RN32). Regras: estimativas após
+        Altera os campos indicados, com registo no histórico (RN32). Editam a tarefa o administrador,
+        o gestor do projeto e os membros da equipa responsável (D49). Regras: estimativas após
         «A desenvolver» só pelo líder ou gestor (RN10, CA03.10); prioridade (RN39, CA03.12);
         responsável pela execução segundo §3.1 e RN03; prazo pelo líder ou gestor (RN29); bloqueio
         com motivo obrigatório (RN28). A equipa só muda por transferência (RN20) e o estado por

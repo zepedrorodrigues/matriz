@@ -100,6 +100,7 @@ Decidida na revisão crítica (Ex. 6, D14).
 | Atualizar o estado; registar o cumprimento de critérios; assinalar bloqueios | ✔ | ✔ | ✔ | só tarefas atribuídas |
 | Alterar critérios após «A desenvolver» (RN24); reabrir tarefas entregues | ✔ | ✔ | ✔ | |
 | Eliminar projetos (RN38) | ✔ | ✔ | | |
+| Editar o título e a descrição de uma tarefa (D49) | ✔ | ✔ | ✔ | ✔ (da equipa responsável) |
 | Eliminar tarefas (RN38) | ✔ | ✔ | ✔ | |
 | Alterar a prioridade de uma tarefa (RN39) | ✔ | ✔ | ✔ | só ao criar |
 | Associar e remover participantes (RN40) | ✔ | ✔ | só a sua equipa | |

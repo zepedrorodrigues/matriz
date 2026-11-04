@@ -5,9 +5,14 @@ import { SetMetadata } from '@nestjs/common';
  * a matriz de permissões (requirements.md §3.1, SEC02). Os módulos declaram a permissão sem
  * dependerem do módulo Identidade (architecture.md §6).
  */
+export type ProjectAction = 'view' | 'edit' | 'delete' | 'createWork' | 'createTask';
+export type TaskAction = 'view' | 'edit' | 'changeState' | 'delete';
+
 export type AccessRequirement =
   | { kind: 'createProject' }
-  | { kind: 'project'; action: 'view' | 'edit' | 'delete'; param: string };
+  | { kind: 'project'; action: ProjectAction; param: string }
+  | { kind: 'objective'; action: 'createWork'; param: string }
+  | { kind: 'task'; action: TaskAction; param: string };
 
 export const ACCESS_REQUIREMENT = 'matriz:accessRequirement';
 
@@ -17,6 +22,18 @@ export const CanCreateProject = () => SetMetadata(ACCESS_REQUIREMENT, { kind: 'c
 /**
  * Operação sobre o projeto indicado no parâmetro de rota. Projeto inexistente, eliminado (RN38) ou
  * com identificador mal formado → 404; existente mas sem permissão → 403.
+ * `createWork`: criar objetivos; `createTask`: criar tarefas e subtarefas (a equipa vem do corpo).
  */
-export const ProjectAccess = (action: 'view' | 'edit' | 'delete', param = 'projectId') =>
+export const ProjectAccess = (action: ProjectAction, param = 'projectId') =>
   SetMetadata(ACCESS_REQUIREMENT, { kind: 'project', action, param } satisfies AccessRequirement);
+
+/** Criar épicos num objetivo: as mesmas regras de criar objetivos no projeto do objetivo. */
+export const ObjectiveAccess = (action: 'createWork', param = 'objectiveId') =>
+  SetMetadata(ACCESS_REQUIREMENT, { kind: 'objective', action, param } satisfies AccessRequirement);
+
+/**
+ * Operação sobre a tarefa indicada no parâmetro de rota. Tarefa inexistente, eliminada, de um projeto
+ * eliminado (RN38) ou com identificador mal formado → 404; existente mas sem permissão → 403.
+ */
+export const TaskAccess = (action: TaskAction, param = 'taskId') =>
+  SetMetadata(ACCESS_REQUIREMENT, { kind: 'task', action, param } satisfies AccessRequirement);

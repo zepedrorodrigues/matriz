@@ -17,8 +17,13 @@ import { TokenVerifier } from './token-verifier.service';
 interface AuthRequest {
   headers: { authorization?: string };
   params: Record<string, string>;
+  body?: unknown;
   user?: AuthenticatedUser;
 }
+
+/** O corpo JSON já interpretado (o guarda corre antes da validação); outro conteúdo conta como vazio. */
+const asRecord = (body: unknown): Record<string, unknown> =>
+  body !== null && typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
 
 /**
  * Guarda global (SEC01, CAT01): todas as rotas exigem um token de acesso válido, exceto as marcadas
@@ -57,7 +62,7 @@ export class AuthGuard implements CanActivate {
 
     // Permissão declarada na rota (matriz §3.1); recusada antes do controlador, sem alterar dados (SEC02).
     const requirement = this.reflector.getAllAndOverride<AccessRequirement>(ACCESS_REQUIREMENT, [ctx.getHandler(), ctx.getClass()]);
-    if (requirement) await this.access.enforce(req.user, requirement, req.params);
+    if (requirement) await this.access.enforce(req.user, requirement, req.params, asRecord(req.body));
     return true;
   }
 }

@@ -100,6 +100,64 @@ export class Fixtures {
     return row.id as string;
   }
 
+  async objective(projectId: string, title = 'Objetivo') {
+    const [row] = await this.db.query(`INSERT INTO work.objective (project_id, title) VALUES ($1, $2) RETURNING id`, [
+      projectId,
+      title,
+    ]);
+    return row.id as string;
+  }
+
+  async epic(objectiveId: string, title = 'Épico') {
+    const [row] = await this.db.query(`INSERT INTO work.epic (objective_id, title) VALUES ($1, $2) RETURNING id`, [
+      objectiveId,
+      title,
+    ]);
+    return row.id as string;
+  }
+
+  /** Tarefa (com `epicId`) ou subtarefa (com `parentTaskId`), criada diretamente na base. */
+  async task(opts: {
+    epicId?: string;
+    parentTaskId?: string;
+    teamId: string;
+    createdBy: string;
+    title?: string;
+    state?: string;
+    priority?: string;
+    assigneeId?: string;
+    estimateHours?: number;
+    storyPoints?: number;
+  }) {
+    const [row] = await this.db.query(
+      `INSERT INTO work.task (epic_id, parent_task_id, title, team_id, original_team_id, assignee_id, state, priority,
+                              estimate_hours, story_points, created_by)
+       VALUES ($1, $2, $3, $4, $4, $5, $6::work.task_state, $7::work.task_priority, $8, $9, $10) RETURNING id`,
+      [
+        opts.epicId ?? null,
+        opts.parentTaskId ?? null,
+        opts.title ?? 'Tarefa de teste',
+        opts.teamId,
+        opts.assigneeId ?? null,
+        opts.state ?? 'in_planning',
+        opts.priority ?? 'medium',
+        opts.estimateHours ?? null,
+        opts.storyPoints ?? null,
+        opts.createdBy,
+      ],
+    );
+    return row.id as string;
+  }
+
+  async criterion(taskId: string, createdBy: string, met = false) {
+    const [row] = await this.db.query(
+      `INSERT INTO work.acceptance_criterion (task_id, description, is_met, met_by, met_at, created_by)
+       VALUES ($1, 'Critério de teste', $2, CASE WHEN $2 THEN $3::uuid END, CASE WHEN $2 THEN now() END, $3) RETURNING id`,
+      [taskId, met, createdBy],
+    );
+    return row.id as string;
+  }
+
   async externalSubjectOf(userId: string): Promise<string | null> {
     const [row] = await this.db.query(`SELECT external_subject FROM identity."user" WHERE id = $1`, [userId]);
     return row.external_subject;

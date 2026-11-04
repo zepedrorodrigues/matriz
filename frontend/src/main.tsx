@@ -9,6 +9,7 @@ import { AuthGate } from './auth/AuthGate';
 import { oidcConfig } from './auth/oidc-config';
 import { ProjectDetailPage } from './pages/projects/ProjectDetailPage';
 import { ProjectsPage } from './pages/projects/ProjectsPage';
+import { TaskDetailPage } from './pages/tasks/TaskDetailPage';
 import './styles.css';
 
 const queryClient = new QueryClient({
@@ -26,6 +27,7 @@ const routes = [
       { index: true, element: <HomePage /> },
       { path: 'projetos', element: <ProjectsPage /> },
       { path: 'projetos/:projectId', element: <ProjectDetailPage /> },
+      { path: 'tarefas/:taskId', element: <TaskDetailPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

@@ -6,13 +6,14 @@ import { canManageProject, useCurrentUser } from '../../auth/current-user';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { Notice } from '../../components/Notice';
 import { ProjectForm } from './ProjectForm';
+import { ProjectTasks } from './ProjectTasks';
 
 const dateFormat = new Intl.DateTimeFormat('pt-PT', { dateStyle: 'long' });
 
 /**
  * Ecrã Detalhe do projeto (Ficha PL 03, Ex. 4 e Ex. 7): dados, gestores e equipas; edição e
- * eliminação com confirmação, só para o administrador e os gestores do projeto (§3.1).
- * As tarefas do projeto chegam no I4.
+ * eliminação com confirmação, só para o administrador e os gestores do projeto (§3.1); tarefas do
+ * projeto com filtros e criação (Ex. 5), e a hierarquia de objetivos e épicos (US02).
  */
 export function ProjectDetailPage() {
   const { projectId = '' } = useParams();
@@ -131,6 +132,8 @@ export function ProjectDetailPage() {
           </dl>
         </>
       )}
+
+      {!editing && me.data ? <ProjectTasks project={p} me={me.data} /> : null}
 
       {confirming ? (
         <ConfirmDialog

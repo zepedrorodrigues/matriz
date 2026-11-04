@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { HistoryModule } from './modules/history/history.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { OrganizationModule } from './modules/organization/organization.module';
+import { WorkModule } from './modules/work/work.module';
 import { buildDataSourceOptions } from './shared/database/database.config';
 import { ProblemDetailsFilter } from './shared/errors/problem-details.filter';
 import { apiValidationPipe } from './shared/errors/validation.pipe';
@@ -12,8 +13,8 @@ import { HealthController } from './shared/health/health.controller';
 import { SharedModule } from './shared/shared.module';
 
 /**
- * Módulo raiz. Módulos de domínio em `src/modules/<módulo>` (DT03); os restantes (work, planning,
- * tracking, history) entram nos incrementos respetivos.
+ * Módulo raiz. Módulos de domínio em `src/modules/<módulo>` (DT03); os restantes (planning, tracking)
+ * entram nos incrementos respetivos.
  */
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { SharedModule } from './shared/shared.module';
     SharedModule,
     HistoryModule,
     OrganizationModule,
+    WorkModule,
     IdentityModule,
   ],
   controllers: [HealthController],
