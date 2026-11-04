@@ -65,6 +65,34 @@ export class OrganizationReader {
     );
     return row.visible === true;
   }
+
+  /** O projeto existe e não foi eliminado (RN38: um projeto eliminado responde como inexistente). */
+  async projectExists(projectId: string): Promise<boolean> {
+    const [row] = await this.db.query(
+      `SELECT EXISTS (SELECT 1 FROM organization.project WHERE id = $1 AND deleted_at IS NULL) AS found`,
+      [projectId],
+    );
+    return row.found === true;
+  }
+
+  async isProjectManager(userId: string, projectId: string): Promise<boolean> {
+    const [row] = await this.db.query(
+      `SELECT EXISTS (SELECT 1 FROM organization.project_manager WHERE project_id = $2 AND user_id = $1) AS manager`,
+      [userId, projectId],
+    );
+    return row.manager === true;
+  }
+
+  /** É líder de pelo menos uma equipa ativa (RN25, D48: os líderes criam projetos). */
+  async leadsAnActiveTeam(userId: string): Promise<boolean> {
+    const [row] = await this.db.query(
+      `SELECT EXISTS (
+         SELECT 1 FROM organization.team_membership m JOIN organization.team t ON t.id = m.team_id AND t.active
+         WHERE m.user_id = $1 AND m.role = 'leader') AS leader`,
+      [userId],
+    );
+    return row.leader === true;
+  }
 }
 
 export const ORGANIZATION_ENTITIES = [Team, TeamMembership, Project, ProjectManager, ProjectTeam];

@@ -8,12 +8,15 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { errors } from 'jose';
+import { ACCESS_REQUIREMENT, type AccessRequirement } from '../../shared/auth/access.decorators';
 import { AuthenticatedUser, IS_PUBLIC } from '../../shared/auth/auth.decorators';
+import { AccessService } from './access.service';
 import { AccountService } from './account.service';
 import { TokenVerifier } from './token-verifier.service';
 
 interface AuthRequest {
   headers: { authorization?: string };
+  params: Record<string, string>;
   user?: AuthenticatedUser;
 }
 
@@ -28,6 +31,7 @@ export class AuthGuard implements CanActivate {
     private readonly reflector: Reflector,
     private readonly verifier: TokenVerifier,
     private readonly accounts: AccountService,
+    private readonly access: AccessService,
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
@@ -50,6 +54,10 @@ export class AuthGuard implements CanActivate {
     const user = await this.accounts.resolve(identity);
     if (!user) throw new ForbiddenException('Não existe uma conta ativa na Matriz para este utilizador.');
     req.user = { id: user.id, isAdmin: user.isAdmin };
+
+    // Permissão declarada na rota (matriz §3.1); recusada antes do controlador, sem alterar dados (SEC02).
+    const requirement = this.reflector.getAllAndOverride<AccessRequirement>(ACCESS_REQUIREMENT, [ctx.getHandler(), ctx.getClass()]);
+    if (requirement) await this.access.enforce(req.user, requirement, req.params);
     return true;
   }
 }

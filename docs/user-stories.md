@@ -52,9 +52,9 @@
 - **Then** a equipa fica registada, consta da lista de equipas e pode ser associada a projetos e a utilizadores.
 
 **CA01.2 — Criar um projeto** · *verificável*
-- **Given** que sou um administrador ou um gestor de projeto,
+- **Given** que sou um administrador ou um líder de equipa (RN25, D48),
 - **When** crio um projeto com um nome e um objetivo,
-- **Then** o projeto fica registado, consta da lista de projetos e pode receber equipas e objetivos.
+- **Then** o projeto fica registado, passo a ser o seu gestor, consta da lista de projetos e pode receber equipas e objetivos.
 
 **CA01.3 — Associar uma equipa a um projeto** · *verificável*
 - **Given** que existe um projeto e uma equipa,

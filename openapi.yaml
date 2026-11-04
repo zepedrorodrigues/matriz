@@ -311,9 +311,10 @@ paths:
       operationId: createProject
       summary: Criar um projeto
       description: |
-        Só o administrador e o gestor de projeto criam projetos (RN25). Quem cria o projeto passa a
-        ser o seu gestor; a identidade vem do token e não do pedido (`docs/requirements.md` §3.1,
-        CA01.2, CA01.17).
+        Criam projetos o administrador e os líderes de equipa (RN25, D48); outro utilizador recebe 403.
+        Quem cria o projeto passa a ser o seu gestor, sem associação automática de equipas; a
+        identidade vem do token e não do pedido (`docs/requirements.md` §3.1, CA01.2, CA01.17).
+        O nome é guardado sem os espaços no início e no fim.
       requestBody:
         required: true
         content:
@@ -1305,6 +1306,7 @@ components:
         objective:
           type: string
           maxLength: 1000
+          description: Novo objetivo; uma cadeia vazia (ou só com espaços) remove o objetivo, que passa a nulo.
 
     ProjectSummary:
       type: object

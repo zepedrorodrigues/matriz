@@ -1,17 +1,19 @@
-import { useQuery } from '@tanstack/react-query';
 import { useAuth } from 'react-oidc-context';
-import { ApiError, getCurrentUser, type CurrentUser } from './api/client';
+import { NavLink, Outlet } from 'react-router';
+import { ApiError, type CurrentUser } from './api/client';
 import { StatusScreen } from './auth/AuthGate';
+import { useCurrentUser } from './auth/current-user';
 
 const ROLE_LABEL = { leader: 'Líder', member: 'Membro' } as const;
 
 /**
- * I1 — aplicação com sessão iniciada: utilizador autenticado (`GET /me`) e fim de sessão.
- * O painel inicial, os projetos e as tarefas chegam nos incrementos seguintes (I2, I4, I8).
+ * Estrutura da aplicação com sessão iniciada: cabeçalho com a navegação do wireframe (D47) e o
+ * utilizador autenticado. As entradas Backlog, Sprints, Acompanhamento e Alertas aparecem com os
+ * respetivos incrementos.
  */
-export function App() {
+export function Layout() {
   const auth = useAuth();
-  const me = useQuery({ queryKey: ['me'], queryFn: getCurrentUser, retry: false });
+  const me = useCurrentUser();
   const signOut = () => void auth.signoutRedirect();
 
   if (me.isPending) return <StatusScreen message="A carregar o seu perfil…" />;
@@ -38,16 +40,42 @@ export function App() {
     <>
       <header className="app-header">
         <span className="app-header__brand">Matriz</span>
+        <nav aria-label="Principal" className="app-nav">
+          <NavLink to="/" end>
+            Início
+          </NavLink>
+          <NavLink to="/projetos">Projetos</NavLink>
+        </nav>
         <span className="app-header__user">{me.data.name}</span>
         <button type="button" onClick={signOut}>
           Terminar sessão
         </button>
       </header>
-      <main className="page">
-        <h1>Olá, {me.data.name}</h1>
-        <Profile user={me.data} />
+      <main>
+        <Outlet />
       </main>
     </>
+  );
+}
+
+/** Início provisório: perfil do utilizador. O painel inicial (Ex. 7, CA07.9) chega no I8. */
+export function HomePage() {
+  const me = useCurrentUser();
+  if (!me.data) return null;
+  return (
+    <section className="page">
+      <h1>Olá, {me.data.name}</h1>
+      <Profile user={me.data} />
+    </section>
+  );
+}
+
+export function NotFoundPage() {
+  return (
+    <section className="page">
+      <h1>Página não encontrada</h1>
+      <NavLink to="/">Voltar ao início</NavLink>
+    </section>
   );
 }
 
