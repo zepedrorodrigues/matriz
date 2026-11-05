@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, EntityManager } from 'typeorm';
 import { todaySql } from '../../shared/config/time-zone';
-import type { PlanningTaskInfo, TaskLocation, TaskState, WorkItemLocator } from '../../shared/ports/work-item-locator';
+import { DONE_STATES_SQL, type PlanningTaskInfo, type TaskLocation, type TaskState, type WorkItemLocator } from '../../shared/ports/work-item-locator';
 
 /** Implementação de WorkItemLocator pelo módulo dono das tabelas do Trabalho (architecture.md §6). */
 @Injectable()
@@ -66,7 +66,7 @@ export class WorkItemLocatorService implements WorkItemLocator {
        LEFT JOIN work.task p ON p.id = t.parent_task_id
        JOIN work.epic e ON e.id = coalesce(t.epic_id, p.epic_id)
        JOIN work.objective o ON o.id = e.objective_id
-       WHERE t.due_date < $1::date AND t.state NOT IN ('done', 'delivered')
+       WHERE t.due_date < $1::date AND t.state NOT IN (${DONE_STATES_SQL})
          AND t.deleted_at IS NULL AND (p.id IS NULL OR p.deleted_at IS NULL)`,
       [today],
     );
@@ -81,7 +81,7 @@ export class WorkItemLocatorService implements WorkItemLocator {
        JOIN work.epic e ON e.id = coalesce(t.epic_id, p.epic_id)
        JOIN work.objective o ON o.id = e.objective_id
        WHERE t.team_id = $1 AND t.deleted_at IS NULL AND (p.id IS NULL OR p.deleted_at IS NULL)
-         AND t.state NOT IN ('done', 'delivered')
+         AND t.state NOT IN (${DONE_STATES_SQL})
        GROUP BY o.project_id`,
       [teamId],
     );
@@ -115,7 +115,7 @@ export class WorkItemLocatorService implements WorkItemLocator {
       `SELECT t.id, t.title, o.project_id, t.team_id, t.parent_task_id, t.state, t.priority, t.estimate_hours,
               t.story_points, t.assignee_id, t.created_at, s.subtask_count, s.subtask_hours, s.subtask_points,
               to_char(t.due_date, 'YYYY-MM-DD') AS due_date, t.is_blocked, t.block_reason,
-              coalesce(t.due_date < ${todaySql()} AND t.state NOT IN ('done', 'delivered'), false) AS is_overdue
+              coalesce(t.due_date < ${todaySql()} AND t.state NOT IN (${DONE_STATES_SQL}), false) AS is_overdue
        FROM work.task t
        LEFT JOIN work.task p ON p.id = t.parent_task_id
        JOIN work.epic e ON e.id = coalesce(t.epic_id, p.epic_id)

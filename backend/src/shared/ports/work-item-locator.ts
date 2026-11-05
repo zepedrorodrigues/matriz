@@ -19,6 +19,14 @@ export type TaskState = (typeof TASK_STATES)[number];
  */
 export const DEVELOPMENT_STATES: readonly TaskState[] = ['in_development', 'in_testing', 'done', 'delivered'];
 
+/**
+ * RN26: tarefa concluída — «Terminada» ou «Entregue». Única definição, usada pelos módulos Trabalho e
+ * Planeamento (I14, Ex. 9.2: antes repetida em três constantes e em literais SQL).
+ */
+export const DONE_STATES: readonly TaskState[] = ['done', 'delivered'];
+/** A mesma lista para SQL: `t.state NOT IN (${DONE_STATES_SQL})` (valores fixos do código, não do pedido). */
+export const DONE_STATES_SQL = DONE_STATES.map((s) => `'${s}'`).join(', ');
+
 /** Tarefa vista pelo módulo Planeamento: o necessário para o backlog e as sprints (I9). */
 export interface PlanningTaskInfo {
   id: string;

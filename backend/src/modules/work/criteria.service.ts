@@ -4,7 +4,7 @@ import { DataSource, EntityManager } from 'typeorm';
 import type { AuthenticatedUser } from '../../shared/auth/auth.decorators';
 import { DomainEvents } from '../../shared/events/domain-events';
 import { USER_DIRECTORY, type UserDirectory } from '../../shared/ports/user-directory';
-import type { TaskState } from '../../shared/ports/work-item-locator';
+import { DONE_STATES, type TaskState } from '../../shared/ports/work-item-locator';
 import type { CriterionUpdateDto } from './work.dto';
 import type { UserSummary } from './tasks.service';
 
@@ -30,7 +30,6 @@ interface CriterionRow {
  * se acrescentam critérios nem se desmarca o cumprimento; a tarefa tem primeiro de recuar de estado
  * (decisão do humano, 2026-11-05).
  */
-const FINISHED_STATES: readonly TaskState[] = ['done', 'delivered'];
 const FINISHED_MESSAGE =
   'A tarefa está «Terminada» ou «Entregue», o que exige todos os critérios cumpridos (RN13): recue-a de estado antes de acrescentar critérios ou desmarcar o seu cumprimento.';
 
@@ -52,7 +51,7 @@ export class CriteriaService {
   async create(user: AuthenticatedUser, taskId: string, description: string): Promise<AcceptanceCriterion> {
     const row = await this.db.transaction(async (tx) => {
       const state = await this.lockTaskState(tx, taskId);
-      if (FINISHED_STATES.includes(state)) throw new ConflictException(FINISHED_MESSAGE);
+      if (DONE_STATES.includes(state)) throw new ConflictException(FINISHED_MESSAGE);
       const [created]: CriterionRow[] = await tx.query(
         `INSERT INTO work.acceptance_criterion (task_id, description, created_by) VALUES ($1, $2, $3)
          RETURNING id, description, is_met, met_by, met_at`,
@@ -95,7 +94,7 @@ export class CriteriaService {
         newValue.description = dto.description;
       }
       if (dto.isMet !== undefined && dto.isMet !== current.is_met) {
-        if (!dto.isMet && FINISHED_STATES.includes(state)) throw new ConflictException(FINISHED_MESSAGE);
+        if (!dto.isMet && DONE_STATES.includes(state)) throw new ConflictException(FINISHED_MESSAGE);
         oldValue.isMet = current.is_met;
         newValue.isMet = dto.isMet;
       }

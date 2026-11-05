@@ -4,7 +4,7 @@ import { DataSource, EntityManager } from 'typeorm';
 import type { AuthenticatedUser } from '../../shared/auth/auth.decorators';
 import { DomainEvents } from '../../shared/events/domain-events';
 import { USER_DIRECTORY, type UserDirectory } from '../../shared/ports/user-directory';
-import { WORK_ITEM_LOCATOR, type PlanningTaskInfo, type WorkItemLocator } from '../../shared/ports/work-item-locator';
+import { DONE_STATES, WORK_ITEM_LOCATOR, type PlanningTaskInfo, type WorkItemLocator } from '../../shared/ports/work-item-locator';
 import { OrganizationReader } from '../organization/organization-reader.service';
 import { planningTimeZone, workingDays } from './sprint-calendar';
 
@@ -108,7 +108,6 @@ interface SprintTaskRow {
   left_reason: LeftReason | null;
 }
 
-const COMPLETED = ['done', 'delivered'];
 const SPRINT_COLUMNS = `id, team_id, to_char(start_date, 'YYYY-MM-DD') AS start_date, to_char(end_date, 'YYYY-MM-DD') AS end_date,
   status, started_at, closed_at, created_at`;
 const num = (v: string | null) => (v === null ? null : Number(v));
@@ -246,7 +245,7 @@ export class SprintsService {
       if (task.teamId !== sprint.team_id) {
         throw new UnprocessableEntityException('Só se planeiam tarefas do backlog da equipa da sprint (RN01).');
       }
-      if (COMPLETED.includes(task.state)) throw new UnprocessableEntityException('A tarefa já está concluída: não se planeia numa sprint.');
+      if (DONE_STATES.includes(task.state)) throw new UnprocessableEntityException('A tarefa já está concluída: não se planeia numa sprint.');
       if (task.estimateHours === null) {
         throw new UnprocessableEntityException('Para planear a tarefa numa sprint, indique primeiro a estimativa temporal (RN27).');
       }
@@ -411,7 +410,7 @@ export class SprintsService {
           [sprint.id],
         );
         const infos = await this.work.planningTasks({ taskIds: open.map((o) => o.task_id) });
-        const unfinished = infos.filter((t) => !COMPLETED.includes(t.state)).map((t) => t.id);
+        const unfinished = infos.filter((t) => !DONE_STATES.includes(t.state)).map((t) => t.id);
         if (unfinished.length > 0) {
           await tx.query(
             `UPDATE planning.sprint_task SET left_at = now(), left_reason = 'sprint_ended'
@@ -459,7 +458,7 @@ export class SprintsService {
           currentStoryPoints: zero ? 0 : t.storyPoints,
           addedAfterStart: l.added_after_start,
           leftReason: l.left_reason,
-          done: !l.left_at && COMPLETED.includes(t.state),
+          done: !l.left_at && DONE_STATES.includes(t.state),
         },
       ];
     });
@@ -498,7 +497,7 @@ export class SprintsService {
         estimateHours: t.estimateHours,
         storyPoints: t.storyPoints,
         assignee: t.assigneeId ? { id: t.assigneeId, name: people.get(t.assigneeId) ?? '' } : null,
-        plannable: !COMPLETED.includes(t.state) && t.estimateHours !== null,
+        plannable: !DONE_STATES.includes(t.state) && t.estimateHours !== null,
       }));
   }
 
