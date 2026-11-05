@@ -51,6 +51,33 @@ export interface SprintDetail extends Sprint {
   leftTasks: SprintTask[];
 }
 
+export interface WorkTotals {
+  startHours: number | null;
+  currentHours: number;
+  startStoryPoints: number | null;
+  currentStoryPoints: number;
+  tasks: number;
+}
+
+export interface SprintProgress {
+  sprintId: string;
+  status: SprintStatus;
+  planned: WorkTotals;
+  done: WorkTotals;
+  tasks: {
+    id: string;
+    title: string;
+    state: PlanningTaskInfo['state'];
+    startEstimateHours: number | null;
+    currentEstimateHours: number | null;
+    startStoryPoints: number | null;
+    currentStoryPoints: number | null;
+    addedAfterStart: boolean;
+    leftReason: LeftReason | null;
+    done: boolean;
+  }[];
+}
+
 export interface BacklogPage {
   page: number;
   pageSize: number;
@@ -83,6 +110,7 @@ const COMPLETED = ['done', 'delivered'];
 const SPRINT_COLUMNS = `id, team_id, to_char(start_date, 'YYYY-MM-DD') AS start_date, to_char(end_date, 'YYYY-MM-DD') AS end_date,
   status, started_at, closed_at, created_at`;
 const num = (v: string | null) => (v === null ? null : Number(v));
+const round2 = (n: number) => Math.round(n * 100) / 100;
 
 const toSprint = (r: SprintRow): Sprint => ({
   id: r.id,
@@ -356,6 +384,53 @@ export class SprintsService {
       }
       return due.map((s) => s.id);
     });
+  }
+
+  /**
+   * CA07.2, RF27, RN10, RN37: planeado = todas as tarefas que entraram na sprint, incluindo as retiradas
+   * depois do início e as que saíram no fim; concluído = as que continuam na sprint em «Terminada» ou
+   * «Entregue». Horas e story points em separado, com a estimativa do início (ou de quando foi acrescentada)
+   * e a atual. Uma tarefa com subtarefas conta 0, como na capacidade (RN22).
+   */
+  async progress(sprintId: string): Promise<SprintProgress> {
+    const [sprint] = await this.db.query(`SELECT status FROM planning.sprint WHERE id = $1`, [sprintId]);
+    if (!sprint) throw new NotFoundException('A sprint não existe.');
+    const links: SprintTaskRow[] = await this.db.query(
+      `SELECT task_id, planned_at, added_after_start, start_estimate_hours, start_story_points, left_at, left_reason
+       FROM planning.sprint_task WHERE sprint_id = $1 ORDER BY planned_at, task_id`,
+      [sprintId],
+    );
+    const infos = await this.work.planningTasks({ taskIds: links.map((l) => l.task_id) });
+    const projects = await this.organization.projectNames([...new Set(infos.map((t) => t.projectId))]);
+    const byId = new Map(infos.filter((t) => projects.has(t.projectId)).map((t) => [t.id, t]));
+    const started = sprint.status !== 'planned';
+    const tasks = links.flatMap((l) => {
+      const t = byId.get(l.task_id);
+      if (!t) return [];
+      const zero = t.hasSubtasks;
+      return [
+        {
+          id: t.id,
+          title: t.title,
+          state: t.state,
+          startEstimateHours: started ? (zero ? 0 : num(l.start_estimate_hours)) : null,
+          currentEstimateHours: zero ? 0 : t.estimateHours,
+          startStoryPoints: started ? (zero ? 0 : l.start_story_points) : null,
+          currentStoryPoints: zero ? 0 : t.storyPoints,
+          addedAfterStart: l.added_after_start,
+          leftReason: l.left_reason,
+          done: !l.left_at && COMPLETED.includes(t.state),
+        },
+      ];
+    });
+    const totals = (list: typeof tasks) => ({
+      startHours: started ? round2(list.reduce((sum, t) => sum + (t.startEstimateHours ?? 0), 0)) : null,
+      currentHours: round2(list.reduce((sum, t) => sum + (t.currentEstimateHours ?? 0), 0)),
+      startStoryPoints: started ? list.reduce((sum, t) => sum + (t.startStoryPoints ?? 0), 0) : null,
+      currentStoryPoints: list.reduce((sum, t) => sum + (t.currentStoryPoints ?? 0), 0),
+      tasks: list.length,
+    });
+    return { sprintId, status: sprint.status, planned: totals(tasks), done: totals(tasks.filter((t) => t.done)), tasks };
   }
 
   /** Nomes dos projetos e dos responsáveis; sem as tarefas de projetos eliminados (RN38). */

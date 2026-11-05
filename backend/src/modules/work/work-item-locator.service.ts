@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import { todaySql } from '../../shared/config/time-zone';
 import type { PlanningTaskInfo, TaskLocation, TaskState, WorkItemLocator } from '../../shared/ports/work-item-locator';
 
 /** Implementação de WorkItemLocator pelo módulo dono das tabelas do Trabalho (architecture.md §6). */
@@ -86,9 +87,15 @@ export class WorkItemLocatorService implements WorkItemLocator {
       subtask_points: number | null;
       assignee_id: string | null;
       created_at: Date;
+      due_date: string | null;
+      is_overdue: boolean;
+      is_blocked: boolean;
+      block_reason: string | null;
     }[] = await this.db.query(
       `SELECT t.id, t.title, o.project_id, t.team_id, t.parent_task_id, t.state, t.priority, t.estimate_hours,
-              t.story_points, t.assignee_id, t.created_at, s.subtask_count, s.subtask_hours, s.subtask_points
+              t.story_points, t.assignee_id, t.created_at, s.subtask_count, s.subtask_hours, s.subtask_points,
+              to_char(t.due_date, 'YYYY-MM-DD') AS due_date, t.is_blocked, t.block_reason,
+              coalesce(t.due_date < ${todaySql()} AND t.state NOT IN ('done', 'delivered'), false) AS is_overdue
        FROM work.task t
        LEFT JOIN work.task p ON p.id = t.parent_task_id
        JOIN work.epic e ON e.id = coalesce(t.epic_id, p.epic_id)
@@ -116,6 +123,10 @@ export class WorkItemLocatorService implements WorkItemLocator {
         estimateHours: hours === null ? null : Number(hours),
         storyPoints: sum ? r.subtask_points : r.story_points,
         hasSubtasks: sum,
+        dueDate: r.due_date,
+        isOverdue: r.is_overdue,
+        isBlocked: r.is_blocked,
+        blockReason: r.block_reason,
         assigneeId: r.assignee_id,
         createdAt: r.created_at.toISOString(),
       };

@@ -18,6 +18,7 @@ import { Notice } from '../../components/Notice';
 import { SelectField } from '../../components/SelectField';
 import { STATE_LABEL, formatHours, type TaskState } from '../../domain/tasks';
 import { AssignmentPanel } from './AssignmentPanel';
+import { BlockPanel } from './BlockPanel';
 import { CommentsPanel } from './CommentsPanel';
 import { CriteriaPanel } from './CriteriaPanel';
 import { TaskBadges } from './TaskBadges';
@@ -47,6 +48,7 @@ export function TaskDetailPage() {
   const [criteriaResetKey, setCriteriaResetKey] = useState(0);
   const [assignmentResetKey, setAssignmentResetKey] = useState(0);
   const [commentsResetKey, setCommentsResetKey] = useState(0);
+  const [blockResetKey, setBlockResetKey] = useState(0);
 
   const task = useQuery({ queryKey: ['task', taskId], queryFn: () => getTask(taskId), retry: false });
   const projectId = task.data?.projectId;
@@ -61,9 +63,10 @@ export function TaskDetailPage() {
    * antigo não pode ficar visível ao lado do resultado da nova operação (Ex. 8, caso 09).
    */
   const startOperation = (
-    current: 'update' | 'move' | 'addSubtask' | 'remove' | 'criteria' | 'assignment' | 'comments',
+    current: 'update' | 'move' | 'addSubtask' | 'remove' | 'criteria' | 'assignment' | 'comments' | 'block',
   ) => {
     setNotice(undefined);
+    if (current !== 'block') setBlockResetKey((n) => n + 1);
     if (current !== 'criteria') setCriteriaResetKey((n) => n + 1);
     if (current !== 'assignment') setAssignmentResetKey((n) => n + 1);
     if (current !== 'comments') setCommentsResetKey((n) => n + 1);
@@ -111,6 +114,7 @@ export function TaskDetailPage() {
         ...(values.description ? { description: values.description } : {}),
         ...(values.estimateHours !== null ? { estimateHours: values.estimateHours } : {}),
         ...(values.storyPoints !== null ? { storyPoints: values.storyPoints } : {}),
+        ...(values.dueDate ? { dueDate: values.dueDate } : {}),
       }),
     onSuccess: async (created) => {
       queryClient.setQueryData(['task', created.id], created);
@@ -175,6 +179,7 @@ export function TaskDetailPage() {
     if (mayLead && values.priority !== t.priority) input.priority = values.priority;
     if (mayEstimate && values.estimateHours !== t.estimateHours) input.estimateHours = values.estimateHours;
     if (mayEstimate && values.storyPoints !== t.storyPoints) input.storyPoints = values.storyPoints;
+    if (mayLead && values.dueDate !== t.dueDate) input.dueDate = values.dueDate;
     if (Object.keys(input).length === 0) {
       setEditing(false);
       return;
@@ -205,7 +210,9 @@ export function TaskDetailPage() {
               priority: t.priority,
               estimateHours: t.estimateHours,
               storyPoints: t.storyPoints,
+              dueDate: t.dueDate,
             }}
+            dueDateEditable={mayLead}
             priorityEditable={mayLead}
             estimatesEditable={mayEstimate}
             estimatesHint={estimatesHint}
@@ -365,6 +372,8 @@ export function TaskDetailPage() {
           )}
         </section>
       ) : null}
+
+      <BlockPanel task={t} me={user} onOperationStart={() => startOperation('block')} resetKey={blockResetKey} onChanged={applyChange} />
 
       <CriteriaPanel
         task={t}

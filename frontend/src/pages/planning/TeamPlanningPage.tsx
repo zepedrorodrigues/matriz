@@ -7,8 +7,9 @@ import { Notice } from '../../components/Notice';
 import { Pagination } from '../../components/Pagination';
 import { SelectField } from '../../components/SelectField';
 import { SPRINT_STATUS_LABEL, formatDate, validateSprintDates, workingDays } from '../../domain/sprints';
-import { DateField } from './DateField';
+import { DateField } from '../../components/DateField';
 import { PlanningTaskRow } from './PlanningTaskRow';
+import { TeamWorkPanel } from './TeamWorkPanel';
 
 const PAGE_SIZE = 20;
 
@@ -139,6 +140,8 @@ export function TeamPlanningPage() {
               <p className="field__hint">Só o líder da equipa cria sprints e planeia tarefas (RN36).</p>
             )}
           </section>
+
+          {teamId ? <TeamWorkPanel key={teamId} teamId={teamId} /> : null}
 
           <section className="panel" aria-labelledby="backlog-title">
             <h2 id="backlog-title">Backlog{backlog.data ? ` (${backlog.data.total})` : ''}</h2>

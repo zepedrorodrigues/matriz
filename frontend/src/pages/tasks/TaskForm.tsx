@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { ApiError, type Objective } from '../../api/client';
+import { DateField } from '../../components/DateField';
+import { formatDate } from '../../domain/sprints';
 import { FormField } from '../../components/FormField';
 import { Notice } from '../../components/Notice';
 import { SelectField } from '../../components/SelectField';
@@ -21,12 +23,23 @@ export interface TaskFormValues {
   /** Estimativas independentes (CA03.4); `null` = sem valor. */
   estimateHours: number | null;
   storyPoints: number | null;
+  /** RN29: AAAA-MM-DD ou `null`. */
+  dueDate: string | null;
   epicId?: string;
   teamId?: string;
 }
 
 interface TaskFormProps {
-  initial?: { title: string; description: string; priority: Priority; estimateHours: number | null; storyPoints: number | null };
+  initial?: {
+    title: string;
+    description: string;
+    priority: Priority;
+    estimateHours: number | null;
+    storyPoints: number | null;
+    dueDate: string | null;
+  };
+  /** RN29, F21: depois da criação, só o líder, o gestor e o administrador alteram o prazo. */
+  dueDateEditable?: boolean;
   /** Só na criação de uma tarefa: épicos do projeto, agrupados por objetivo (RN12). */
   objectives?: Objective[];
   /** Só na criação de uma tarefa: equipas para onde o utilizador pode criar (RN21, RN23). */
@@ -49,7 +62,7 @@ interface TaskFormProps {
   onCancel?: () => void;
 }
 
-const FIELDS = ['title', 'description', 'priority', 'estimateHours', 'storyPoints', 'epicId', 'teamId'];
+const FIELDS = ['title', 'description', 'priority', 'estimateHours', 'storyPoints', 'dueDate', 'epicId', 'teamId'];
 
 /**
  * Formulário de tarefas e subtarefas (criação e edição). Valida como a API (CA03.18) e não permite
@@ -62,6 +75,7 @@ export function TaskForm({
   priorityEditable = true,
   estimatesEditable = true,
   estimatesHint,
+  dueDateEditable = true,
   submitLabel,
   busyLabel,
   error,
@@ -75,6 +89,7 @@ export function TaskForm({
   const [priority, setPriority] = useState<Priority>(initial?.priority ?? 'medium');
   const [hours, setHours] = useState(initial?.estimateHours == null ? '' : formatHours(initial.estimateHours));
   const [points, setPoints] = useState(initial?.storyPoints == null ? '' : String(initial.storyPoints));
+  const [dueDate, setDueDate] = useState(initial?.dueDate ?? '');
   const [epicId, setEpicId] = useState(objectives?.flatMap((o) => o.epics)[0]?.id ?? '');
   const [teamId, setTeamId] = useState(teams?.length === 1 ? teams[0].id : '');
   const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
@@ -104,6 +119,7 @@ export function TaskForm({
       priority,
       estimateHours: estimateHours ?? null,
       storyPoints: points === '' ? null : Number(points),
+      dueDate: dueDate || null,
       ...(withHierarchy ? { epicId, teamId } : {}),
     });
   };
@@ -182,6 +198,15 @@ export function TaskForm({
             {hours === '' ? 'Sem estimativa temporal' : `${hours} h`} · {points === '' ? 'sem story points' : `${points} SP`}
           </span>
           {estimatesHint ? <span className="field__hint">{estimatesHint}</span> : null}
+        </div>
+      )}
+      {dueDateEditable ? (
+        <DateField label="Prazo" value={dueDate} onChange={setDueDate} error={errors.dueDate} required={false} hint="Opcional; uma data" />
+      ) : (
+        <div className="field">
+          <span className="field__label">Prazo</span>
+          <span>{dueDate ? formatDate(dueDate) : 'Sem prazo'}</span>
+          <span className="field__hint">Só o líder da equipa, o gestor do projeto e o administrador alteram o prazo (RN29).</span>
         </div>
       )}
       <div className="actions">

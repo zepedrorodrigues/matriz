@@ -48,6 +48,7 @@ export function ProjectTasks({ project, me }: { project: Project; me: CurrentUse
         ...(values.description ? { description: values.description } : {}),
         ...(values.estimateHours !== null ? { estimateHours: values.estimateHours } : {}),
         ...(values.storyPoints !== null ? { storyPoints: values.storyPoints } : {}),
+        ...(values.dueDate ? { dueDate: values.dueDate } : {}),
       }),
     onMutate: () => {
       setNotice(undefined);

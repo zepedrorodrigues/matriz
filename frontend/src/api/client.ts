@@ -216,6 +216,62 @@ export interface SprintDates {
   startDate: string;
   endDate: string;
 }
+/** openapi.yaml: TeamWork (CA07.1, CA07.3, CA07.4) e SprintProgress (CA07.2). */
+export type WorkGroup = 'planned' | 'in_progress' | 'done' | 'blocked' | 'overdue';
+export interface TeamWork {
+  page: number;
+  pageSize: number;
+  total: number;
+  counts: Record<WorkGroup, number>;
+  items: {
+    id: string;
+    title: string;
+    projectId: string;
+    projectName: string;
+    parentTaskId: string | null;
+    state: TaskState;
+    priority: Priority;
+    assignee: UserSummary | null;
+    dueDate: string | null;
+    isOverdue: boolean;
+    isBlocked: boolean;
+    blockReason: string | null;
+  }[];
+}
+export function getTeamWork(teamId: string, params: { group?: WorkGroup; page?: number; pageSize?: number }) {
+  const search = new URLSearchParams();
+  if (params.group) search.set('group', params.group);
+  search.set('page', String(params.page ?? 1));
+  search.set('pageSize', String(params.pageSize ?? 20));
+  return apiGet<TeamWork>(`/teams/${id(teamId)}/work?${search.toString()}`);
+}
+export interface WorkTotals {
+  startHours: number | null;
+  currentHours: number;
+  startStoryPoints: number | null;
+  currentStoryPoints: number;
+  tasks: number;
+}
+export interface SprintProgress {
+  sprintId: string;
+  status: SprintStatus;
+  planned: WorkTotals;
+  done: WorkTotals;
+  tasks: {
+    id: string;
+    title: string;
+    state: TaskState;
+    startEstimateHours: number | null;
+    currentEstimateHours: number | null;
+    startStoryPoints: number | null;
+    currentStoryPoints: number | null;
+    addedAfterStart: boolean;
+    leftReason: 'sprint_ended' | 'removed' | 'transferred' | null;
+    done: boolean;
+  }[];
+}
+export const getSprintProgress = (sprintId: string) => apiGet<SprintProgress>(`/sprints/${id(sprintId)}/progress`);
+
 /** openapi.yaml: SprintCapacity, MemberCapacity (US05; RN06, RN19; SEC07: `members` filtrado). */
 export interface MemberCapacity {
   userId: string;
@@ -372,6 +428,8 @@ export interface TaskCreate {
   priority?: Priority;
   estimateHours?: number;
   storyPoints?: number;
+  /** RN29: AAAA-MM-DD. */
+  dueDate?: string;
 }
 
 /** openapi.yaml: TaskUpdate (título, descrição, prioridade e estimativas; `null` deixa sem valor). */
@@ -384,6 +442,11 @@ export interface TaskUpdate {
   /** CA03.3, CA09.1: `null` retira o responsável; a justificação é obrigatória para outra equipa (RN03). */
   assigneeId?: string | null;
   assignmentJustification?: string;
+  /** RN29, F21: `null` retira o prazo. */
+  dueDate?: string | null;
+  /** RN28, CA07.6: bloquear exige o motivo. */
+  isBlocked?: boolean;
+  blockReason?: string | null;
 }
 
 const id = (value: string) => encodeURIComponent(value);

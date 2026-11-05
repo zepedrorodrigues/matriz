@@ -18,7 +18,8 @@ import { PageFeedbackProvider, usePageFeedback } from '../../components/PageFeed
 import { SPRINT_STATUS_LABEL, formatDate, validateSprintDates, workingDays } from '../../domain/sprints';
 import { formatHours } from '../../domain/tasks';
 import { CapacityPanel } from './CapacityPanel';
-import { DateField } from './DateField';
+import { ProgressPanel } from './ProgressPanel';
+import { DateField } from '../../components/DateField';
 import { PlanningTaskRow } from './PlanningTaskRow';
 
 const errorText = (error: unknown) => (error instanceof ApiError ? error.message : 'Não foi possível concluir a operação.');
@@ -62,6 +63,7 @@ function Sprint() {
       queryClient.invalidateQueries({ queryKey: ['backlog', updated.teamId] }),
       queryClient.invalidateQueries({ queryKey: ['sprints', updated.teamId] }),
       queryClient.invalidateQueries({ queryKey: ['capacity', sprintId] }),
+      queryClient.invalidateQueries({ queryKey: ['sprint-progress', sprintId] }),
     ]);
     setNotice(message);
   };
@@ -189,6 +191,8 @@ function Sprint() {
       </p>
 
       <CapacityPanel sprintId={s.id} mayAdjust={mayManage && open} />
+
+      <ProgressPanel sprintId={s.id} />
 
       <section className="panel" aria-labelledby="sprint-tasks-title">
         <h2 id="sprint-tasks-title">{s.status === 'planned' ? 'Tarefas planeadas' : 'Tarefas da sprint'}</h2>

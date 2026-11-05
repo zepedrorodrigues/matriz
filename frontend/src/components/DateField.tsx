@@ -7,12 +7,14 @@ export function DateField({
   onChange,
   error,
   hint,
+  required = true,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   error?: string;
   hint?: string;
+  required?: boolean;
 }) {
   const id = useId();
   const describedBy = [hint ? `${id}-hint` : null, error ? `${id}-error` : null].filter(Boolean).join(' ') || undefined;
@@ -20,13 +22,13 @@ export function DateField({
     <div className="field">
       <label htmlFor={id}>
         {label}
-        <span aria-hidden="true"> *</span>
+        {required ? <span aria-hidden="true"> *</span> : null}
       </label>
       <input
         id={id}
         type="date"
         value={value}
-        required
+        required={required}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
         onChange={(e) => onChange(e.target.value)}

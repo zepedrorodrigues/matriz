@@ -7,7 +7,7 @@ import { AvailabilityInputDto, BacklogQuery, SprintDatesDto, SprintStartDto, Spr
 import { CapacityService } from './capacity.service';
 import type { SprintCapacity } from './capacity.service';
 import { SprintsService } from './sprints.service';
-import type { BacklogPage, Sprint, SprintDetail } from './sprints.service';
+import type { BacklogPage, Sprint, SprintDetail, SprintProgress } from './sprints.service';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -20,8 +20,8 @@ function requireOrder(dto: { startDate?: string; endDate?: string }) {
 
 /**
  * openapi.yaml: listTeamSprints, createSprint, getTeamBacklog, getSprint, updateSprintDates, startSprint,
- * planSprintTask, removeSprintTask, getSprintCapacity, setAvailability, resetAvailability. A autorização é
- * declarada em cada rota e verificada pelo guarda global (§3.1, RN36).
+ * planSprintTask, removeSprintTask, getSprintCapacity, setAvailability, resetAvailability,
+ * getSprintProgress. A autorização é declarada em cada rota e verificada pelo guarda global (§3.1, RN36).
  */
 @Controller()
 export class PlanningController {
@@ -74,6 +74,12 @@ export class PlanningController {
   @SprintAccess('manage')
   plan(@CurrentUser() user: AuthenticatedUser, @Param('sprintId') sprintId: string, @Body() dto: SprintTaskInputDto): Promise<SprintDetail> {
     return this.sprints.planTask(user, sprintId, dto.taskId);
+  }
+
+  @Get('sprints/:sprintId/progress')
+  @SprintAccess('view')
+  progress(@Param('sprintId') sprintId: string): Promise<SprintProgress> {
+    return this.sprints.progress(sprintId);
   }
 
   @Get('sprints/:sprintId/capacity')

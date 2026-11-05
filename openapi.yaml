@@ -840,6 +840,72 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
 
+  /teams/{teamId}/work:
+    get:
+      tags: [Acompanhamento]
+      operationId: getTeamWork
+      summary: Consultar o trabalho de uma equipa
+      description: |
+        Membros da equipa, administrador e gestores dos projetos em que participa (F20). Tarefas e
+        subtarefas da equipa (sem as eliminadas nem as de projetos eliminados, RN38), com as contagens
+        por grupo — planeadas («Em planeamento», «Em análise técnica», «Pronto a desenvolver»), em
+        execução («A desenvolver», «Em testes»), concluídas («Terminada», «Entregue») — e das bloqueadas
+        e atrasadas, qualquer que seja o estado (CA07.1, CA07.3, CA07.4, RF26). `group` filtra a lista;
+        as contagens são sempre do conjunto completo. Bloqueadas primeiro, depois as atrasadas.
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+        - name: group
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [planned, in_progress, done, blocked, overdue]
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Trabalho da equipa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamWork'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sprints/{sprintId}/progress:
+    get:
+      tags: [Planeamento]
+      operationId: getSprintProgress
+      summary: Comparar o planeado com o concluído numa sprint
+      description: |
+        Quem consulta o planeamento da equipa (F20). Trabalho planeado — todas as tarefas que entraram
+        na sprint, incluindo as retiradas depois do início (RN37) e as que saíram no fim — e trabalho
+        concluído — as que continuam na sprint em «Terminada» ou «Entregue» —, em horas e em story
+        points apresentados separadamente, com a estimativa registada no início (ou quando foi
+        acrescentada) e a atual (CA07.2, RF27, RN10). Uma tarefa com subtarefas conta 0, como na
+        capacidade (RN22). Numa sprint «Planeada», as estimativas do início são nulas.
+      parameters:
+        - $ref: '#/components/parameters/SprintId'
+      responses:
+        '200':
+          description: Comparação da sprint.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SprintProgress'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /dashboard:
     get:
       tags: [Acompanhamento]
@@ -1179,7 +1245,8 @@ paths:
         equipa indicada numa subtarefa difere da da tarefa principal (CA02.8). O responsável pela
         execução (`assigneeId`), na criação, é atribuído pelo líder da equipa, pelo gestor ou pelo
         administrador (o membro recebe 403) e tem de ser um membro ativo da equipa responsável (422);
-        a atribuição a alguém de outra equipa faz-se na edição, com justificação (RN03).
+        a atribuição a alguém de outra equipa faz-se na edição, com justificação (RN03). Quem cria a
+        tarefa pode indicar o prazo (`dueDate`, RN29; F21).
       parameters:
         - $ref: '#/components/parameters/ProjectId'
       requestBody:
@@ -1252,7 +1319,12 @@ paths:
         equipa, o gestor e o administrador (o membro recebe 403, CA03.6); responde 422 quando o
         utilizador não existe ou está desativado, quando o líder escolhe alguém de outra equipa
         (CA03.15) ou quando falta a justificação para outra equipa (RN03, CA09.6); `null` retira-o;
-        a equipa responsável não muda (RN20); prazo pelo líder ou gestor (RN29); bloqueio
+        a equipa responsável não muda (RN20); prazo (`dueDate`, `null` retira-o) só pelo líder da
+        equipa, pelo gestor ou pelo administrador, com `due_date_changed` no histórico (RN29, F21);
+        bloqueio (`isBlocked` e `blockReason`, RN28, CA07.6) pelo administrador, pelo gestor, pelo líder e
+        pelo membro a quem a tarefa está atribuída: bloquear exige o motivo (422 sem ele), desbloquear
+        apaga-o, um motivo sem a tarefa bloqueada → 422; o estado mantém-se; `blocked`, `unblocked` ou
+        `block_reason_changed` no histórico; prazo pelo líder ou gestor (RN29); bloqueio
         com motivo obrigatório (RN28). A equipa só muda por transferência (RN20) e o estado por
         `POST /tasks/{taskId}/state`.
       parameters:
@@ -2289,6 +2361,122 @@ components:
                         type: [string, 'null']
                         format: uuid
 
+    WorkTotals:
+      type: object
+      required: [startHours, currentHours, startStoryPoints, currentStoryPoints, tasks]
+      properties:
+        startHours:
+          type: [number, 'null']
+          description: Soma das estimativas registadas no início; nula numa sprint «Planeada».
+        currentHours:
+          type: number
+        startStoryPoints:
+          type: [integer, 'null']
+        currentStoryPoints:
+          type: integer
+        tasks:
+          type: integer
+
+    SprintProgress:
+      type: object
+      required: [sprintId, status, planned, done, tasks]
+      properties:
+        sprintId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [planned, active, closed]
+        planned:
+          $ref: '#/components/schemas/WorkTotals'
+        done:
+          $ref: '#/components/schemas/WorkTotals'
+        tasks:
+          type: array
+          items:
+            type: object
+            required: [id, title, state, startEstimateHours, currentEstimateHours, startStoryPoints, currentStoryPoints, addedAfterStart, leftReason, done]
+            properties:
+              id:
+                type: string
+                format: uuid
+              title:
+                type: string
+              state:
+                $ref: '#/components/schemas/TaskState'
+              startEstimateHours:
+                type: [number, 'null']
+              currentEstimateHours:
+                type: [number, 'null']
+              startStoryPoints:
+                type: [integer, 'null']
+              currentStoryPoints:
+                type: [integer, 'null']
+              addedAfterStart:
+                type: boolean
+              leftReason:
+                type: [string, 'null']
+                enum: [sprint_ended, removed, transferred, null]
+              done:
+                type: boolean
+
+    TeamWork:
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+        - type: object
+          required: [counts, items]
+          properties:
+            counts:
+              type: object
+              required: [planned, in_progress, done, blocked, overdue]
+              properties:
+                planned:
+                  type: integer
+                in_progress:
+                  type: integer
+                done:
+                  type: integer
+                blocked:
+                  type: integer
+                overdue:
+                  type: integer
+            items:
+              type: array
+              items:
+                type: object
+                required: [id, title, projectId, projectName, parentTaskId, state, priority, assignee, dueDate, isOverdue, isBlocked, blockReason]
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  projectId:
+                    type: string
+                    format: uuid
+                  projectName:
+                    type: string
+                  parentTaskId:
+                    type: [string, 'null']
+                    format: uuid
+                  state:
+                    $ref: '#/components/schemas/TaskState'
+                  priority:
+                    $ref: '#/components/schemas/Priority'
+                  assignee:
+                    oneOf:
+                      - $ref: '#/components/schemas/UserSummary'
+                      - type: 'null'
+                  dueDate:
+                    type: [string, 'null']
+                    format: date
+                  isOverdue:
+                    type: boolean
+                  isBlocked:
+                    type: boolean
+                  blockReason:
+                    type: [string, 'null']
+
     TeamSummary:
       type: object
       required: [id, name, active]
@@ -2521,7 +2709,10 @@ components:
           type: boolean
         blockReason:
           type: [string, 'null']
-          description: Obrigatório quando `isBlocked` é verdadeiro; descreve o impedimento (RN28, SEC06).
+          maxLength: 2000
+          description: |
+            Obrigatório ao bloquear; até 2000 caracteres, não só espaços; descreve o impedimento, nunca
+            motivos pessoais (RN28, SEC06).
 
     StateChange:
       type: object

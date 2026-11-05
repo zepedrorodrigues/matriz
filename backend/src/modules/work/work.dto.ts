@@ -3,6 +3,7 @@ import {
   IsBoolean,
   IsIn,
   IsInt,
+  IsISO8601,
   IsNumber,
   IsOptional,
   IsString,
@@ -29,6 +30,8 @@ const STATE_MESSAGE = `O estado tem de ser um de: ${TASK_STATES.join(', ')}.`;
 const ELEMENT_TITLE_MESSAGE = 'O título é obrigatório e não pode ter só espaços.';
 const CRITERION_MESSAGE = 'A descrição do critério é obrigatória e não pode ter só espaços.';
 const USER_ID_MESSAGE = 'O utilizador tem de ser um identificador válido.';
+const DUE_MESSAGE = 'Indique o prazo como data, no formato AAAA-MM-DD.';
+const BLOCK_MESSAGE = 'O motivo do bloqueio tem até 2000 caracteres.';
 const JUSTIFICATION_MESSAGE = 'A justificação não pode ter só espaços.';
 
 /** RN07: escala comum e fixa de story points. */
@@ -74,7 +77,7 @@ export class ElementInputDto {
  * openapi.yaml: TaskCreate (CA03.1, CA03.11, CA03.18, RN12, RN22, RN29). A combinação épico e equipa
  * (tarefa) ou tarefa principal (subtarefa) é verificada no controlador. Estimativas (I5, CA03.4) e
  * responsável pela execução (I6): na criação, só um membro da equipa responsável (decisão 4a, F15).
- * O prazo chega no I11 — até lá, é um campo desconhecido (400).
+ * Prazo (I11): quem cria pode indicá-lo (RN29, F21).
  */
 export class CreateTaskDto {
   @IsOptional()
@@ -113,6 +116,11 @@ export class CreateTaskDto {
   @IsOptional()
   @IsUUID('all', { message: USER_ID_MESSAGE })
   assigneeId?: string;
+
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: DUE_MESSAGE })
+  @IsISO8601({ strict: true }, { message: DUE_MESSAGE })
+  dueDate?: string;
 }
 
 /**
@@ -153,6 +161,23 @@ export class UpdateTaskDto {
   @IsString({ message: JUSTIFICATION_MESSAGE })
   @Matches(/\S/, { message: JUSTIFICATION_MESSAGE })
   assignmentJustification?: string;
+
+  /** RN29: `null` retira o prazo; altera-o o líder, o gestor ou o administrador (verificado pelo guarda). */
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: DUE_MESSAGE })
+  @IsISO8601({ strict: true }, { message: DUE_MESSAGE })
+  dueDate?: string | null;
+
+  /** RN28, CA07.6: indicador, não estado. */
+  @ValidateIf((o: UpdateTaskDto) => o.isBlocked !== undefined)
+  @IsBoolean({ message: 'isBlocked tem de ser verdadeiro ou falso.' })
+  isBlocked?: boolean;
+
+  /** Descreve o impedimento, nunca motivos pessoais (SEC06); obrigatório ao bloquear (verificado no serviço). */
+  @IsOptional()
+  @IsString({ message: BLOCK_MESSAGE })
+  @MaxLength(2000, { message: BLOCK_MESSAGE })
+  blockReason?: string | null;
 }
 
 /** openapi.yaml: ParticipantInput (CA03.13, CA03.15; RN03). */

@@ -31,6 +31,11 @@ export interface PlanningTaskInfo {
   storyPoints: number | null;
   /** Tem subtarefas não eliminadas: na capacidade conta 0, contam as subtarefas (RN22, CA05.9). */
   hasSubtasks: boolean;
+  dueDate: string | null;
+  /** Prazo ultrapassado (no fuso da aplicação) e não concluída (RF28). */
+  isOverdue: boolean;
+  isBlocked: boolean;
+  blockReason: string | null;
   assigneeId: string | null;
   createdAt: string;
 }

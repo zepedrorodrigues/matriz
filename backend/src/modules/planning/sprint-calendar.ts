@@ -3,7 +3,7 @@
  * Europe/Lisbon, configurável em APP_TIME_ZONE) e os dias úteis de uma sprint (RN06: segunda a sexta,
  * sem descontar feriados).
  */
-export const planningTimeZone = () => process.env.APP_TIME_ZONE || 'Europe/Lisbon';
+export { appTimeZone as planningTimeZone } from '../../shared/config/time-zone';
 
 /** Dias úteis entre duas datas AAAA-MM-DD, inclusive. */
 export function workingDays(startDate: string, endDate: string): number {

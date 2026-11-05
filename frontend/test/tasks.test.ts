@@ -14,6 +14,7 @@ import {
   lifecycleTargets,
   needsJustification,
   parseEstimateHours,
+  validateBlockReason,
   validateCommentText,
   validateCriterionText,
   validateTaskText,
@@ -92,4 +93,9 @@ test('CA10.2 — o comentário mais recente fica na última página', () => {
   assert.equal(lastPage(0, 20), 1);
   assert.equal(lastPage(20, 20), 1);
   assert.equal(lastPage(21, 20), 2);
+});
+
+test('RN28, SEC06 — o motivo do bloqueio é obrigatório, não só espaços, até 2000 caracteres', () => {
+  for (const bad of ['', '   ', 'x'.repeat(2001)]) assert.ok(validateBlockReason(bad));
+  assert.equal(validateBlockReason('  Ambiente de testes em baixo  '), undefined);
 });

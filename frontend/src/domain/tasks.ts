@@ -107,3 +107,11 @@ export function validateCommentText(text: string): string | undefined {
 
 /** Página onde fica o comentário número `total` (o mais recente), por ordem cronológica (CA10.2). */
 export const lastPage = (total: number, pageSize: number) => Math.max(1, Math.ceil(total / pageSize));
+
+export const BLOCK_REASON_MESSAGE = 'Descreva o impedimento ao trabalho (até 2000 caracteres), nunca motivos pessoais.';
+
+/** RN28, SEC06: ao bloquear, o motivo é obrigatório, não só espaços, até 2000 caracteres. */
+export function validateBlockReason(text: string): string | undefined {
+  const length = text.trim().length;
+  return length < 1 || length > 2000 ? BLOCK_REASON_MESSAGE : undefined;
+}

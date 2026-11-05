@@ -72,3 +72,7 @@ export const leadsTeam = (me: CurrentUser, teamId: string) => roleIn(me, teamId)
 
 /** RN36: iniciam a sprint o líder da equipa e o administrador. */
 export const canStartSprint = (me: CurrentUser, teamId: string) => me.isAdmin || leadsTeam(me, teamId);
+
+/** §3.1, RN28: assinalam bloqueios o administrador, o gestor, o líder e o membro nas tarefas que lhe estão atribuídas. */
+export const canBlockTask = (me: CurrentUser, task: Task) =>
+  leadsTask(me, task) || (roleIn(me, task.teamId) !== undefined && task.assignee?.id === me.id);

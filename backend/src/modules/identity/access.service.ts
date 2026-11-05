@@ -237,6 +237,18 @@ export class AccessService {
             'Depois de a tarefa entrar em «A desenvolver», só o líder da equipa, os gestores do projeto e o administrador alteram as estimativas.',
           );
         }
+        // RN29 (F21): depois da criação, o prazo muda pelo líder, pelo gestor ou pelo administrador.
+        if (body.dueDate !== undefined && !LEADS_TASK.includes(role)) {
+          throw new ForbiddenException('Só o líder da equipa, os gestores do projeto e o administrador alteram o prazo (RN29).');
+        }
+        // §3.1, RN28: assinalam bloqueios o líder, o gestor, o administrador e o membro nas tarefas que lhe estão atribuídas.
+        if (
+          (body.isBlocked !== undefined || body.blockReason !== undefined) &&
+          !LEADS_TASK.includes(role) &&
+          !(role === 'member' && task.assigneeId === user.id)
+        ) {
+          throw new ForbiddenException('O membro só assinala bloqueios nas tarefas que lhe estão atribuídas.');
+        }
         // §3.1, CA03.3, CA03.6: atribuem o responsável o líder da equipa, o gestor e o administrador.
         if (body.assigneeId !== undefined) {
           if (!LEADS_TASK.includes(role)) {

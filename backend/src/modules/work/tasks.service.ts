@@ -2,6 +2,7 @@ import { ConflictException, Inject, Injectable, NotFoundException, Unprocessable
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, EntityManager } from 'typeorm';
 import type { AuthenticatedUser } from '../../shared/auth/auth.decorators';
+import { todaySql } from '../../shared/config/time-zone';
 import { DomainEvents } from '../../shared/events/domain-events';
 import { USER_DIRECTORY, type UserDirectory } from '../../shared/ports/user-directory';
 import type { TaskState } from '../../shared/ports/work-item-locator';
@@ -77,9 +78,9 @@ interface SummaryRow {
  * subtarefas não eliminadas. RF28: prazo ultrapassado e tarefa não concluída («Terminada» e
  * «Entregue» contam como concluídas, RN26).
  */
-const SUMMARY_COLUMNS = `
+const summaryColumns = () => `
   t.id, t.title, t.state, t.priority, t.team_id, t.assignee_id, t.estimate_hours, t.story_points, t.is_blocked,
-  coalesce(t.due_date < current_date AND t.state NOT IN ('done', 'delivered'), false) AS is_overdue,
+  coalesce(t.due_date < ${todaySql()} AND t.state NOT IN ('done', 'delivered'), false) AS is_overdue,
   s.subtask_count, s.subtask_hours, s.subtask_points`;
 const SUBTASK_TOTALS = `
   LEFT JOIN LATERAL (
@@ -126,7 +127,7 @@ export class TasksService {
     const from = `FROM work.task t JOIN work.epic e ON e.id = t.epic_id JOIN work.objective o ON o.id = e.objective_id`;
     const [{ total }] = await this.db.query(`SELECT count(*)::int AS total ${from} WHERE ${where}`, params);
     const rows: SummaryRow[] = await this.db.query(
-      `SELECT ${SUMMARY_COLUMNS} ${from} ${SUBTASK_TOTALS} WHERE ${where}
+      `SELECT ${summaryColumns()} ${from} ${SUBTASK_TOTALS} WHERE ${where}
        ORDER BY t.created_at DESC, t.id LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
       [...params, pageSize, (page - 1) * pageSize],
     );
@@ -165,10 +166,11 @@ export class TasksService {
       const estimateHours = dto.estimateHours ?? null;
       const storyPoints = dto.storyPoints ?? null;
       const assigneeId = dto.assigneeId ?? null;
+      const dueDate = dto.dueDate ?? null;
       const [row] = await tx.query(
         `INSERT INTO work.task (epic_id, parent_task_id, title, description, team_id, original_team_id, priority,
-                                estimate_hours, story_points, assignee_id, created_by)
-         VALUES ($1, $2, $3, $4, $5, $5, $6::work.task_priority, $7, $8, $9, $10) RETURNING id`,
+                                estimate_hours, story_points, assignee_id, created_by, due_date)
+         VALUES ($1, $2, $3, $4, $5, $5, $6::work.task_priority, $7, $8, $9, $10, $11) RETURNING id`,
         [
           dto.parentTaskId ? null : dto.epicId,
           dto.parentTaskId ?? null,
@@ -180,6 +182,7 @@ export class TasksService {
           storyPoints,
           assigneeId,
           user.id,
+          dueDate,
         ],
       );
       await this.events.publish(
@@ -197,6 +200,7 @@ export class TasksService {
             estimateHours,
             storyPoints,
             assigneeId,
+            dueDate,
             ...(dto.parentTaskId ? { parentTaskId: dto.parentTaskId } : { epicId: dto.epicId }),
           },
           authorId: user.id,
@@ -211,7 +215,7 @@ export class TasksService {
   /** Tarefa com critérios, participantes e subtarefas (openapi.yaml: getTask). */
   async get(taskId: string): Promise<Task> {
     const [row] = await this.db.query(
-      `SELECT ${SUMMARY_COLUMNS}, o.project_id, t.epic_id, t.parent_task_id, t.description, t.original_team_id,
+      `SELECT ${summaryColumns()}, o.project_id, t.epic_id, t.parent_task_id, t.description, t.original_team_id,
               to_char(t.due_date, 'YYYY-MM-DD') AS due_date, t.block_reason, t.created_by, t.created_at
        FROM work.task t
        LEFT JOIN work.task p ON p.id = t.parent_task_id
@@ -234,7 +238,7 @@ export class TasksService {
       [taskId],
     );
     const subtaskRows: SummaryRow[] = await this.db.query(
-      `SELECT ${SUMMARY_COLUMNS} FROM work.task t ${SUBTASK_TOTALS}
+      `SELECT ${summaryColumns()} FROM work.task t ${SUBTASK_TOTALS}
        WHERE t.parent_task_id = $1 AND t.deleted_at IS NULL ORDER BY t.created_at, t.id`,
       [taskId],
     );
@@ -282,6 +286,8 @@ export class TasksService {
    * subtarefas e não se define diretamente (422). CA03.3, CA09.1: o responsável pela execução muda sem
    * mudar a equipa responsável (RN20); fica no histórico como `assignee_changed`, com a justificação
    * quando é de outra equipa (RN03, RN15). A elegibilidade foi verificada antes pelo guarda.
+   * RN29: o prazo muda com `due_date_changed`. RN28, CA07.6: bloquear exige o motivo; desbloquear apaga-o;
+   * o estado mantém-se; `blocked`, `unblocked` ou `block_reason_changed` no histórico.
    */
   async update(user: AuthenticatedUser, taskId: string, dto: UpdateTaskDto): Promise<Task> {
     await this.db.transaction(async (tx) => {
@@ -304,7 +310,18 @@ export class TasksService {
         estimateHours: dto.estimateHours === undefined ? current.estimateHours : dto.estimateHours,
         storyPoints: dto.storyPoints === undefined ? current.storyPoints : dto.storyPoints,
         assigneeId: dto.assigneeId === undefined ? current.assigneeId : dto.assigneeId,
+        dueDate: dto.dueDate === undefined ? current.dueDate : dto.dueDate,
       };
+      const isBlocked = dto.isBlocked ?? current.isBlocked;
+      let blockReason = dto.blockReason === undefined ? current.blockReason : dto.blockReason?.trim() || null;
+      if (!isBlocked) {
+        if (dto.blockReason !== undefined && blockReason !== null) {
+          throw new UnprocessableEntityException('O motivo do bloqueio só se indica com a tarefa bloqueada (RN28).');
+        }
+        blockReason = null;
+      } else if (!blockReason) {
+        throw new UnprocessableEntityException('Indique o motivo do bloqueio: descreva o impedimento ao trabalho (RN28).');
+      }
       const diff = (keys: readonly (keyof typeof next)[]) => {
         const oldValue: Record<string, unknown> = {};
         const newValue: Record<string, unknown> = {};
@@ -319,13 +336,44 @@ export class TasksService {
       const fields = diff(['title', 'description', 'priority']);
       const estimates = diff(['estimateHours', 'storyPoints']);
       const assignee = diff(['assigneeId']);
-      if (!fields && !estimates && !assignee) return;
+      const due = diff(['dueDate']);
+      const blockChanged = isBlocked !== current.isBlocked || blockReason !== current.blockReason;
+      if (!fields && !estimates && !assignee && !due && !blockChanged) return;
       await tx.query(
         `UPDATE work.task SET title = $2, description = $3, priority = $4::work.task_priority,
-                              estimate_hours = $5, story_points = $6, assignee_id = $7
+                              estimate_hours = $5, story_points = $6, assignee_id = $7, due_date = $8,
+                              is_blocked = $9, block_reason = $10
          WHERE id = $1`,
-        [taskId, next.title, next.description, next.priority, next.estimateHours, next.storyPoints, next.assigneeId],
+        [
+          taskId,
+          next.title,
+          next.description,
+          next.priority,
+          next.estimateHours,
+          next.storyPoints,
+          next.assigneeId,
+          next.dueDate,
+          isBlocked,
+          blockReason,
+        ],
       );
+      if (due) {
+        await this.events.publish({ entityType: 'task', entityId: taskId, eventType: 'due_date_changed', ...due, authorId: user.id }, tx);
+      }
+      if (blockChanged) {
+        const eventType = isBlocked && !current.isBlocked ? 'blocked' : !isBlocked ? 'unblocked' : 'block_reason_changed';
+        await this.events.publish(
+          {
+            entityType: 'task',
+            entityId: taskId,
+            eventType,
+            oldValue: { isBlocked: current.isBlocked, blockReason: current.blockReason },
+            newValue: { isBlocked, blockReason },
+            authorId: user.id,
+          },
+          tx,
+        );
+      }
       if (fields) {
         await this.events.publish({ entityType: 'task', entityId: taskId, eventType: 'updated', ...fields, authorId: user.id }, tx);
       }
@@ -466,14 +514,27 @@ export class TasksService {
     storyPoints: number | null;
     assigneeId: string | null;
     teamId: string;
+    dueDate: string | null;
+    isBlocked: boolean;
+    blockReason: string | null;
   }> {
     const [row] = await tx.query(
-      `SELECT title, description, priority, state, estimate_hours, story_points, assignee_id, team_id
+      `SELECT title, description, priority, state, estimate_hours, story_points, assignee_id, team_id,
+              to_char(due_date, 'YYYY-MM-DD') AS due_date, is_blocked, block_reason
        FROM work.task WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`,
       [taskId],
     );
     if (!row) throw new NotFoundException('A tarefa não existe.');
-    const { estimate_hours, story_points, assignee_id, team_id, ...rest } = row;
-    return { ...rest, estimateHours: hours(estimate_hours), storyPoints: story_points, assigneeId: assignee_id, teamId: team_id };
+    const { estimate_hours, story_points, assignee_id, team_id, due_date, is_blocked, block_reason, ...rest } = row;
+    return {
+      ...rest,
+      estimateHours: hours(estimate_hours),
+      storyPoints: story_points,
+      assigneeId: assignee_id,
+      teamId: team_id,
+      dueDate: due_date,
+      isBlocked: is_blocked,
+      blockReason: block_reason,
+    };
   }
 }
