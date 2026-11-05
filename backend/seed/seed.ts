@@ -4,9 +4,9 @@ import { buildDataSourceOptions, databaseName } from '../src/shared/database/dat
 /**
  * Dados de demonstração (I0, Ficha PL 03 Ex. 2), fictícios (SEC08) e idempotentes: só acrescenta o que falta;
  * nunca altera nem apaga dados existentes. As contas correspondem às do realm
- * keycloak/realm-matriz.json, exceto `sem-conta`, que existe só no Keycloak (token válido sem
- * conta na Matriz → 403, CAT02). A ligação ao fornecedor (external_subject) faz-se no primeiro
- * acesso (RN35).
+ * keycloak/realm-matriz.json, exceto `sem-acesso` (token válido sem conta na Matriz → 403, CAT02) e
+ * `sem-conta` (a conta é criada pelo administrador na aplicação, CA01.13), que existem só no Keycloak.
+ * A ligação ao fornecedor (external_subject) faz-se no primeiro acesso (RN35).
  *
  * Acessos distintos (requirements.md §3.1):
  * - admin: administrador, vê todos os projetos;

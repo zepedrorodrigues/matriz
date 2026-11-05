@@ -110,6 +110,14 @@
       "lastName": "Semconta",
       "enabled": true,
       "emailVerified": true
+    },
+    {
+      "username": "sem-acesso",
+      "email": "sem-acesso@matriz.example",
+      "firstName": "Tiago",
+      "lastName": "Semacesso",
+      "enabled": true,
+      "emailVerified": true
     }
   ]
 }

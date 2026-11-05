@@ -109,7 +109,7 @@ npm run dev:frontend          # aplicação em http://localhost:5173; /api encam
 
 **Outros comandos:** `npm test` (testes de API do backend, que recriam a base `matriz_test`, e testes do frontend), `npm run build`, `npm run migration:revert -w backend`.
 
-As contas fictícias do Keycloak (`admin`, `gestor`, `ana`, `rui`, `bruno`, `sem-conta`, com e-mail `@matriz.example`) usam a palavra-passe `MATRIZ_DEMO_PASSWORD` do `.env`. A `sem-conta` não existe na Matriz: serve para testar um token válido sem conta (CAT02).
+As contas fictícias do Keycloak (`admin`, `gestor`, `ana`, `rui`, `bruno`, `sem-conta`, `sem-acesso`, com e-mail `@matriz.example`) usam a palavra-passe `MATRIZ_DEMO_PASSWORD` do `.env`. A `sem-acesso` nunca tem conta na Matriz: serve para testar um token válido sem conta (CAT02). A `sem-conta` também não vem no seed: serve para o administrador lhe criar a conta em Administração › Contas e verificar a ligação no primeiro acesso (CA01.13); depois disso, entra normalmente.
 
 Se o Keycloak correr noutra porta (`./scripts/keycloak-dev.ps1 -Port 8180`), `OIDC_ISSUER` e `VITE_OIDC_AUTHORITY` no `.env` têm de usar essa porta.
 
