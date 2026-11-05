@@ -29,6 +29,8 @@ export interface PlanningTaskInfo {
   /** Numa tarefa com subtarefas, a soma das subtarefas (RN22). */
   estimateHours: number | null;
   storyPoints: number | null;
+  /** Tem subtarefas não eliminadas: na capacidade conta 0, contam as subtarefas (RN22, CA05.9). */
+  hasSubtasks: boolean;
   assigneeId: string | null;
   createdAt: string;
 }

@@ -85,7 +85,7 @@ describe('I9 — backlog e sprints', () => {
       await as('leaderB').post(`/api/teams/${teamB}/sprints`, { startDate: '2030-01-07', endDate: '2030-01-18' }).expect(201);
     });
 
-    it('§3.1, RN36 — o membro, o administrador, o gestor e o líder de outra equipa não criam sprints (403); consultar: membros e administrador', async () => {
+    it('§3.1, RN36 — o membro, o administrador, o gestor e o líder de outra equipa não criam sprints (403); consultar: membros, administrador e gestores dos projetos da equipa', async () => {
       const before = await sprintCount();
       for (const who of ['memberA', 'admin', 'manager', 'leaderB']) {
         await as(who).post(`/api/teams/${teamA}/sprints`, period()).expect(403);
@@ -94,7 +94,8 @@ describe('I9 — backlog e sprints', () => {
       await as('admin').get(`/api/teams/${teamA}/sprints`).expect(200);
       await as('admin').get(`/api/teams/${teamA}/backlog`).expect(200);
       await as('outsider').get(`/api/teams/${teamA}/sprints`).expect(403);
-      await as('manager').get(`/api/teams/${teamA}/backlog`).expect(403);
+      // F20 (I10): o gestor de um projeto em que a equipa participa consulta o planeamento, só em leitura.
+      await as('manager').get(`/api/teams/${teamA}/backlog`).expect(200);
       await as('leaderA').get('/api/teams/00000000-0000-4000-8000-000000000000/sprints').expect(404);
       await as('leaderA').get('/api/sprints/00000000-0000-4000-8000-000000000000').expect(404);
       const off = await fx.team('Desligada', [{ userId: ids.leaderA, role: 'leader' }]);

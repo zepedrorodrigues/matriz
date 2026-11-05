@@ -71,13 +71,18 @@ paths:
         - capacidade individual = 8 h × dias úteis da sprint × alocação à equipa, salvo ajuste de
           disponibilidade para a sprint (CA05.5, CA05.6, CA05.10);
         - capacidade da equipa = soma da capacidade dos membros, incluindo os líderes (CA05.7, CA05.11);
-        - horas planeadas = estimativas das tarefas planeadas na sprint; de uma tarefa com subtarefas
-          contam apenas as subtarefas planeadas nesta sprint (CA05.9);
-        - tarefas sem story points contam como 0 (RN27).
+        - horas planeadas = estimativas atuais das tarefas que fazem parte da sprint (ou nela planeadas);
+          as retiradas e as que saíram no fim não contam; uma tarefa com subtarefas conta 0 — contam
+          apenas as subtarefas, cada uma na sprint em que está planeada (CA05.9); o mesmo para os story
+          points;
+        - tarefas sem story points contam como 0 (RN27);
+        - carga individual = tarefas da sprint atribuídas ao membro; as sem responsável ou com um
+          responsável de outra equipa contam só no total da equipa.
 
-        Visibilidade dos dados individuais (SEC07, CAT05): o líder da equipa recebe todos os membros;
-        um membro recebe apenas os seus próprios dados; o gestor de projeto e o administrador recebem
-        `members` vazio.
+        Consultam a capacidade os membros da equipa, o administrador e os gestores dos projetos em que a
+        equipa participa (§3.1; F20). Visibilidade dos dados individuais (SEC07, CAT05): o líder da
+        equipa recebe todos os membros; um membro recebe apenas os seus próprios dados; o gestor de
+        projeto e o administrador recebem `members` vazio.
       parameters:
         - $ref: '#/components/parameters/SprintId'
       responses:
@@ -129,6 +134,68 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+
+  /sprints/{sprintId}/availability/{userId}:
+    put:
+      tags: [Planeamento]
+      operationId: setAvailability
+      summary: Ajustar as horas disponíveis de um membro numa sprint
+      description: |
+        Só o líder da equipa (§3.1, CA05.5). Horas disponíveis do membro nesta sprint e nesta equipa,
+        em vez do cálculo de RN06 (p. ex. feriados ou ausências); não se pede nem se regista o motivo
+        (SEC06). O utilizador tem de ser membro da equipa (422); numa sprint terminada → 409. Fica no
+        histórico da sprint (só as horas). Devolve a capacidade recalculada.
+      parameters:
+        - $ref: '#/components/parameters/SprintId'
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AvailabilityInput'
+      responses:
+        '200':
+          description: Capacidade recalculada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SprintCapacity'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+    delete:
+      tags: [Planeamento]
+      operationId: resetAvailability
+      summary: Repor o cálculo das horas disponíveis
+      description: Só o líder da equipa. Retira o ajuste; a capacidade volta ao cálculo de RN06. Sem ajuste → 404; sprint terminada → 409.
+      parameters:
+        - $ref: '#/components/parameters/SprintId'
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: Capacidade recalculada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SprintCapacity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
   /tasks/{taskId}/transfer:
     post:
@@ -1680,6 +1747,18 @@ components:
           description: Dados individuais, filtrados segundo SEC07 (ver a descrição da operação).
           items:
             $ref: '#/components/schemas/MemberCapacity'
+
+    AvailabilityInput:
+      type: object
+      required: [availableHours]
+      additionalProperties: false
+      description: Só as horas; sem motivo (SEC06).
+      properties:
+        availableHours:
+          type: number
+          minimum: 0
+          maximum: 9999.99
+          description: Horas disponíveis na sprint, nesta equipa, com até duas casas decimais.
 
     MemberCapacity:
       type: object

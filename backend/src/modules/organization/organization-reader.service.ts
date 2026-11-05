@@ -123,6 +123,28 @@ export class OrganizationReader {
     return (row?.role as TeamRole | undefined) ?? null;
   }
 
+  /** Membros de uma equipa (líderes incluídos) com o papel e a alocação, para a capacidade (RN06, I10). */
+  async teamMembers(teamId: string): Promise<{ userId: string; role: TeamRole; allocationPct: number }[]> {
+    const rows: { user_id: string; role: TeamRole; allocation_pct: number }[] = await this.db.query(
+      `SELECT user_id, role, allocation_pct FROM organization.team_membership WHERE team_id = $1`,
+      [teamId],
+    );
+    return rows.map((r) => ({ userId: r.user_id, role: r.role, allocationPct: r.allocation_pct }));
+  }
+
+  /** É gestor de um projeto não eliminado em que a equipa participa (§3.1: consultar a capacidade, F20). */
+  async managesProjectOfTeam(userId: string, teamId: string): Promise<boolean> {
+    const [row] = await this.db.query(
+      `SELECT EXISTS (
+         SELECT 1 FROM organization.project_team pt
+         JOIN organization.project p ON p.id = pt.project_id AND p.deleted_at IS NULL
+         JOIN organization.project_manager pm ON pm.project_id = p.id AND pm.user_id = $1
+         WHERE pt.team_id = $2) AS manages`,
+      [userId, teamId],
+    );
+    return row.manages === true;
+  }
+
   /** Estado de uma equipa: null se não existir (planeamento, I9). */
   async teamStatus(teamId: string): Promise<{ active: boolean } | null> {
     const [row] = await this.db.query(`SELECT active FROM organization.team WHERE id = $1`, [teamId]);

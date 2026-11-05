@@ -3,6 +3,7 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { SPRINT_LOCATOR, type SprintLocator } from '../../shared/ports/sprint-locator';
 import { OrganizationModule } from '../organization/organization.module';
+import { CapacityService } from './capacity.service';
 import { PlanningController } from './planning.controller';
 import { SprintJobService } from './sprint-job.service';
 import { SprintsService } from './sprints.service';
@@ -19,15 +20,15 @@ class SprintLocatorService implements SprintLocator {
 }
 
 /**
- * Módulo Planeamento (architecture.md §5): sprints e backlog de cada equipa (I9); a capacidade chega no
- * I10. Depende da interface de leitura do módulo Organização e das interfaces WorkItemLocator e
- * UserDirectory (globais); disponibiliza SprintLocator ao módulo Identidade e acesso.
+ * Módulo Planeamento (architecture.md §5): sprints e backlog de cada equipa (I9) e capacidade (I10).
+ * Depende da interface de leitura do módulo Organização e das interfaces WorkItemLocator e UserDirectory
+ * (globais); disponibiliza SprintLocator ao módulo Identidade e acesso.
  */
 @Global()
 @Module({
   imports: [OrganizationModule],
   controllers: [PlanningController],
-  providers: [SprintsService, SprintJobService, { provide: SPRINT_LOCATOR, useClass: SprintLocatorService }],
+  providers: [SprintsService, CapacityService, SprintJobService, { provide: SPRINT_LOCATOR, useClass: SprintLocatorService }],
   exports: [SPRINT_LOCATOR, SprintJobService],
 })
 export class PlanningModule {}

@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { ApiError, createSprint, getTeamBacklog, listTeamSprints, listTeams } from '../../api/client';
+import { ApiError, createSprint, getProject, getTeamBacklog, listTeamSprints, listTeams } from '../../api/client';
 import { leadsTeam, useCurrentUser } from '../../auth/current-user';
 import { Notice } from '../../components/Notice';
 import { Pagination } from '../../components/Pagination';
@@ -15,7 +15,8 @@ const PAGE_SIZE = 20;
 /**
  * Ecrã Planeamento da equipa (US04, US08; CA04.1–CA04.3, CA04.8, CA08.1): as sprints da equipa (criação
  * pelo líder, RN36) e o backlog — tarefas de todos os projetos que não fazem parte da sprint ativa, com as
- * planeadas assinaladas. A equipa fica no endereço. Consultam os membros da equipa e o administrador.
+ * planeadas assinaladas. A equipa fica no endereço. Consultam os membros da equipa, o administrador e os
+ * gestores dos projetos em que a equipa participa (só leitura, F20).
  */
 export function TeamPlanningPage() {
   const me = useCurrentUser();
@@ -23,9 +24,18 @@ export function TeamPlanningPage() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const allTeams = useQuery({ queryKey: ['teams'], queryFn: listTeams, enabled: me.data?.isAdmin === true });
+  // F20: o gestor vê também as equipas dos projetos que gere.
+  const managed = useQueries({
+    queries: (me.data?.isAdmin ? [] : (me.data?.managedProjectIds ?? [])).map((projectId) => ({
+      queryKey: ['project', projectId],
+      queryFn: () => getProject(projectId),
+    })),
+  });
+  const own = (me.data?.teams ?? []).map((t) => ({ teamId: t.teamId, teamName: t.teamName }));
+  const fromProjects = managed.flatMap((q) => (q.data?.teams ?? []).filter((t) => t.active).map((t) => ({ teamId: t.id, teamName: t.name })));
   const teams = me.data?.isAdmin
     ? (allTeams.data ?? []).filter((t) => t.active).map((t) => ({ teamId: t.id, teamName: t.name }))
-    : (me.data?.teams ?? []).map((t) => ({ teamId: t.teamId, teamName: t.teamName }));
+    : [...own, ...fromProjects.filter((t, i, all) => !own.some((o) => o.teamId === t.teamId) && all.findIndex((x) => x.teamId === t.teamId) === i)];
   const teamId = params.get('equipa') ?? teams[0]?.teamId ?? '';
   const page = Math.max(1, Number(params.get('pagina')) || 1);
   const [startDate, setStartDate] = useState('');

@@ -216,6 +216,38 @@ export interface SprintDates {
   startDate: string;
   endDate: string;
 }
+/** openapi.yaml: SprintCapacity, MemberCapacity (US05; RN06, RN19; SEC07: `members` filtrado). */
+export interface MemberCapacity {
+  userId: string;
+  name: string;
+  role: 'leader' | 'member';
+  allocationPct: number;
+  capacityHours: number;
+  availabilityAdjusted: boolean;
+  plannedHours: number;
+  remainingHours: number;
+  overloaded: boolean;
+}
+export interface SprintCapacity {
+  sprintId: string;
+  teamId: string;
+  startDate: string;
+  endDate: string;
+  workingDays: number;
+  capacityHours: number;
+  plannedHours: number;
+  remainingHours: number;
+  plannedStoryPoints: number;
+  tasksWithoutStoryPoints: number;
+  overloaded: boolean;
+  members: MemberCapacity[];
+}
+export const getSprintCapacity = (sprintId: string) => apiGet<SprintCapacity>(`/sprints/${id(sprintId)}/capacity`);
+export const setAvailability = (sprintId: string, userId: string, availableHours: number) =>
+  apiRequest<SprintCapacity>('PUT', `/sprints/${id(sprintId)}/availability/${id(userId)}`, { availableHours });
+export const resetAvailability = (sprintId: string, userId: string) =>
+  apiRequest<SprintCapacity>('DELETE', `/sprints/${id(sprintId)}/availability/${id(userId)}`);
+
 export const listTeamSprints = (teamId: string) => apiGet<Sprint[]>(`/teams/${id(teamId)}/sprints`);
 export const createSprint = (teamId: string, dates: SprintDates) => apiRequest<SprintDetail>('POST', `/teams/${id(teamId)}/sprints`, dates);
 export const getTeamBacklog = (teamId: string, page = 1, pageSize = 100) =>

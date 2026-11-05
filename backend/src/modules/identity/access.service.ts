@@ -325,14 +325,17 @@ export class AccessService {
   }
 
   /**
-   * §3.1, RN36: consultam o planeamento de uma equipa os seus membros e o administrador; criam e gerem
+   * §3.1, RN36: consultam o planeamento de uma equipa os seus membros, o administrador e os gestores dos
+   * projetos em que participa (só leitura, F20); criam e gerem
    * sprints e planeiam tarefas só o líder (nem o administrador nem o gestor, RN08, CA04.6); iniciam a
    * sprint o líder e o administrador (CA04.9, CA04.10).
    */
   private async enforcePlanning(user: AuthenticatedUser, action: SprintAction, teamId: string): Promise<void> {
     const role = await this.organization.teamRole(user.id, teamId);
     if (action === 'view') {
-      if (!user.isAdmin && !role) throw new ForbiddenException('Só os membros da equipa e o administrador consultam o seu planeamento.');
+      if (!user.isAdmin && !role && !(await this.organization.managesProjectOfTeam(user.id, teamId))) {
+        throw new ForbiddenException('Só os membros da equipa, os gestores dos seus projetos e o administrador consultam o seu planeamento.');
+      }
       return;
     }
     if (action === 'start' && user.isAdmin) return;

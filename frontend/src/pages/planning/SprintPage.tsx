@@ -17,6 +17,7 @@ import { Notice } from '../../components/Notice';
 import { PageFeedbackProvider, usePageFeedback } from '../../components/PageFeedback';
 import { SPRINT_STATUS_LABEL, formatDate, validateSprintDates, workingDays } from '../../domain/sprints';
 import { formatHours } from '../../domain/tasks';
+import { CapacityPanel } from './CapacityPanel';
 import { DateField } from './DateField';
 import { PlanningTaskRow } from './PlanningTaskRow';
 
@@ -27,8 +28,8 @@ const LEFT_REASON = { sprint_ended: 'não concluída no fim da sprint', removed:
  * Ecrã Sprint (wireframe; US04: CA04.3–CA04.16; RN05, RN27, RN31, RN36, RN37): datas, dias úteis e estado;
  * «Editar datas» enquanto «Planeada»; «Iniciar sprint», confirmando ou ajustando as datas (líder ou
  * administrador); tarefas da sprint com «↩ Backlog»; backlog com «Planear →», inativo sem estimativa
- * temporal. A capacidade e o aviso de sobrecarga chegam no I10. Cada ação aparece a quem a matriz o
- * permite (§3.1); a API decide sempre.
+ * temporal; capacidade e sobrecarga (I10, CapacityPanel). Cada ação aparece a quem a matriz o permite
+ * (§3.1); a API decide sempre.
  */
 export function SprintPage() {
   return (
@@ -60,6 +61,7 @@ function Sprint() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['backlog', updated.teamId] }),
       queryClient.invalidateQueries({ queryKey: ['sprints', updated.teamId] }),
+      queryClient.invalidateQueries({ queryKey: ['capacity', sprintId] }),
     ]);
     setNotice(message);
   };
@@ -185,6 +187,8 @@ function Sprint() {
         {s.workingDays} dias úteis · {formatHours(plannedHours)} h planeadas · {plannedPoints} SP
         {s.tasks.some((t) => t.storyPoints === null) ? ' (há tarefas sem story points, que contam como 0)' : ''}
       </p>
+
+      <CapacityPanel sprintId={s.id} mayAdjust={mayManage && open} />
 
       <section className="panel" aria-labelledby="sprint-tasks-title">
         <h2 id="sprint-tasks-title">{s.status === 'planned' ? 'Tarefas planeadas' : 'Tarefas da sprint'}</h2>

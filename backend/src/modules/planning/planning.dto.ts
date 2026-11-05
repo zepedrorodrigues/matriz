@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsISO8601, IsOptional, IsUUID, Matches, Max, Min } from 'class-validator';
+import { IsInt, IsISO8601, IsNumber, IsOptional, IsUUID, Matches, Max, Min } from 'class-validator';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const DATE_MESSAGE = 'Indique a data no formato AAAA-MM-DD.';
@@ -32,6 +32,16 @@ export class SprintStartDto {
 export class SprintTaskInputDto {
   @IsUUID('all', { message: 'A tarefa tem de ser um identificador válido.' })
   taskId!: string;
+}
+
+const HOURS_MESSAGE = 'As horas disponíveis são um número entre 0 e 9999,99, com até duas casas decimais.';
+
+/** openapi.yaml: AvailabilityInput (CA05.5): só as horas, sem motivo (SEC06). */
+export class AvailabilityInputDto {
+  @IsNumber({ allowNaN: false, allowInfinity: false, maxDecimalPlaces: 2 }, { message: HOURS_MESSAGE })
+  @Min(0, { message: HOURS_MESSAGE })
+  @Max(9999.99, { message: HOURS_MESSAGE })
+  availableHours!: number;
 }
 
 /** Paginação do backlog (D46). */

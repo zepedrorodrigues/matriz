@@ -115,6 +115,7 @@ export class WorkItemLocatorService implements WorkItemLocator {
         priority: r.priority,
         estimateHours: hours === null ? null : Number(hours),
         storyPoints: sum ? r.subtask_points : r.story_points,
+        hasSubtasks: sum,
         assigneeId: r.assignee_id,
         createdAt: r.created_at.toISOString(),
       };
