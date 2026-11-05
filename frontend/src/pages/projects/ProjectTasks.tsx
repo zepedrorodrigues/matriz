@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router';
 import { createTask, listObjectives, listTasks, type CurrentUser, type Project } from '../../api/client';
 import { canCreateWork, teamsForNewTask } from '../../auth/current-user';
 import { Notice } from '../../components/Notice';
+import { usePageFeedback } from '../../components/PageFeedback';
 import { Pagination } from '../../components/Pagination';
 import { SelectField } from '../../components/SelectField';
 import { PRIORITIES, PRIORITY_LABEL, STATE_LABEL, TASK_STATES, type Priority, type TaskState } from '../../domain/tasks';
@@ -28,6 +29,7 @@ export function ProjectTasks({ project, me }: { project: Project; me: CurrentUse
   const page = Math.max(1, Number(params.get('page')) || 1);
   const [creating, setCreating] = useState(false);
   const [notice, setNotice] = useState<string>();
+  const announce = usePageFeedback('tasks', () => setNotice(undefined));
 
   const objectives = useQuery({ queryKey: ['objectives', project.id], queryFn: () => listObjectives(project.id) });
   const tasks = useQuery({
@@ -47,6 +49,10 @@ export function ProjectTasks({ project, me }: { project: Project; me: CurrentUse
         ...(values.estimateHours !== null ? { estimateHours: values.estimateHours } : {}),
         ...(values.storyPoints !== null ? { storyPoints: values.storyPoints } : {}),
       }),
+    onMutate: () => {
+      setNotice(undefined);
+      announce();
+    },
     onSuccess: async (task) => {
       // A resposta confirmada pela API alimenta o detalhe; a listagem e o total são recarregados.
       queryClient.setQueryData(['task', task.id], task);

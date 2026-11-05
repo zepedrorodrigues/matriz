@@ -5,6 +5,7 @@ import { ApiError, deleteProject, getProject, updateProject } from '../../api/cl
 import { canManageProject, useCurrentUser } from '../../auth/current-user';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { Notice } from '../../components/Notice';
+import { PageFeedbackProvider, usePageFeedback } from '../../components/PageFeedback';
 import { ProjectForm } from './ProjectForm';
 import { ProjectTasks } from './ProjectTasks';
 import { ProjectTeams } from './ProjectTeams';
@@ -14,9 +15,18 @@ const dateFormat = new Intl.DateTimeFormat('pt-PT', { dateStyle: 'long' });
 /**
  * Ecrã Detalhe do projeto (Ficha PL 03, Ex. 4 e Ex. 7): dados, gestores e equipas; edição e
  * eliminação com confirmação, só para o administrador e os gestores do projeto (§3.1); tarefas do
- * projeto com filtros e criação (Ex. 5), e a hierarquia de objetivos e épicos (US02).
+ * projeto com filtros e criação (Ex. 5), e a hierarquia de objetivos e épicos (US02). Cada operação de
+ * um painel apaga as mensagens das anteriores (PageFeedback; Ex. 8, caso 09).
  */
 export function ProjectDetailPage() {
+  return (
+    <PageFeedbackProvider>
+      <ProjectDetail />
+    </PageFeedbackProvider>
+  );
+}
+
+function ProjectDetail() {
   const { projectId = '' } = useParams();
   const me = useCurrentUser();
   const queryClient = useQueryClient();
@@ -25,12 +35,17 @@ export function ProjectDetailPage() {
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [notice, setNotice] = useState<string | undefined>((location.state as { notice?: string } | null)?.notice);
+  const announce = usePageFeedback('project', () => setNotice(undefined));
 
   const project = useQuery({ queryKey: ['project', projectId], queryFn: () => getProject(projectId), retry: false });
 
   const update = useMutation({
     mutationFn: (input: { name: string; objective?: string }) =>
       updateProject(projectId, { name: input.name, objective: input.objective ?? '' }),
+    onMutate: () => {
+      setNotice(undefined);
+      announce();
+    },
     onSuccess: async (updated) => {
       queryClient.setQueryData(['project', projectId], updated);
       await queryClient.invalidateQueries({ queryKey: ['projects'] });

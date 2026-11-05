@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError, addProjectTeam, listTeams, type Project } from '../../api/client';
 import { Notice } from '../../components/Notice';
+import { usePageFeedback } from '../../components/PageFeedback';
 import { SelectField } from '../../components/SelectField';
 
 /**
@@ -14,10 +15,14 @@ export function ProjectTeams({ project, mayManage }: { project: Project; mayMana
   const [teamId, setTeamId] = useState('');
   const [success, setSuccess] = useState<string>();
   const teams = useQuery({ queryKey: ['teams'], queryFn: listTeams, enabled: mayManage });
+  const announce = usePageFeedback('teams', () => setSuccess(undefined));
 
   const add = useMutation({
     mutationFn: (id: string) => addProjectTeam(project.id, id),
-    onMutate: () => setSuccess(undefined),
+    onMutate: () => {
+      setSuccess(undefined);
+      announce();
+    },
     onSuccess: async (updated, id) => {
       queryClient.setQueryData<Project>(['project', project.id], (p) => (p ? { ...p, teams: updated } : p));
       await queryClient.invalidateQueries({ queryKey: ['project', project.id] });

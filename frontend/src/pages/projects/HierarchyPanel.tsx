@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApiError, createEpic, createObjective, type ElementInput, type Objective } from '../../api/client';
 import { FormField } from '../../components/FormField';
 import { Notice } from '../../components/Notice';
+import { usePageFeedback } from '../../components/PageFeedback';
 
 /** Formulário de um objetivo ou de um épico: título obrigatório, sem ser só espaços (ElementInput). */
 function ElementForm({
@@ -59,9 +60,12 @@ export function HierarchyPanel({ projectId, objectives, mayCreate }: { projectId
   const queryClient = useQueryClient();
   const [adding, setAdding] = useState<'objective' | string | null>(null);
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['objectives', projectId] });
+  // Este painel não mostra mensagens de sucesso, mas as suas operações apagam as dos outros painéis.
+  const announce = usePageFeedback('hierarchy', () => {});
 
   const newObjective = useMutation({
     mutationFn: (input: ElementInput) => createObjective(projectId, input),
+    onMutate: () => announce(),
     onSuccess: async () => {
       await refresh();
       setAdding(null);
@@ -69,6 +73,7 @@ export function HierarchyPanel({ projectId, objectives, mayCreate }: { projectId
   });
   const newEpic = useMutation({
     mutationFn: ({ objectiveId, input }: { objectiveId: string; input: ElementInput }) => createEpic(objectiveId, input),
+    onMutate: () => announce(),
     onSuccess: async () => {
       await refresh();
       setAdding(null);
