@@ -112,6 +112,7 @@ Modelo lógico dos dados essenciais do MVP, para PostgreSQL (DT02). Os requisito
 | team_id | uuid | ref. lógica → team | Obrigatório (RN29); equipa associada ao projeto (RN23); numa subtarefa, igual à da tarefa principal (RN22). |
 | original_team_id | uuid | ref. lógica → team | Equipa na criação; nunca muda (RN14). |
 | assignee_id | uuid | ref. lógica → user, nulo | Responsável pela execução (RN15). |
+| assignee_cross_team | boolean | | A atribuição atual é a exceção do RN03 (alguém de outra equipa, com justificação); só ela dá a esse responsável acesso à tarefa (F24). Falso sem responsável (CHECK). |
 | state | enum (RN17) | | `in_planning`, `in_technical_analysis`, `ready_for_development`, `in_development`, `in_testing`, `done`, `delivered`. Transições: RN26. |
 | estimate_hours | numeric(6,2) | nulo | ≥ 0. Numa tarefa com subtarefas, a soma das subtarefas é calculada e não guardada (RN22). |
 | story_points | smallint | nulo | 1, 2, 3, 5, 8, 13 ou 21 (RN07). |

@@ -110,13 +110,15 @@ npm run dev:frontend          # aplicação em http://localhost:5173; /api encam
 **Testes:**
 
 ```powershell
-npm test                      # backend e frontend
-npm test -w backend           # testes de API (Jest + supertest); recriam a base matriz_test com as migrations
+npm test                      # unitários e de integração: backend e frontend
+npm run test:unit             # só unitários, sem base de dados (backend src/**/*.spec.ts e frontend)
+npm test -w backend           # integração: API real (Jest + supertest); recria a base matriz_test com as migrations
 npm test -w frontend          # regras da interface (node:test), sem browser
 npx jest test/tasks.e2e-spec.ts   # um ficheiro, a partir de backend/
+npm run test:e2e              # End-to-End (Playwright no Chrome instalado); precisa do Keycloak, da API e do frontend a correr
 ```
 
-Os testes de API não precisam do Keycloak: assinam os próprios tokens com uma chave gerada no arranque. O resultado de cada verificação está em [`docs/verification.md`](docs/verification.md).
+Os testes de integração não precisam do Keycloak: assinam os próprios tokens com uma chave gerada no arranque. Os E2E (`e2e/`) entram pelo Keycloak real com as contas fictícias (palavra-passe `MATRIZ_DEMO_PASSWORD` do `.env`), criam dados com nomes únicos e eliminam o que criam; se falharem, a captura de ecrã e o trace ficam em `e2e/test-results/` (fora do Git). O Playwright usa o Chrome instalado (`channel: 'chrome'`): não é preciso `npx playwright install`. Planos e resultados: [`docs/test-plan.md`](docs/test-plan.md), [`docs/verification.md`](docs/verification.md) e [`docs/quality-security-review.md`](docs/quality-security-review.md).
 
 **Outros comandos:** `npm run build` (backend e frontend), `npm start -w backend` (API compilada, a partir de `backend/dist`), `npm run migration:revert -w backend`.
 
@@ -159,6 +161,7 @@ Pedidos diretos à API em desenvolvimento: o cliente `matriz-dev-cli` do realm a
 - [x] Ex. 6 — Revisão crítica (human-in-the-loop) — Specification Pack v0.3, ver [`docs/review.md`](docs/review.md)
 - [x] Aula 2 (Ficha PL 02) — Architecture Pack: arquitetura, modelo de dados, API e wireframe, com revisão cruzada (human-in-the-loop), ver [`docs/review.md`](docs/review.md) §3
 - [x] Aula 3 (Ficha PL 03) — Implementação do MVP: plano em [`docs/implementation-plan.md`](docs/implementation-plan.md), verificação em [`docs/verification.md`](docs/verification.md). Fica por fazer o I13 (consulta do histórico), fora do âmbito da ficha.
+- [x] Aula 4 (Ficha PL 04) — Testes unitários, de integração e E2E, Code Review e Security Review: [`docs/test-plan.md`](docs/test-plan.md), [`docs/quality-security-review.md`](docs/quality-security-review.md)
 
 **Em números:** 42 regras de negócio · 36 requisitos funcionais · 13 requisitos não funcionais · 10 user stories · 116 critérios de aceitação (110 nas US e 6 transversais), todos verificáveis · sem decisões funcionais pendentes.
 

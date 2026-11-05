@@ -84,7 +84,7 @@ Decidida na revisão crítica (Ex. 6, D14).
 - Um utilizador pode **acumular papéis**; as suas permissões são a união das permissões de cada papel.
 - O administrador tem um papel **global**; o gestor de projeto, **por projeto**; o líder e o membro, **por equipa**.
 - **Visibilidade:** cada utilizador vê os projetos em que participa uma das suas equipas e os projetos de que é gestor; o administrador vê todos. Os dados individuais de capacidade seguem SEC07.
-- **Responsável de outra equipa** (RN03; decisão do humano, F23): quem é atribuído por exceção tem, nessa tarefa, as permissões do membro (vê-la, atualizar o estado, registar critérios, assinalar bloqueios, comentar); não passa a ver o resto do projeto.
+- **Responsável de outra equipa** (RN03; decisões do humano, F23 e F24): quem é atribuído por exceção — de outra equipa, pelo gestor ou pelo administrador, com justificação — pode, nessa tarefa, vê-la, atualizar o estado, registar o cumprimento dos critérios, assinalar bloqueios e comentar; não edita o título, a descrição nem as estimativas, não consulta os membros da equipa e não vê o resto do projeto. Quem deixa de pertencer à equipa não fica com este acesso às tarefas que lhe continuem atribuídas.
 - **Planeamento de uma equipa consultado por quem não é da equipa** (o gestor de um dos seus projetos, F20): o backlog, as sprints e o trabalho da equipa mostram só as tarefas dos projetos que essa pessoa vê (CAT06; F23).
 
 | Operação | Administrador | Gestor (dos seus projetos) | Líder (da sua equipa) | Membro (da sua equipa) |
