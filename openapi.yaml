@@ -45,7 +45,7 @@ tags:
   - name: Sistema
     description: Estado do serviço, para o balanceador e o arranque local (sem autenticação).
   - name: Identidade e acesso
-    description: Utilizador autenticado (módulo Identidade e acesso).
+    description: Utilizador autenticado e contas de utilizador (módulo Identidade e acesso).
   - name: Organização
     description: Projetos e equipas (módulo Organização).
   - name: Acompanhamento
@@ -258,6 +258,63 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+
+  /users:
+    get:
+      tags: [Identidade e acesso]
+      operationId: listUsers
+      summary: Consultar as contas de utilizador
+      description: |
+        Só o administrador (§3.1). Pesquisa pelo nome ou pelo e-mail, sem distinguir maiúsculas,
+        ordenadas pelo nome, com o total do conjunto pesquisado (D46). `linked` indica se a conta já
+        foi ligada à identidade do colaborador no primeiro acesso (RN35).
+      parameters:
+        - $ref: '#/components/parameters/Query'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Página de contas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAccountPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Identidade e acesso]
+      operationId: createUser
+      summary: Criar uma conta de utilizador
+      description: |
+        Só o administrador (RN35, CA01.13). A conta fica ativa e por ligar; no primeiro acesso do
+        colaborador, liga-se à sua identidade pelo e-mail profissional verificado. Um e-mail já usado
+        por outra conta, sem distinguir maiúsculas, responde 409. A conta é criada sem papel de
+        administrador nem equipas (as pertenças gerem-se à parte, RN06).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: Conta criada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAccount'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
   /dashboard:
     get:
@@ -1256,6 +1313,56 @@ components:
           format: uuid
         name:
           type: string
+
+    UserCreate:
+      type: object
+      required: [name, workEmail]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: \S
+          description: Até 100 caracteres, contados depois de retirar os espaços no início e no fim; não só espaços.
+        workEmail:
+          type: string
+          format: email
+          maxLength: 254
+          description: E-mail profissional do colaborador (SEC05); único, sem distinguir maiúsculas.
+
+    UserAccount:
+      type: object
+      required: [id, name, workEmail, isAdmin, active, linked, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        workEmail:
+          type: string
+        isAdmin:
+          type: boolean
+        active:
+          type: boolean
+        linked:
+          type: boolean
+          description: Já ligada à identidade do colaborador no fornecedor (primeiro acesso, RN35).
+        createdAt:
+          type: string
+          format: date-time
+
+    UserAccountPage:
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/UserAccount'
 
     CurrentUser:
       type: object

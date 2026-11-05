@@ -359,6 +359,11 @@ button:disabled {
   align-items: end;
 }
 
+/* Nos formulários, os campos alinham-se pelo topo: a ajuda ou o erro de um campo não desloca o outro. */
+.form__row {
+  align-items: start;
+}
+
 .filters {
   margin: 1rem 0;
 }

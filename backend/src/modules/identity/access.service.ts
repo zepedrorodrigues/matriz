@@ -77,6 +77,9 @@ export class AccessService {
     query: Record<string, unknown> = {},
   ): Promise<void> {
     switch (requirement.kind) {
+      case 'admin':
+        if (!user.isAdmin) throw new ForbiddenException('Só o administrador gere contas, equipas e pertenças.');
+        return;
       case 'createProject':
         if (!(await this.canCreateProject(user))) {
           throw new ForbiddenException('Só o administrador e os líderes de equipa podem criar projetos.');

@@ -22,12 +22,16 @@ export type TaskAction =
   | 'removeParticipant';
 
 export type AccessRequirement =
+  | { kind: 'admin' }
   | { kind: 'createProject' }
   | { kind: 'project'; action: ProjectAction; param: string }
   | { kind: 'objective'; action: 'createWork'; param: string }
   | { kind: 'task'; action: TaskAction; param: string };
 
 export const ACCESS_REQUIREMENT = 'matriz:accessRequirement';
+
+/** Só o administrador: gerir contas, equipas e pertenças (§3.1, «Gerir utilizadores, papéis e equipas»). */
+export const AdminOnly = () => SetMetadata(ACCESS_REQUIREMENT, { kind: 'admin' } satisfies AccessRequirement);
 
 /** Criar projetos: administrador ou líder de equipa (RN25, D48). */
 export const CanCreateProject = () => SetMetadata(ACCESS_REQUIREMENT, { kind: 'createProject' } satisfies AccessRequirement);

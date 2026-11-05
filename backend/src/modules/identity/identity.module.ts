@@ -5,6 +5,8 @@ import { requireEnv } from '../../shared/config/load-env';
 import { USER_DIRECTORY } from '../../shared/ports/user-directory';
 import { OrganizationModule } from '../organization/organization.module';
 import { AccessService } from './access.service';
+import { AccountsController } from './accounts.controller';
+import { AccountsService } from './accounts.service';
 import { AccountService } from './account.service';
 import { AuthGuard } from './auth.guard';
 import { MeController } from './me.controller';
@@ -20,11 +22,12 @@ import { User } from './user.entity';
 @Global()
 @Module({
   imports: [TypeOrmModule.forFeature([User]), OrganizationModule],
-  controllers: [MeController],
+  controllers: [MeController, AccountsController],
   providers: [
     { provide: OIDC_KEY_SET, useFactory: () => discoveredKeySet(requireEnv('OIDC_ISSUER')) },
     TokenVerifier,
     AccountService,
+    AccountsService,
     AccessService,
     { provide: USER_DIRECTORY, useClass: UserDirectoryService },
     { provide: APP_GUARD, useClass: AuthGuard },

@@ -101,6 +101,32 @@ export interface ProjectInput {
 
 export const getCurrentUser = () => apiGet<CurrentUser>('/me');
 
+/** openapi.yaml: UserAccount, UserAccountPage, UserCreate (CA01.13, RN35) — só o administrador. */
+export interface UserAccount {
+  id: string;
+  name: string;
+  workEmail: string;
+  isAdmin: boolean;
+  active: boolean;
+  linked: boolean;
+  createdAt: string;
+}
+export interface UserAccountPage {
+  page: number;
+  pageSize: number;
+  total: number;
+  items: UserAccount[];
+}
+export function listUsers(params: { q?: string; page?: number; pageSize?: number }) {
+  const search = new URLSearchParams();
+  if (params.q) search.set('q', params.q);
+  if (params.page) search.set('page', String(params.page));
+  if (params.pageSize) search.set('pageSize', String(params.pageSize));
+  const qs = search.toString();
+  return apiGet<UserAccountPage>(`/users${qs ? `?${qs}` : ''}`);
+}
+export const createUser = (input: { name: string; workEmail: string }) => apiRequest<UserAccount>('POST', '/users', input);
+
 /** openapi.yaml: Dashboard — projetos visíveis com o número de tarefas por estado (CA07.9). */
 export interface Dashboard {
   projects: { id: string; name: string; taskCounts: Record<TaskState, number>; totalTasks: number }[];

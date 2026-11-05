@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from 'react-oidc-context';
 import { Link, NavLink, Outlet } from 'react-router';
@@ -11,8 +12,8 @@ const ROLE_LABEL = { leader: 'Líder', member: 'Membro' } as const;
 
 /**
  * Estrutura da aplicação com sessão iniciada: cabeçalho com a navegação do wireframe (D47) e o
- * utilizador autenticado. As entradas Backlog, Sprints, Acompanhamento e Alertas aparecem com os
- * respetivos incrementos.
+ * utilizador autenticado. A Administração aparece só ao administrador (wireframe §1, §3.1). As
+ * entradas Backlog, Sprints, Acompanhamento e Alertas aparecem com os respetivos incrementos.
  */
 export function Layout() {
   const auth = useAuth();
@@ -56,6 +57,7 @@ export function Layout() {
             Início
           </NavLink>
           <NavLink to="/projetos">Projetos</NavLink>
+          {me.data.isAdmin ? <NavLink to="/administracao/contas">Administração</NavLink> : null}
         </nav>
         <span className="app-header__user">{me.data.name}</span>
         <button type="button" onClick={signOut}>
@@ -123,6 +125,21 @@ export function HomePage() {
       </section>
     </section>
   );
+}
+
+/** Rotas de administração: quem não é administrador vê a indicação, e a API recusa sempre (SEC02). */
+export function AdminOnlyPage({ children }: { children: ReactNode }) {
+  const me = useCurrentUser();
+  if (!me.data) return null;
+  if (!me.data.isAdmin) {
+    return (
+      <section className="page">
+        <Notice tone="error">Esta área é só para o administrador.</Notice>
+        <NavLink to="/">Voltar ao início</NavLink>
+      </section>
+    );
+  }
+  return <>{children}</>;
 }
 
 export function NotFoundPage() {
