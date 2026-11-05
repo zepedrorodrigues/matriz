@@ -15,9 +15,14 @@
     "db:migrate": "npm run migration:run -w backend",
     "db:seed": "npm run seed -w backend",
     "build": "npm run build -w backend && npm run build -w frontend",
-    "test": "npm test -w backend && npm test -w frontend"
+    "test": "npm test -w backend && npm test -w frontend",
+    "test:unit": "npm run test:unit -w backend && npm test -w frontend",
+    "test:e2e": "playwright test --config e2e/playwright.config.ts"
   },
   "overrides": {
     "multer": "2.5.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0"
   }
 }
