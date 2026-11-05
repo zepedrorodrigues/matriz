@@ -1,3 +1,5 @@
+import type { EntityManager } from 'typeorm';
+
 /** Estados de uma tarefa (RN17), pela ordem do ciclo de vida (RN26). Valores técnicos do contrato. */
 export const TASK_STATES = [
   'in_planning',
@@ -75,7 +77,12 @@ export interface WorkItemLocator {
    * Tarefas e subtarefas não eliminadas (nem a tarefa principal, RN38) de uma equipa, ou as indicadas por
    * id, para o backlog e as sprints (I9). Quem chama exclui as de projetos eliminados.
    */
-  planningTasks(query: { teamId: string } | { taskIds: string[] }): Promise<PlanningTaskInfo[]>;
+  planningTasks(query: { teamId: string } | { taskIds: string[] }, manager?: EntityManager): Promise<PlanningTaskInfo[]>;
+  /**
+   * Tarefas e subtarefas não eliminadas com o prazo já ultrapassado no dia indicado e não concluídas (RN29,
+   * RN30; alertas de prazo, I11). Quem chama exclui as de projetos eliminados.
+   */
+  overdueTasks(today: string): Promise<{ id: string; teamId: string; projectId: string; assigneeId: string | null; dueDate: string }[]>;
 }
 
 export const WORK_ITEM_LOCATOR = Symbol('WORK_ITEM_LOCATOR');

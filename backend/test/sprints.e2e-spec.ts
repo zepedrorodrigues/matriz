@@ -251,8 +251,10 @@ describe('I9 — backlog e sprints', () => {
       const finished = (await as('leaderA').get(`/api/sprints/${ids.activeSprint}`).expect(200)).body.tasks[0].id as string;
       await t.db.query(`UPDATE work.task SET state = 'done', assignee_id = $2 WHERE id = $1`, [finished, ids.memberA]);
       await t.db.query(`UPDATE work.task SET state = 'in_testing', assignee_id = $2 WHERE id = $1`, [ids.added, ids.memberA]);
-      // Antes do fim, nada termina (o próprio dia de fim ainda conta).
-      expect(await job.runOnce(sprint.endDate)).toEqual([]);
+      // Antes do fim, a sprint não termina (o próprio dia de fim ainda conta). Outras sprints da base de testes
+      // (de outros ficheiros, que partilham a base) podem terminar: a tarefa diária é global.
+      expect(await job.runOnce(sprint.endDate)).not.toContain(ids.activeSprint);
+      expect((await as('leaderA').get(`/api/sprints/${ids.activeSprint}`).expect(200)).body.status).toBe('active');
       const dayAfter = new Date(`${sprint.endDate}T00:00:00Z`);
       dayAfter.setUTCDate(dayAfter.getUTCDate() + 1);
       const closed = await job.runOnce(dayAfter.toISOString().slice(0, 10));

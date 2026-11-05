@@ -60,22 +60,51 @@ export class CapacityService {
    * seus dados; o gestor e o administrador, nenhum (a não ser que sejam também líderes ou membros).
    */
   async forSprint(viewer: AuthenticatedUser, sprintId: string): Promise<SprintCapacity> {
-    const [sprint] = await this.db.query(
+    const computed = await this.compute(sprintId, this.db.manager);
+    if (!computed) throw new NotFoundException('A sprint não existe.');
+    const { result, rows, members } = computed;
+    const viewerRole = members.find((m) => m.userId === viewer.id)?.role;
+    return { ...result, members: viewerRole === 'leader' ? rows : viewerRole === 'member' ? rows.filter((r) => r.userId === viewer.id) : [] };
+  }
+
+  /** CA05.8 (I11): sobrecarga da equipa e de cada membro, calculada na transação indicada. */
+  async overloadState(sprintId: string, manager: EntityManager): Promise<{ teamId: string; team: boolean; users: string[] } | null> {
+    const [sprint] = await manager.query(`SELECT status FROM planning.sprint WHERE id = $1`, [sprintId]);
+    if (!sprint || sprint.status === 'closed') return null;
+    const computed = await this.compute(sprintId, manager);
+    if (!computed) return null;
+    return { teamId: computed.result.teamId, team: computed.result.overloaded, users: computed.rows.filter((r) => r.overloaded).map((r) => r.userId) };
+  }
+
+  async openSprintsOfTask(taskId: string, manager: EntityManager): Promise<string[]> {
+    const rows: { id: string }[] = await manager.query(
+      `SELECT s.id FROM planning.sprint_task st JOIN planning.sprint s ON s.id = st.sprint_id
+       WHERE st.task_id = $1 AND st.left_at IS NULL AND s.status IN ('planned', 'active')`,
+      [taskId],
+    );
+    return rows.map((r) => r.id);
+  }
+
+  private async compute(
+    sprintId: string,
+    m: EntityManager,
+  ): Promise<{ result: SprintCapacity; rows: MemberCapacity[]; members: { userId: string; role: 'leader' | 'member' }[] } | null> {
+    const [sprint] = await m.query(
       `SELECT id, team_id, to_char(start_date, 'YYYY-MM-DD') AS start_date, to_char(end_date, 'YYYY-MM-DD') AS end_date
        FROM planning.sprint WHERE id = $1`,
       [sprintId],
     );
-    if (!sprint) throw new NotFoundException('A sprint não existe.');
+    if (!sprint) return null;
     const days = workingDays(sprint.start_date, sprint.end_date);
 
     const [members, adjustments, links] = await Promise.all([
       this.organization.teamMembers(sprint.team_id),
-      this.db.query(`SELECT user_id, available_hours FROM planning.availability_adjustment WHERE sprint_id = $1`, [sprintId]) as Promise<
+      m.query(`SELECT user_id, available_hours FROM planning.availability_adjustment WHERE sprint_id = $1`, [sprintId]) as Promise<
         { user_id: string; available_hours: string }[]
       >,
-      this.db.query(`SELECT task_id FROM planning.sprint_task WHERE sprint_id = $1 AND left_at IS NULL`, [sprintId]) as Promise<{ task_id: string }[]>,
+      m.query(`SELECT task_id FROM planning.sprint_task WHERE sprint_id = $1 AND left_at IS NULL`, [sprintId]) as Promise<{ task_id: string }[]>,
     ]);
-    const infos = await this.work.planningTasks({ taskIds: links.map((l) => l.task_id) });
+    const infos = await this.work.planningTasks({ taskIds: links.map((l) => l.task_id) }, m);
     const live = await this.organization.projectNames([...new Set(infos.map((t) => t.projectId))]);
     // RN22, CA05.9: uma tarefa com subtarefas conta 0; contam as subtarefas, cada uma na sua sprint.
     const counted = infos.filter((t) => live.has(t.projectId) && !t.hasSubtasks);
@@ -102,8 +131,7 @@ export class CapacityService {
 
     const capacityHours = round2(rows.reduce((sum, r) => sum + r.capacityHours, 0));
     const plannedHours = round2(counted.reduce((sum, t) => sum + (t.estimateHours ?? 0), 0));
-    const viewerRole = members.find((m) => m.userId === viewer.id)?.role;
-    return {
+    const result: SprintCapacity = {
       sprintId,
       teamId: sprint.team_id,
       startDate: sprint.start_date,
@@ -115,8 +143,9 @@ export class CapacityService {
       plannedStoryPoints: counted.reduce((sum, t) => sum + (t.storyPoints ?? 0), 0),
       tasksWithoutStoryPoints: counted.filter((t) => t.storyPoints === null).length,
       overloaded: plannedHours > capacityHours,
-      members: viewerRole === 'leader' ? rows : viewerRole === 'member' ? rows.filter((r) => r.userId === viewer.id) : [],
+      members: rows,
     };
+    return { result, rows, members };
   }
 
   /** CA05.5, SEC06: horas disponíveis do membro nesta sprint e nesta equipa, sem motivo; fica no histórico. */

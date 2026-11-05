@@ -1,6 +1,7 @@
 import { Global, Injectable, Module } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import { CAPACITY_READER } from '../../shared/ports/capacity-reader';
 import { SPRINT_LOCATOR, type SprintLocator } from '../../shared/ports/sprint-locator';
 import { OrganizationModule } from '../organization/organization.module';
 import { CapacityService } from './capacity.service';
@@ -28,7 +29,13 @@ class SprintLocatorService implements SprintLocator {
 @Module({
   imports: [OrganizationModule],
   controllers: [PlanningController],
-  providers: [SprintsService, CapacityService, SprintJobService, { provide: SPRINT_LOCATOR, useClass: SprintLocatorService }],
-  exports: [SPRINT_LOCATOR, SprintJobService],
+  providers: [
+    SprintsService,
+    CapacityService,
+    SprintJobService,
+    { provide: SPRINT_LOCATOR, useClass: SprintLocatorService },
+    { provide: CAPACITY_READER, useExisting: CapacityService },
+  ],
+  exports: [SPRINT_LOCATOR, CAPACITY_READER, SprintJobService],
 })
 export class PlanningModule {}

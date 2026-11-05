@@ -145,6 +145,16 @@ export class OrganizationReader {
     return row.manages === true;
   }
 
+  /** Nomes das equipas indicadas (alertas de sobrecarga, I11). */
+  async teamNames(teamIds: string[]): Promise<Map<string, { name: string; active: boolean }>> {
+    if (teamIds.length === 0) return new Map();
+    const rows: { id: string; name: string; active: boolean }[] = await this.db.query(
+      `SELECT id, name, active FROM organization.team WHERE id = ANY($1::uuid[])`,
+      [teamIds],
+    );
+    return new Map(rows.map((r) => [r.id, { name: r.name, active: r.active }]));
+  }
+
   /** Estado de uma equipa: null se não existir (planeamento, I9). */
   async teamStatus(teamId: string): Promise<{ active: boolean } | null> {
     const [row] = await this.db.query(`SELECT active FROM organization.team WHERE id = $1`, [teamId]);

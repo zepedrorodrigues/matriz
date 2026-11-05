@@ -322,6 +322,29 @@ export interface Dashboard {
 }
 export const getDashboard = () => apiGet<Dashboard>('/dashboard');
 
+/** openapi.yaml: Alert, AlertPage — só os alertas do próprio utilizador (RN18, RN30; SEC07). */
+export type AlertType = 'deadline_passed' | 'task_blocked' | 'task_reopened' | 'member_task_created' | 'team_overload' | 'individual_overload';
+export interface Alert {
+  id: string;
+  type: AlertType;
+  createdAt: string;
+  readAt: string | null;
+  task: { id: string; title: string; state: TaskState; isBlocked: boolean; blockReason: string | null } | null;
+  team: TeamSummary | null;
+  member: UserSummary | null;
+  sprintId: string | null;
+  dueDate: string | null;
+}
+export interface AlertPage {
+  page: number;
+  pageSize: number;
+  total: number;
+  unreadCount: number;
+  items: Alert[];
+}
+export const listAlerts = (page = 1, pageSize = 20) => apiGet<AlertPage>(`/alerts?page=${page}&pageSize=${pageSize}`);
+export const markAlertRead = (alertId: string) => apiRequest<Alert>('POST', `/alerts/${id(alertId)}/read`);
+
 export function listProjects(params: { q?: string; page?: number; pageSize?: number }) {
   const search = new URLSearchParams();
   if (params.q) search.set('q', params.q);

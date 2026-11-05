@@ -2,19 +2,20 @@ import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from 'react-oidc-context';
 import { Link, NavLink, Outlet } from 'react-router';
-import { ApiError, getDashboard, type CurrentUser } from './api/client';
+import { ApiError, getDashboard, listAlerts, type CurrentUser } from './api/client';
 import { StatusScreen } from './auth/AuthGate';
 import { useCurrentUser } from './auth/current-user';
 import { Notice } from './components/Notice';
+import { alertsNavLabel } from './domain/alerts';
 import { STATE_LABEL, TASK_STATES } from './domain/tasks';
 
 const ROLE_LABEL = { leader: 'Líder', member: 'Membro' } as const;
 
 /**
  * Estrutura da aplicação com sessão iniciada: cabeçalho com a navegação do wireframe (D47) e o
- * utilizador autenticado. A Administração aparece só ao administrador (wireframe §1, §3.1). As
- * entradas Acompanhamento e Alertas aparecem com os respetivos incrementos; Sprints (I9) abre o
- * planeamento da equipa, com as sprints e o backlog.
+ * utilizador autenticado. A Administração aparece só ao administrador (wireframe §1, §3.1). Sprints (I9)
+ * abre o planeamento da equipa, com as sprints, o backlog e o trabalho da equipa (acompanhamento, I11);
+ * Alertas (I11) mostra o número de alertas por ler.
  */
 export function Layout() {
   const auth = useAuth();
@@ -59,6 +60,7 @@ export function Layout() {
           </NavLink>
           <NavLink to="/projetos">Projetos</NavLink>
           <NavLink to="/planeamento">Sprints</NavLink>
+          <AlertsNavLink />
           {me.data.isAdmin ? <NavLink to="/administracao/contas">Administração</NavLink> : null}
         </nav>
         <span className="app-header__user">{me.data.name}</span>
@@ -71,6 +73,15 @@ export function Layout() {
       </main>
     </>
   );
+}
+
+/**
+ * Entrada «Alertas» com o número por ler (wireframe §1; RN18). DT07: os alertas são consultados
+ * periodicamente — a cada minuto e depois de cada alteração confirmada pela API (main.tsx).
+ */
+function AlertsNavLink() {
+  const unread = useQuery({ queryKey: ['alerts', 'unread'], queryFn: () => listAlerts(1, 1), refetchInterval: 60_000 });
+  return <NavLink to="/alertas">{alertsNavLabel(unread.data?.unreadCount ?? 0)}</NavLink>;
 }
 
 /**

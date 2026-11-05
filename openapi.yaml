@@ -906,6 +906,63 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /alerts:
+    get:
+      tags: [Acompanhamento]
+      operationId: listAlerts
+      summary: Consultar os meus alertas
+      description: |
+        Os alertas do utilizador autenticado, e só esses (SEC07), na aplicação (RN18): prazo
+        ultrapassado (`deadline_passed`), tarefa bloqueada (`task_blocked`), tarefa reaberta
+        (`task_reopened`), tarefa criada por um membro (`member_task_created`, RN09) e sobrecarga da
+        equipa ou individual (`team_overload`, `individual_overload`, RN19) — RN30. Mais recentes
+        primeiro, com o total e o número de não lidos (para o contador da navegação; a aplicação
+        consulta-os periodicamente, DT07). A tarefa vem com o estado e o motivo de bloqueio atuais;
+        uma tarefa entretanto eliminada aparece a `null`. Os alertas não são apagados.
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Alertas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /alerts/{alertId}/read:
+    post:
+      tags: [Acompanhamento]
+      operationId: markAlertRead
+      summary: Marcar um alerta como lido
+      description: Só o destinatário; o alerta de outra pessoa responde 404, como um inexistente (SEC07).
+      parameters:
+        - name: alertId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Alerta lido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /dashboard:
     get:
       tags: [Acompanhamento]
@@ -2476,6 +2533,72 @@ components:
                     type: boolean
                   blockReason:
                     type: [string, 'null']
+
+    Alert:
+      type: object
+      required: [id, type, createdAt, readAt, task, team, member, sprintId, dueDate]
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [deadline_passed, task_blocked, task_reopened, member_task_created, team_overload, individual_overload]
+        createdAt:
+          type: string
+          format: date-time
+        readAt:
+          type: [string, 'null']
+          format: date-time
+        task:
+          description: A tarefa, com o estado e o bloqueio atuais; `null` nas sobrecargas ou numa tarefa eliminada.
+          oneOf:
+            - type: object
+              required: [id, title, state, isBlocked, blockReason]
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                title:
+                  type: string
+                state:
+                  $ref: '#/components/schemas/TaskState'
+                isBlocked:
+                  type: boolean
+                blockReason:
+                  type: [string, 'null']
+            - type: 'null'
+        team:
+          description: A equipa, nas sobrecargas.
+          oneOf:
+            - $ref: '#/components/schemas/TeamSummary'
+            - type: 'null'
+        member:
+          description: A pessoa sobrecarregada (`individual_overload`); o alerta chega a ela e aos líderes (RN19).
+          oneOf:
+            - $ref: '#/components/schemas/UserSummary'
+            - type: 'null'
+        sprintId:
+          type: [string, 'null']
+          format: uuid
+        dueDate:
+          type: [string, 'null']
+          format: date
+          description: O prazo ultrapassado (`deadline_passed`); há um alerta por tarefa e por prazo (F21).
+
+    AlertPage:
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+        - type: object
+          required: [unreadCount, items]
+          properties:
+            unreadCount:
+              type: integer
+              minimum: 0
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Alert'
 
     TeamSummary:
       type: object

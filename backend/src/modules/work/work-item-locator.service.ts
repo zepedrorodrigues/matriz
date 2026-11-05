@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 import { todaySql } from '../../shared/config/time-zone';
 import type { PlanningTaskInfo, TaskLocation, TaskState, WorkItemLocator } from '../../shared/ports/work-item-locator';
 
@@ -54,6 +54,20 @@ export class WorkItemLocatorService implements WorkItemLocator {
     return counts;
   }
 
+  async overdueTasks(today: string): Promise<{ id: string; teamId: string; projectId: string; assigneeId: string | null; dueDate: string }[]> {
+    const rows: { id: string; team_id: string; project_id: string; assignee_id: string | null; due_date: string }[] = await this.db.query(
+      `SELECT t.id, t.team_id, o.project_id, t.assignee_id, to_char(t.due_date, 'YYYY-MM-DD') AS due_date
+       FROM work.task t
+       LEFT JOIN work.task p ON p.id = t.parent_task_id
+       JOIN work.epic e ON e.id = coalesce(t.epic_id, p.epic_id)
+       JOIN work.objective o ON o.id = e.objective_id
+       WHERE t.due_date < $1::date AND t.state NOT IN ('done', 'delivered')
+         AND t.deleted_at IS NULL AND (p.id IS NULL OR p.deleted_at IS NULL)`,
+      [today],
+    );
+    return rows.map((r) => ({ id: r.id, teamId: r.team_id, projectId: r.project_id, assigneeId: r.assignee_id, dueDate: r.due_date }));
+  }
+
   async openTaskCountsOfTeam(teamId: string): Promise<{ projectId: string; count: number }[]> {
     const rows: { project_id: string; n: number }[] = await this.db.query(
       `SELECT o.project_id, count(*)::int AS n
@@ -69,7 +83,8 @@ export class WorkItemLocatorService implements WorkItemLocator {
     return rows.map((r) => ({ projectId: r.project_id, count: r.n }));
   }
 
-  async planningTasks(query: { teamId: string } | { taskIds: string[] }): Promise<PlanningTaskInfo[]> {
+  /** Com `manager`, lê na transação em curso (p. ex. para recalcular a sobrecarga com as alterações por confirmar). */
+  async planningTasks(query: { teamId: string } | { taskIds: string[] }, manager?: EntityManager): Promise<PlanningTaskInfo[]> {
     const byTeam = 'teamId' in query;
     if (!byTeam && query.taskIds.length === 0) return [];
     const rows: {
@@ -91,7 +106,7 @@ export class WorkItemLocatorService implements WorkItemLocator {
       is_overdue: boolean;
       is_blocked: boolean;
       block_reason: string | null;
-    }[] = await this.db.query(
+    }[] = await (manager ?? this.db).query(
       `SELECT t.id, t.title, o.project_id, t.team_id, t.parent_task_id, t.state, t.priority, t.estimate_hours,
               t.story_points, t.assignee_id, t.created_at, s.subtask_count, s.subtask_hours, s.subtask_points,
               to_char(t.due_date, 'YYYY-MM-DD') AS due_date, t.is_blocked, t.block_reason,

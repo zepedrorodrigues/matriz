@@ -7,6 +7,7 @@ import { ApiError } from './api/client';
 import { AdminOnlyPage, HomePage, Layout, NotFoundPage } from './App';
 import { AuthGate } from './auth/AuthGate';
 import { AccountsPage } from './pages/admin/AccountsPage';
+import { AlertsPage } from './pages/alerts/AlertsPage';
 import { TeamDetailPage } from './pages/admin/TeamDetailPage';
 import { TeamsPage } from './pages/admin/TeamsPage';
 import { oidcConfig } from './auth/oidc-config';
@@ -19,9 +20,12 @@ import './styles.css';
 
 const queryClient: QueryClient = new QueryClient({
   // Ex. 7: qualquer alteração confirmada pela API (criar, editar, eliminar, mudar o estado) pode mudar
-  // as contagens do painel inicial, que são marcadas como desatualizadas e pedidas de novo.
+  // as contagens do painel inicial e os alertas (I11), que são marcados como desatualizados e pedidos de novo.
   mutationCache: new MutationCache({
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      void queryClient.invalidateQueries({ queryKey: ['alerts'] });
+    },
   }),
   // Um erro 4xx (401, 403, 404…) não melhora ao repetir; os restantes tentam uma vez mais.
   defaultOptions: {
@@ -40,6 +44,7 @@ const routes = [
       { path: 'tarefas/:taskId', element: <TaskDetailPage /> },
       { path: 'planeamento', element: <TeamPlanningPage /> },
       { path: 'sprints/:sprintId', element: <SprintPage /> },
+      { path: 'alertas', element: <AlertsPage /> },
       { path: 'administracao/contas', element: <AdminOnlyPage><AccountsPage /></AdminOnlyPage> },
       { path: 'administracao/equipas', element: <AdminOnlyPage><TeamsPage /></AdminOnlyPage> },
       { path: 'administracao/equipas/:teamId', element: <AdminOnlyPage><TeamDetailPage /></AdminOnlyPage> },

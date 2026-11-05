@@ -204,12 +204,22 @@ A capacidade não é guardada: calcula-se como 8 h × dias úteis da sprint × `
 | recipient_id | uuid | ref. lógica → user | Só o destinatário o vê (SEC07). |
 | type | enum | | `deadline_passed`, `task_blocked`, `task_reopened`, `member_task_created`, `team_overload`, `individual_overload` (RN09, RN19, RN30). |
 | task_id | uuid | ref. lógica → task, nulo | |
-| team_id | uuid | ref. lógica → team, nulo | Nas sobrecargas. |
+| team_id | uuid | ref. lógica → team, nulo | A equipa da tarefa ou, nas sobrecargas, a equipa da sprint. |
 | sprint_id | uuid | ref. lógica → sprint, nulo | Nas sobrecargas. |
+| user_id | uuid | ref. lógica → user, nulo | A pessoa sobrecarregada; preenchido só em `individual_overload`, que também chega aos líderes (RN19). |
+| due_date | date | nulo | O prazo ultrapassado; preenchido só em `deadline_passed`. Único por (tarefa, destinatário, prazo): um alerta por prazo (F21). |
 | created_at | timestamptz | | |
 | read_at | timestamptz | nulo | |
 
 No MVP, os alertas não são apagados nem arquivados, para não perder informação; o volume desta tabela será revisto (DT09).
+
+**overload_flag** — quem está assinalado em sobrecarga numa sprint em aberto (a equipa ou um membro), para alertar só na passagem a sobrecarga e não repetir enquanto durar (CA05.8, F21). Sai quando deixa de haver sobrecarga.
+
+| Atributo | Tipo | Chave | Regra |
+|---|---|---|---|
+| sprint_id | uuid | PK; ref. lógica → sprint | |
+| subject_id | uuid | PK; ref. lógica → team ou user | |
+| flagged_at | timestamptz | | |
 
 ### 2.6 Histórico (`history`)
 

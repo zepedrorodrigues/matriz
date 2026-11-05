@@ -497,3 +497,8 @@ button:disabled {
     overflow-wrap: anywhere;
   }
 }
+
+/* Alertas por ler (I11). */
+.card--unread {
+  border-left: 4px solid var(--accent);
+}
