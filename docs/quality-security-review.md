@@ -3,7 +3,7 @@
 Resultados do Code Review e do Security Review do Matriz, com a evidência de cada achado, a classificação (confirmado ou suspeita), as decisões humanas e as correções com o respetivo teste de regressão. O plano de testes está em [`test-plan.md`](test-plan.md).
 
 - **Data:** 2026-11-05
-- **Versão revista:** commit `44f1f11` (fim da Ficha 03); correções no commit que acrescenta este documento.
+- **Versão revista:** commit `44f1f11` (fim da Ficha 03). **Testes novos:** `df17603`. **Correções:** `5eccfdb`. **Documentação:** `212ea47` e seguintes no `main`.
 - **Quem fez o quê:** a revisão e a primeira classificação são da IA (Claude Code), cada uma por um agente separado. Os achados que dependiam da execução foram confirmados com testes reais. As decisões e a escolha do que corrigir são do responsável do projeto (F24).
 
 ## 1. Âmbito e método
