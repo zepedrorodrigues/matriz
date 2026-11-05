@@ -12,11 +12,12 @@ import {
   type Task,
   type TaskUpdate,
 } from '../../api/client';
-import { canCreateSubtask, canEditTask, leadsTask, stateTargetsFor, useCurrentUser } from '../../auth/current-user';
+import { canCreateSubtask, canEditEstimates, canEditTask, leadsTask, stateTargetsFor, useCurrentUser } from '../../auth/current-user';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { Notice } from '../../components/Notice';
 import { SelectField } from '../../components/SelectField';
-import { STATE_LABEL, type TaskState } from '../../domain/tasks';
+import { STATE_LABEL, formatHours, type TaskState } from '../../domain/tasks';
+import { CriteriaPanel } from './CriteriaPanel';
 import { TaskBadges } from './TaskBadges';
 import { TaskForm, type TaskFormValues } from './TaskForm';
 
@@ -25,9 +26,9 @@ const date = new Intl.DateTimeFormat('pt-PT', { dateStyle: 'long' });
 const errorText = (error: unknown) => (error instanceof ApiError ? error.message : 'Não foi possível concluir a operação.');
 
 /**
- * Ecrã Detalhe da tarefa (Ficha PL 03, Ex. 5 e Ex. 7): dados, edição, estado, prioridade, subtarefas e
- * eliminação com confirmação. Os critérios de aceitação e os participantes são apresentados; a sua
- * gestão chega nos incrementos I5 e I6. Cada ação aparece a quem a matriz o permite (§3.1); a API
+ * Ecrã Detalhe da tarefa (Ficha PL 03, Ex. 5 e Ex. 7): dados, edição (com as estimativas, I5), estado,
+ * prioridade, subtarefas, critérios de aceitação (I5) e eliminação com confirmação. Os participantes
+ * são apresentados; a sua gestão chega no I6. Cada ação aparece a quem a matriz o permite (§3.1); a API
  * decide sempre e a interface mostra o motivo de uma recusa.
  */
 export function TaskDetailPage() {
@@ -41,6 +42,7 @@ export function TaskDetailPage() {
   const [addingSubtask, setAddingSubtask] = useState(false);
   const [target, setTarget] = useState<TaskState | ''>('');
   const [notice, setNotice] = useState<string | undefined>((location.state as { notice?: string } | null)?.notice);
+  const [criteriaResetKey, setCriteriaResetKey] = useState(0);
 
   const task = useQuery({ queryKey: ['task', taskId], queryFn: () => getTask(taskId), retry: false });
   const projectId = task.data?.projectId;
@@ -54,8 +56,9 @@ export function TaskDetailPage() {
    * Ao iniciar uma operação, apaga-se o resultado das anteriores: uma mensagem de sucesso ou um erro
    * antigo não pode ficar visível ao lado do resultado da nova operação (Ex. 8, caso 09).
    */
-  const startOperation = (current: 'update' | 'move' | 'addSubtask' | 'remove') => {
+  const startOperation = (current: 'update' | 'move' | 'addSubtask' | 'remove' | 'criteria') => {
     setNotice(undefined);
+    if (current !== 'criteria') setCriteriaResetKey((n) => n + 1);
     if (current !== 'update') update.reset();
     if (current !== 'move') move.reset();
     if (current !== 'addSubtask') addSubtask.reset();
@@ -98,6 +101,8 @@ export function TaskDetailPage() {
         title: values.title,
         priority: values.priority,
         ...(values.description ? { description: values.description } : {}),
+        ...(values.estimateHours !== null ? { estimateHours: values.estimateHours } : {}),
+        ...(values.storyPoints !== null ? { storyPoints: values.storyPoints } : {}),
       }),
     onSuccess: async (created) => {
       queryClient.setQueryData(['task', created.id], created);
@@ -148,12 +153,20 @@ export function TaskDetailPage() {
   const targets = user ? stateTargetsFor(user, t) : [];
   const teamName = project.data?.teams.find((team) => team.id === t.teamId)?.name ?? '—';
   const isSubtask = t.parentTaskId !== null;
+  // RN22: numa tarefa com subtarefas, a estimativa é a soma das subtarefas; RN10: proteção em desenvolvimento.
+  const hasSubtasks = t.subtasks.length > 0;
+  const mayEstimate = user ? canEditEstimates(user, t) && !hasSubtasks : false;
+  const estimatesHint = hasSubtasks
+    ? 'A estimativa de uma tarefa com subtarefas é a soma das estimativas das subtarefas.'
+    : 'Depois de a tarefa entrar em «A desenvolver», só o líder da equipa, o gestor do projeto e o administrador alteram as estimativas.';
 
   const saveEdit = (values: TaskFormValues) => {
     const input: TaskUpdate = {};
     if (values.title !== t.title) input.title = values.title;
     if (values.description !== (t.description ?? '')) input.description = values.description || null;
     if (mayLead && values.priority !== t.priority) input.priority = values.priority;
+    if (mayEstimate && values.estimateHours !== t.estimateHours) input.estimateHours = values.estimateHours;
+    if (mayEstimate && values.storyPoints !== t.storyPoints) input.storyPoints = values.storyPoints;
     if (Object.keys(input).length === 0) {
       setEditing(false);
       return;
@@ -178,8 +191,16 @@ export function TaskDetailPage() {
         <div className="panel">
           <h1>{isSubtask ? 'Editar subtarefa' : 'Editar tarefa'}</h1>
           <TaskForm
-            initial={{ title: t.title, description: t.description ?? '', priority: t.priority }}
+            initial={{
+              title: t.title,
+              description: t.description ?? '',
+              priority: t.priority,
+              estimateHours: t.estimateHours,
+              storyPoints: t.storyPoints,
+            }}
             priorityEditable={mayLead}
+            estimatesEditable={mayEstimate}
+            estimatesHint={estimatesHint}
             submitLabel="Guardar alterações"
             busyLabel="A guardar…"
             busy={update.isPending}
@@ -231,8 +252,9 @@ export function TaskDetailPage() {
             <dd>{t.assignee?.name ?? <span className="muted">Sem responsável.</span>}</dd>
             <dt>Estimativa</dt>
             <dd>
-              {t.estimateHours === null ? '—' : `${t.estimateHours} h`} · {t.storyPoints === null ? 'sem story points' : `${t.storyPoints} SP`}
-              {t.subtasks.length > 0 ? <span className="muted"> (soma das subtarefas)</span> : null}
+              {t.estimateHours === null ? 'sem estimativa temporal' : `${formatHours(t.estimateHours)} h`} ·{' '}
+              {t.storyPoints === null ? 'sem story points' : `${t.storyPoints} SP`}
+              {hasSubtasks ? <span className="muted"> (somas das subtarefas, apresentadas em separado)</span> : null}
             </dd>
             <dt>Prazo</dt>
             <dd>{t.dueDate ? date.format(new Date(`${t.dueDate}T00:00:00`)) : '—'}</dd>
@@ -325,6 +347,10 @@ export function TaskDetailPage() {
                   <p className="card__text">
                     <TaskBadges state={s.state} priority={s.priority} isBlocked={s.isBlocked} isOverdue={s.isOverdue} />
                   </p>
+                  <p className="card__text muted">
+                    {s.estimateHours === null ? 'sem estimativa temporal' : `${formatHours(s.estimateHours)} h`} ·{' '}
+                    {s.storyPoints === null ? 'sem story points' : `${s.storyPoints} SP`}
+                  </p>
                 </li>
               ))}
             </ul>
@@ -332,20 +358,12 @@ export function TaskDetailPage() {
         </section>
       ) : null}
 
-      <section className="panel" aria-labelledby="criteria-title">
-        <h2 id="criteria-title">Critérios de aceitação</h2>
-        {t.acceptanceCriteria.length === 0 ? (
-          <p className="muted">Sem critérios de aceitação. São precisos para passar a «Pronto a desenvolver».</p>
-        ) : (
-          <ul className="checklist">
-            {t.acceptanceCriteria.map((c) => (
-              <li key={c.id}>
-                <span className="badge">{c.isMet ? 'Cumprido' : 'Por cumprir'}</span> {c.description}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <CriteriaPanel
+        task={t}
+        me={user}
+        resetKey={criteriaResetKey}
+        onOperationStart={() => startOperation('criteria')}
+      />
 
       <section className="panel" aria-labelledby="participants-title">
         <h2 id="participants-title">Participantes</h2>

@@ -53,7 +53,8 @@ export class TasksController {
   @Patch('tasks/:taskId')
   @TaskAccess('edit')
   update(@CurrentUser() user: AuthenticatedUser, @Param('taskId') taskId: string, @Body() dto: UpdateTaskDto): Promise<Task> {
-    if (dto.title === undefined && dto.description === undefined && dto.priority === undefined) {
+    const fields = [dto.title, dto.description, dto.priority, dto.estimateHours, dto.storyPoints];
+    if (fields.every((value) => value === undefined)) {
       throw new ValidationFailedException([{ field: '', message: 'Indique pelo menos um campo a alterar.' }]);
     }
     return this.tasks.update(user, taskId, dto);

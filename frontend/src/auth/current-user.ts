@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { getCurrentUser, type CurrentUser, type Project, type Task } from '../api/client';
-import { MEMBER_STATES, lifecycleTargets, type TaskState } from '../domain/tasks';
+import { DEVELOPMENT_STATES, MEMBER_STATES, lifecycleTargets, type TaskState } from '../domain/tasks';
 
 /** Utilizador autenticado (`GET /me`), partilhado pelos ecrãs. */
 export const useCurrentUser = () => useQuery({ queryKey: ['me'], queryFn: getCurrentUser, retry: false });
@@ -41,3 +41,22 @@ export function stateTargetsFor(me: CurrentUser, task: Task): TaskState[] {
   const mayMove = task.assignee?.id === me.id && MEMBER_STATES.includes(task.state);
   return mayMove ? targets.filter((s) => MEMBER_STATES.includes(s)) : [];
 }
+
+/**
+ * §3.1, RN10: definem estimativas o administrador, o gestor e os membros da equipa responsável; em
+ * «A desenvolver» ou depois, só o administrador, o gestor e o líder.
+ */
+export const canEditEstimates = (me: CurrentUser, task: Task) =>
+  leadsTask(me, task) || (canEditTask(me, task) && !DEVELOPMENT_STATES.includes(task.state));
+
+/**
+ * RN24: definem e alteram os critérios o administrador, o gestor, o líder e, antes de «A desenvolver»,
+ * quem criou a tarefa (se for da equipa responsável).
+ */
+export const canDefineCriteria = (me: CurrentUser, task: Task) =>
+  leadsTask(me, task) ||
+  (!DEVELOPMENT_STATES.includes(task.state) && roleIn(me, task.teamId) !== undefined && task.createdBy.id === me.id);
+
+/** §3.1: registar o cumprimento — o membro, só nas tarefas que lhe estão atribuídas. */
+export const canRecordCriteria = (me: CurrentUser, task: Task) =>
+  leadsTask(me, task) || (roleIn(me, task.teamId) !== undefined && task.assignee?.id === me.id);

@@ -6,7 +6,8 @@ import { SetMetadata } from '@nestjs/common';
  * dependerem do módulo Identidade (architecture.md §6).
  */
 export type ProjectAction = 'view' | 'edit' | 'delete' | 'createWork' | 'createTask';
-export type TaskAction = 'view' | 'edit' | 'changeState' | 'delete';
+/** `createCriterion`/`updateCriterion`: acrescentar e alterar critérios de aceitação (RN24, §3.1). */
+export type TaskAction = 'view' | 'edit' | 'changeState' | 'delete' | 'createCriterion' | 'updateCriterion';
 
 export type AccessRequirement =
   | { kind: 'createProject' }

@@ -1,5 +1,19 @@
 import { Transform, Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString, IsUUID, Length, Matches, Max, MaxLength, Min, ValidateIf } from 'class-validator';
+import {
+  IsBoolean,
+  IsIn,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Length,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+  ValidateIf,
+} from 'class-validator';
 import { TASK_STATES, type TaskState } from '../../shared/ports/work-item-locator';
 
 /** RN42: os limites contam-se depois de retirar os espaços no início e no fim. */
@@ -13,6 +27,33 @@ const DESCRIPTION_MESSAGE = 'A descrição pode ter até 2000 caracteres.';
 const PRIORITY_MESSAGE = 'A prioridade tem de ser low, medium ou high.';
 const STATE_MESSAGE = `O estado tem de ser um de: ${TASK_STATES.join(', ')}.`;
 const ELEMENT_TITLE_MESSAGE = 'O título é obrigatório e não pode ter só espaços.';
+const CRITERION_MESSAGE = 'A descrição do critério é obrigatória e não pode ter só espaços.';
+
+/** RN07: escala comum e fixa de story points. */
+export const STORY_POINTS = [1, 2, 3, 5, 8, 13, 21] as const;
+const STORY_POINTS_MESSAGE = `Os story points têm de ser um de: ${STORY_POINTS.join(', ')}.`;
+/** Limite da coluna numeric(6,2): de 0 a 9999,99 horas, com até duas casas decimais. */
+export const MAX_ESTIMATE_HOURS = 9999.99;
+const HOURS_MESSAGE = 'A estimativa temporal tem de ser um número de horas entre 0 e 9999,99, com até duas casas decimais.';
+
+/**
+ * Estimativas independentes (CA03.4, CA03.9, RN07). `null`, na edição, deixa a tarefa sem valor;
+ * na criação, equivale a omitir o campo.
+ */
+function EstimateHours(): PropertyDecorator {
+  return (target, key) => {
+    IsOptional()(target, key);
+    IsNumber({ allowNaN: false, allowInfinity: false, maxDecimalPlaces: 2 }, { message: HOURS_MESSAGE })(target, key);
+    Min(0, { message: HOURS_MESSAGE })(target, key);
+    Max(MAX_ESTIMATE_HOURS, { message: HOURS_MESSAGE })(target, key);
+  };
+}
+function StoryPoints(): PropertyDecorator {
+  return (target, key) => {
+    IsOptional()(target, key);
+    IsIn(STORY_POINTS, { message: STORY_POINTS_MESSAGE })(target, key);
+  };
+}
 
 /** openapi.yaml: ElementInput — objetivo ou épico (CA02.1, CA02.2). */
 export class ElementInputDto {
@@ -29,8 +70,9 @@ export class ElementInputDto {
 
 /**
  * openapi.yaml: TaskCreate (CA03.1, CA03.11, CA03.18, RN12, RN22, RN29). A combinação épico e equipa
- * (tarefa) ou tarefa principal (subtarefa) é verificada no controlador. O responsável pela execução,
- * as estimativas e o prazo chegam nos incrementos I5 e I6; até lá, são campos desconhecidos (400).
+ * (tarefa) ou tarefa principal (subtarefa) é verificada no controlador. As estimativas chegam no I5
+ * (CA03.4); o responsável pela execução e o prazo chegam no I6 e no I11 — até lá, são campos
+ * desconhecidos (400).
  */
 export class CreateTaskDto {
   @IsOptional()
@@ -59,11 +101,17 @@ export class CreateTaskDto {
   @IsOptional()
   @IsIn(PRIORITIES, { message: PRIORITY_MESSAGE })
   priority?: Priority;
+
+  @EstimateHours()
+  estimateHours?: number | null;
+
+  @StoryPoints()
+  storyPoints?: number | null;
 }
 
 /**
- * openapi.yaml: TaskUpdate — no I4, título, descrição e prioridade (CA03.12, CA03.18). A descrição a
- * `null` ou vazia fica sem valor. O título e a prioridade não aceitam `null`.
+ * openapi.yaml: TaskUpdate — título, descrição e prioridade (I4) e estimativas (I5, CA03.5, CA03.10); CA03.12, CA03.18. A descrição a `null` ou vazia e as
+ * estimativas a `null` ficam sem valor. O título e a prioridade não aceitam `null`.
  */
 export class UpdateTaskDto {
   @ValidateIf((o: UpdateTaskDto) => o.title !== undefined)
@@ -81,6 +129,33 @@ export class UpdateTaskDto {
   @ValidateIf((o: UpdateTaskDto) => o.priority !== undefined)
   @IsIn(PRIORITIES, { message: PRIORITY_MESSAGE })
   priority?: Priority;
+
+  @EstimateHours()
+  estimateHours?: number | null;
+
+  @StoryPoints()
+  storyPoints?: number | null;
+}
+
+/** openapi.yaml: AcceptanceCriterionInput (CA06.7). */
+export class CriterionInputDto {
+  @Transform(trim)
+  @IsString({ message: CRITERION_MESSAGE })
+  @Matches(/\S/, { message: CRITERION_MESSAGE })
+  description!: string;
+}
+
+/** openapi.yaml: AcceptanceCriterionUpdate — o texto (RN24) e/ou o cumprimento (RN13). */
+export class CriterionUpdateDto {
+  @ValidateIf((o: CriterionUpdateDto) => o.description !== undefined)
+  @Transform(trim)
+  @IsString({ message: CRITERION_MESSAGE })
+  @Matches(/\S/, { message: CRITERION_MESSAGE })
+  description?: string;
+
+  @ValidateIf((o: CriterionUpdateDto) => o.isMet !== undefined)
+  @IsBoolean({ message: 'O cumprimento (isMet) tem de ser verdadeiro ou falso.' })
+  isMet?: boolean;
 }
 
 /** openapi.yaml: StateChange (RN26). */

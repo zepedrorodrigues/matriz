@@ -3,24 +3,43 @@ import { ApiError, type Objective } from '../../api/client';
 import { FormField } from '../../components/FormField';
 import { Notice } from '../../components/Notice';
 import { SelectField } from '../../components/SelectField';
-import { PRIORITIES, PRIORITY_LABEL, validateTaskText, type Priority } from '../../domain/tasks';
+import {
+  HOURS_MESSAGE,
+  PRIORITIES,
+  PRIORITY_LABEL,
+  STORY_POINTS,
+  formatHours,
+  parseEstimateHours,
+  validateTaskText,
+  type Priority,
+} from '../../domain/tasks';
 
 export interface TaskFormValues {
   title: string;
   description: string;
   priority: Priority;
+  /** Estimativas independentes (CA03.4); `null` = sem valor. */
+  estimateHours: number | null;
+  storyPoints: number | null;
   epicId?: string;
   teamId?: string;
 }
 
 interface TaskFormProps {
-  initial?: { title: string; description: string; priority: Priority };
+  initial?: { title: string; description: string; priority: Priority; estimateHours: number | null; storyPoints: number | null };
   /** Só na criação de uma tarefa: épicos do projeto, agrupados por objetivo (RN12). */
   objectives?: Objective[];
   /** Só na criação de uma tarefa: equipas para onde o utilizador pode criar (RN21, RN23). */
   teams?: { id: string; name: string }[];
   /** RN39: depois de criada, só o líder, o gestor e o administrador alteram a prioridade. */
   priorityEditable?: boolean;
+  /**
+   * RN10: em «A desenvolver» ou depois, só o líder, o gestor e o administrador alteram as estimativas;
+   * RN22: numa tarefa com subtarefas, a estimativa é a soma das subtarefas. Quando não é editável,
+   * `estimatesHint` explica porquê.
+   */
+  estimatesEditable?: boolean;
+  estimatesHint?: string;
   submitLabel: string;
   busyLabel: string;
   /** Erro da última submissão; os dados do formulário mantêm-se (Ficha PL 03, Ex. 7). */
@@ -30,7 +49,7 @@ interface TaskFormProps {
   onCancel?: () => void;
 }
 
-const FIELDS = ['title', 'description', 'priority', 'epicId', 'teamId'];
+const FIELDS = ['title', 'description', 'priority', 'estimateHours', 'storyPoints', 'epicId', 'teamId'];
 
 /**
  * Formulário de tarefas e subtarefas (criação e edição). Valida como a API (CA03.18) e não permite
@@ -41,6 +60,8 @@ export function TaskForm({
   objectives,
   teams,
   priorityEditable = true,
+  estimatesEditable = true,
+  estimatesHint,
   submitLabel,
   busyLabel,
   error,
@@ -52,6 +73,8 @@ export function TaskForm({
   const [title, setTitle] = useState(initial?.title ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [priority, setPriority] = useState<Priority>(initial?.priority ?? 'medium');
+  const [hours, setHours] = useState(initial?.estimateHours == null ? '' : formatHours(initial.estimateHours));
+  const [points, setPoints] = useState(initial?.storyPoints == null ? '' : String(initial.storyPoints));
   const [epicId, setEpicId] = useState(objectives?.flatMap((o) => o.epics)[0]?.id ?? '');
   const [teamId, setTeamId] = useState(teams?.length === 1 ? teams[0].id : '');
   const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
@@ -69,6 +92,8 @@ export function TaskForm({
     e.preventDefault();
     if (busy) return;
     const found = validateTaskText({ title, description });
+    const estimateHours = parseEstimateHours(hours);
+    if (estimatesEditable && estimateHours === undefined) found.estimateHours = HOURS_MESSAGE;
     if (withHierarchy && !epicId) found.epicId = 'Escolha o épico a que a tarefa pertence.';
     if (withHierarchy && !teamId) found.teamId = 'Escolha a equipa responsável.';
     setClientErrors(found);
@@ -77,6 +102,8 @@ export function TaskForm({
       title: title.trim(),
       description: description.trim(),
       priority,
+      estimateHours: estimateHours ?? null,
+      storyPoints: points === '' ? null : Number(points),
       ...(withHierarchy ? { epicId, teamId } : {}),
     });
   };
@@ -124,6 +151,39 @@ export function TaskForm({
           </option>
         ))}
       </SelectField>
+      {estimatesEditable ? (
+        <div className="form__row">
+          <FormField
+            label="Estimativa temporal (horas)"
+            value={hours}
+            onChange={setHours}
+            error={errors.estimateHours}
+            hint="Opcional; p. ex. 8 ou 7,5"
+          />
+          <SelectField
+            label="Story points"
+            value={points}
+            onChange={setPoints}
+            error={errors.storyPoints}
+            hint="Escala 1, 2, 3, 5, 8, 13, 21; independente das horas"
+          >
+            <option value="">Sem story points</option>
+            {STORY_POINTS.map((sp) => (
+              <option key={sp} value={sp}>
+                {sp}
+              </option>
+            ))}
+          </SelectField>
+        </div>
+      ) : (
+        <div className="field">
+          <span className="field__label">Estimativas</span>
+          <span>
+            {hours === '' ? 'Sem estimativa temporal' : `${hours} h`} · {points === '' ? 'sem story points' : `${points} SP`}
+          </span>
+          {estimatesHint ? <span className="field__hint">{estimatesHint}</span> : null}
+        </div>
+      )}
       <div className="actions">
         {onCancel ? (
           <button type="button" className="button--secondary" onClick={onCancel} disabled={busy}>

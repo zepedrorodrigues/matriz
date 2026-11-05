@@ -44,6 +44,8 @@ export function ProjectTasks({ project, me }: { project: Project; me: CurrentUse
         title: values.title,
         priority: values.priority,
         ...(values.description ? { description: values.description } : {}),
+        ...(values.estimateHours !== null ? { estimateHours: values.estimateHours } : {}),
+        ...(values.storyPoints !== null ? { storyPoints: values.storyPoints } : {}),
       }),
     onSuccess: async (task) => {
       // A resposta confirmada pela API alimenta o detalhe; a listagem e o total são recarregados.

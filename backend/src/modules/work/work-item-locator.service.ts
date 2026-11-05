@@ -14,7 +14,7 @@ export class WorkItemLocatorService implements WorkItemLocator {
    */
   async locateTask(taskId: string): Promise<TaskLocation | null> {
     const [row] = await this.db.query(
-      `SELECT o.project_id, t.team_id, t.assignee_id, t.parent_task_id, t.state
+      `SELECT o.project_id, t.team_id, t.assignee_id, t.parent_task_id, t.state, t.created_by
        FROM work.task t
        LEFT JOIN work.task p ON p.id = t.parent_task_id
        JOIN work.epic e ON e.id = coalesce(t.epic_id, p.epic_id)
@@ -29,6 +29,7 @@ export class WorkItemLocatorService implements WorkItemLocator {
       assigneeId: row.assignee_id,
       parentTaskId: row.parent_task_id,
       state: row.state,
+      createdBy: row.created_by,
     };
   }
 

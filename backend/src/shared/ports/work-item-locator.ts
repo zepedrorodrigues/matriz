@@ -10,6 +10,13 @@ export const TASK_STATES = [
 ] as const;
 export type TaskState = (typeof TASK_STATES)[number];
 
+/**
+ * RN10, RN24: estados em que a tarefa está «depois de entrar em A desenvolver» — conta o estado atual;
+ * se recuar para «Pronto a desenvolver» ou antes, a proteção deixa de se aplicar (decisão do humano,
+ * 2026-11-05).
+ */
+export const DEVELOPMENT_STATES: readonly TaskState[] = ['in_development', 'in_testing', 'done', 'delivered'];
+
 /** Onde está uma tarefa e quem responde por ela — o necessário para avaliar a matriz de permissões. */
 export interface TaskLocation {
   projectId: string;
@@ -17,6 +24,8 @@ export interface TaskLocation {
   assigneeId: string | null;
   parentTaskId: string | null;
   state: TaskState;
+  /** Quem criou a tarefa: define os critérios antes de «A desenvolver» (RN24). */
+  createdBy: string;
 }
 
 /**

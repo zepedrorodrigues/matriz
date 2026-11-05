@@ -152,6 +152,15 @@ export interface TaskSummary {
   subtaskCount: number;
 }
 
+/** openapi.yaml: AcceptanceCriterion */
+export interface AcceptanceCriterion {
+  id: string;
+  description: string;
+  isMet: boolean;
+  metBy: UserSummary | null;
+  metAt: string | null;
+}
+
 /** openapi.yaml: Task */
 export interface Task extends Omit<TaskSummary, 'subtaskCount'> {
   projectId: string;
@@ -161,7 +170,7 @@ export interface Task extends Omit<TaskSummary, 'subtaskCount'> {
   originalTeamId: string;
   dueDate: string | null;
   blockReason: string | null;
-  acceptanceCriteria: { id: string; description: string; isMet: boolean; metBy: UserSummary | null; metAt: string | null }[];
+  acceptanceCriteria: AcceptanceCriterion[];
   participants: { user: UserSummary; addedBy: UserSummary; addedAt: string }[];
   subtasks: TaskSummary[];
   createdBy: UserSummary;
@@ -189,13 +198,17 @@ export interface TaskCreate {
   title: string;
   description?: string;
   priority?: Priority;
+  estimateHours?: number;
+  storyPoints?: number;
 }
 
-/** openapi.yaml: TaskUpdate (no I4: título, descrição e prioridade). */
+/** openapi.yaml: TaskUpdate (título, descrição, prioridade e estimativas; `null` deixa sem valor). */
 export interface TaskUpdate {
   title?: string;
   description?: string | null;
   priority?: Priority;
+  estimateHours?: number | null;
+  storyPoints?: number | null;
 }
 
 const id = (value: string) => encodeURIComponent(value);
@@ -223,3 +236,9 @@ export const updateTask = (taskId: string, input: TaskUpdate) => apiRequest<Task
 export const changeTaskState = (taskId: string, state: TaskState) =>
   apiRequest<Task>('POST', `/tasks/${id(taskId)}/state`, { state });
 export const deleteTask = (taskId: string) => apiRequest<void>('DELETE', `/tasks/${id(taskId)}`);
+
+/** openapi.yaml: createAcceptanceCriterion, updateAcceptanceCriterion (RN13, RN24). */
+export const createCriterion = (taskId: string, input: { description: string }) =>
+  apiRequest<AcceptanceCriterion>('POST', `/tasks/${id(taskId)}/acceptance-criteria`, input);
+export const updateCriterion = (taskId: string, criterionId: string, input: { description?: string; isMet?: boolean }) =>
+  apiRequest<AcceptanceCriterion>('PATCH', `/tasks/${id(taskId)}/acceptance-criteria/${id(criterionId)}`, input);

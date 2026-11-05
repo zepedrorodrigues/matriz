@@ -57,3 +57,35 @@ export function validateTaskText(input: { title: string; description: string }):
   if (input.description.trim().length > 2000) errors.description = DESCRIPTION_MESSAGE;
   return errors;
 }
+
+/** RN07: escala comum e fixa de story points. */
+export const STORY_POINTS = [1, 2, 3, 5, 8, 13, 21] as const;
+
+/**
+ * RN10, RN24: «depois de entrar em A desenvolver» conta o estado atual (decisão do humano, 2026-11-05).
+ * Nestes estados, só o líder, o gestor e o administrador alteram as estimativas e os critérios.
+ */
+export const DEVELOPMENT_STATES: readonly TaskState[] = ['in_development', 'in_testing', 'done', 'delivered'];
+
+/** RN13: numa tarefa «Terminada» ou «Entregue» não se acrescentam critérios nem se desmarca o cumprimento. */
+export const FINISHED_STATES: readonly TaskState[] = ['done', 'delivered'];
+
+export const HOURS_MESSAGE = 'Indique as horas entre 0 e 9999,99, com até duas casas decimais (p. ex. 8 ou 7,5).';
+export const CRITERION_MESSAGE = 'A descrição do critério é obrigatória e não pode ter só espaços.';
+
+/**
+ * Horas escritas no campo (aceita vírgula ou ponto): vazio → `null` (sem estimativa); inválido →
+ * `undefined`. Os mesmos limites da API: de 0 a 9999,99, com até duas casas decimais.
+ */
+export function parseEstimateHours(text: string): number | null | undefined {
+  const value = text.trim();
+  if (value === '') return null;
+  if (!/^\d{1,4}([.,]\d{1,2})?$/.test(value)) return undefined;
+  return Number(value.replace(',', '.'));
+}
+
+/** Horas como se escrevem em pt-PT (vírgula decimal), para mostrar e para preencher o campo. */
+export const formatHours = (hours: number) => String(hours).replace('.', ',');
+
+/** CA06.7: a descrição de um critério é obrigatória e não pode ter só espaços. */
+export const validateCriterionText = (text: string) => (text.trim() === '' ? CRITERION_MESSAGE : undefined);

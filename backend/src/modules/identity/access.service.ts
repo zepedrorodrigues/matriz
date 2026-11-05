@@ -2,6 +2,7 @@ import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nest
 import type { AccessRequirement, ProjectAction, TaskAction } from '../../shared/auth/access.decorators';
 import type { AuthenticatedUser } from '../../shared/auth/auth.decorators';
 import {
+  DEVELOPMENT_STATES,
   TASK_STATES,
   WORK_ITEM_LOCATOR,
   type TaskLocation,
@@ -163,6 +164,17 @@ export class AccessService {
             'Só o líder da equipa responsável, os gestores do projeto e o administrador alteram a prioridade.',
           );
         }
+        // §3.1, RN10 (CA03.10): os membros definem estimativas; depois de «A desenvolver», só o líder,
+        // o gestor e o administrador as alteram.
+        if (
+          (body.estimateHours !== undefined || body.storyPoints !== undefined) &&
+          !LEADS_TASK.includes(role) &&
+          DEVELOPMENT_STATES.includes(task.state)
+        ) {
+          throw new ForbiddenException(
+            'Depois de a tarefa entrar em «A desenvolver», só o líder da equipa, os gestores do projeto e o administrador alteram as estimativas.',
+          );
+        }
         return;
       case 'changeState': {
         if (LEADS_TASK.includes(role)) return;
@@ -182,6 +194,17 @@ export class AccessService {
         }
         return;
       }
+      case 'createCriterion':
+        return this.enforceCriterionText(user, role, task);
+      case 'updateCriterion':
+        if (body.description !== undefined) this.enforceCriterionText(user, role, task);
+        // §3.1: registar o cumprimento — o membro, só nas tarefas que lhe estão atribuídas.
+        if (body.isMet !== undefined && !LEADS_TASK.includes(role) && !(role === 'member' && task.assigneeId === user.id)) {
+          throw new ForbiddenException(
+            'O membro só regista o cumprimento dos critérios das tarefas que lhe estão atribuídas.',
+          );
+        }
+        return;
       case 'delete':
         if (!LEADS_TASK.includes(role)) {
           throw new ForbiddenException(
@@ -189,6 +212,25 @@ export class AccessService {
           );
         }
         return;
+    }
+  }
+
+  /**
+   * RN24 (CA06.7–CA06.9): definem e alteram os critérios o administrador, o gestor do projeto, o líder
+   * da equipa responsável e, antes de «A desenvolver», quem criou a tarefa (se ainda pertencer à equipa
+   * responsável). Os restantes membros registam apenas o cumprimento.
+   */
+  private enforceCriterionText(user: AuthenticatedUser, role: TaskRole, task: TaskLocation): void {
+    if (LEADS_TASK.includes(role)) return;
+    if (DEVELOPMENT_STATES.includes(task.state)) {
+      throw new ForbiddenException(
+        'Depois de a tarefa entrar em «A desenvolver», só o líder da equipa, os gestores do projeto e o administrador alteram os critérios.',
+      );
+    }
+    if (role !== 'member' || task.createdBy !== user.id) {
+      throw new ForbiddenException(
+        'Definem os critérios quem criou a tarefa, o líder da equipa, os gestores do projeto e o administrador; os membros registam o cumprimento.',
+      );
     }
   }
 

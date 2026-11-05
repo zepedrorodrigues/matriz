@@ -618,9 +618,13 @@ paths:
       operationId: updateTask
       summary: Editar uma tarefa
       description: |
-        Altera os campos indicados, com registo no histórico (RN32). Editam a tarefa o administrador,
-        o gestor do projeto e os membros da equipa responsável (D49). Regras: estimativas após
-        «A desenvolver» só pelo líder ou gestor (RN10, CA03.10); prioridade (RN39, CA03.12);
+        Altera os campos indicados, com registo no histórico (RN32; as estimativas como
+        `estimate_changed`). Editam a tarefa o administrador, o gestor do projeto e os membros da
+        equipa responsável (D49). Regras: enquanto a tarefa estiver em «A desenvolver» ou num estado
+        seguinte, só o líder, o gestor e o administrador alteram as estimativas (RN10, CA03.10; conta
+        o estado atual); cada estimativa muda sem alterar a outra (CA03.5); numa tarefa com
+        subtarefas, a estimativa é a soma das subtarefas e não se define diretamente (RN22, 422);
+        prioridade (RN39, CA03.12);
         responsável pela execução segundo §3.1 e RN03; prazo pelo líder ou gestor (RN29); bloqueio
         com motivo obrigatório (RN28). A equipa só muda por transferência (RN20) e o estado por
         `POST /tasks/{taskId}/state`.
@@ -711,7 +715,12 @@ paths:
       tags: [Trabalho]
       operationId: createAcceptanceCriterion
       summary: Acrescentar um critério de aceitação
-      description: Depois de «A desenvolver», só o líder ou o gestor alteram os critérios (RN24, CA06.7–CA06.9).
+      description: |
+        O critério fica com o cumprimento por registar (CA06.7). Definem critérios o administrador,
+        o gestor do projeto, o líder da equipa responsável e quem criou a tarefa; enquanto a tarefa
+        estiver em «A desenvolver» ou num estado seguinte, só o administrador, o gestor e o líder
+        (RN24, CA06.8, CA06.9). Numa tarefa «Terminada» ou «Entregue» responde 409: a tarefa tem
+        primeiro de recuar de estado (RN13).
       parameters:
         - $ref: '#/components/parameters/TaskId'
       requestBody:
@@ -735,6 +744,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
   /tasks/{taskId}/acceptance-criteria/{criterionId}:
     patch:
@@ -742,8 +753,11 @@ paths:
       operationId: updateAcceptanceCriterion
       summary: Alterar um critério ou registar o seu cumprimento
       description: |
-        Os membros registam apenas o cumprimento (`isMet`) nas tarefas que lhes estão atribuídas;
-        alterar o texto segue RN24. Quem regista o cumprimento e quando vêm do token e do sistema.
+        Registam o cumprimento (`isMet`) o administrador, o gestor do projeto, o líder da equipa
+        responsável e o membro a quem a tarefa está atribuída (§3.1). Alterar o texto segue as
+        regras de `createAcceptanceCriterion` (RN24). Quem regista o cumprimento e quando vêm do
+        token e do sistema; ao desmarcar, ficam a `null`. Desmarcar numa tarefa «Terminada» ou
+        «Entregue» responde 409 (RN13). Um critério de outra tarefa responde 404.
       parameters:
         - $ref: '#/components/parameters/TaskId'
         - $ref: '#/components/parameters/CriterionId'
@@ -768,6 +782,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
   /tasks/{taskId}/eligible-users:
     get:
@@ -1449,6 +1465,8 @@ components:
         estimateHours:
           type: number
           minimum: 0
+          maximum: 9999.99
+          description: Horas, com até duas casas decimais (CA03.4); opcional (RN27).
         storyPoints:
           $ref: '#/components/schemas/StoryPoints'
         dueDate:
@@ -1481,9 +1499,12 @@ components:
         estimateHours:
           type: [number, 'null']
           minimum: 0
+          maximum: 9999.99
+          description: Horas, com até duas casas decimais. Não altera os story points (CA03.5).
         storyPoints:
           type: [integer, 'null']
           enum: [1, 2, 3, 5, 8, 13, 21, null]
+          description: Escala fixa (RN07, CA03.9). Não altera a estimativa temporal (CA03.5).
         dueDate:
           type: [string, 'null']
           format: date
