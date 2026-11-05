@@ -168,6 +168,66 @@ export const getUserMemberships = (userId: string) => apiGet<UserMemberships>(`/
 export const replaceUserMemberships = (userId: string, memberships: Membership[]) =>
   apiRequest<UserMemberships>('PUT', `/users/${id(userId)}/memberships`, { memberships });
 
+/** openapi.yaml: Sprint, SprintDetail, PlanningTask, BacklogPage (US04; RN31, RN36, RN37). */
+export type SprintStatus = 'planned' | 'active' | 'closed';
+export interface Sprint {
+  id: string;
+  teamId: string;
+  startDate: string;
+  endDate: string;
+  workingDays: number;
+  status: SprintStatus;
+  startedAt: string | null;
+  closedAt: string | null;
+  createdAt: string;
+}
+export interface PlanningTask {
+  id: string;
+  title: string;
+  projectId: string;
+  projectName: string;
+  parentTaskId: string | null;
+  state: TaskState;
+  priority: Priority;
+  estimateHours: number | null;
+  storyPoints: number | null;
+  assignee: UserSummary | null;
+  plannable: boolean;
+}
+export interface SprintTask extends PlanningTask {
+  plannedAt: string;
+  addedAfterStart: boolean;
+  startEstimateHours: number | null;
+  startStoryPoints: number | null;
+  leftAt: string | null;
+  leftReason: 'sprint_ended' | 'removed' | 'transferred' | null;
+}
+export interface SprintDetail extends Sprint {
+  tasks: SprintTask[];
+  leftTasks: SprintTask[];
+}
+export interface BacklogPage {
+  page: number;
+  pageSize: number;
+  total: number;
+  items: (PlanningTask & { plannedSprintId: string | null })[];
+}
+export interface SprintDates {
+  startDate: string;
+  endDate: string;
+}
+export const listTeamSprints = (teamId: string) => apiGet<Sprint[]>(`/teams/${id(teamId)}/sprints`);
+export const createSprint = (teamId: string, dates: SprintDates) => apiRequest<SprintDetail>('POST', `/teams/${id(teamId)}/sprints`, dates);
+export const getTeamBacklog = (teamId: string, page = 1, pageSize = 100) =>
+  apiGet<BacklogPage>(`/teams/${id(teamId)}/backlog?page=${page}&pageSize=${pageSize}`);
+export const getSprint = (sprintId: string) => apiGet<SprintDetail>(`/sprints/${id(sprintId)}`);
+export const updateSprintDates = (sprintId: string, dates: SprintDates) => apiRequest<SprintDetail>('PATCH', `/sprints/${id(sprintId)}`, dates);
+export const startSprint = (sprintId: string, dates?: SprintDates) => apiRequest<SprintDetail>('POST', `/sprints/${id(sprintId)}/start`, dates ?? {});
+export const planSprintTask = (sprintId: string, taskId: string) =>
+  apiRequest<SprintDetail>('POST', `/sprints/${id(sprintId)}/tasks`, { taskId });
+export const removeSprintTask = (sprintId: string, taskId: string) =>
+  apiRequest<SprintDetail>('DELETE', `/sprints/${id(sprintId)}/tasks/${id(taskId)}`);
+
 /** openapi.yaml: Dashboard — projetos visíveis com o número de tarefas por estado (CA07.9). */
 export interface Dashboard {
   projects: { id: string; name: string; taskCounts: Record<TaskState, number>; totalTasks: number }[];

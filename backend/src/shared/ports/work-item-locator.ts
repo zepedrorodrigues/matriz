@@ -17,6 +17,22 @@ export type TaskState = (typeof TASK_STATES)[number];
  */
 export const DEVELOPMENT_STATES: readonly TaskState[] = ['in_development', 'in_testing', 'done', 'delivered'];
 
+/** Tarefa vista pelo módulo Planeamento: o necessário para o backlog e as sprints (I9). */
+export interface PlanningTaskInfo {
+  id: string;
+  title: string;
+  projectId: string;
+  teamId: string;
+  parentTaskId: string | null;
+  state: TaskState;
+  priority: 'low' | 'medium' | 'high';
+  /** Numa tarefa com subtarefas, a soma das subtarefas (RN22). */
+  estimateHours: number | null;
+  storyPoints: number | null;
+  assigneeId: string | null;
+  createdAt: string;
+}
+
 /** Onde está uma tarefa e quem responde por ela — o necessário para avaliar a matriz de permissões. */
 export interface TaskLocation {
   projectId: string;
@@ -48,6 +64,11 @@ export interface WorkItemLocator {
    * fora de «Terminada» e «Entregue», subtarefas incluídas. Quem chama exclui os projetos eliminados.
    */
   openTaskCountsOfTeam(teamId: string): Promise<{ projectId: string; count: number }[]>;
+  /**
+   * Tarefas e subtarefas não eliminadas (nem a tarefa principal, RN38) de uma equipa, ou as indicadas por
+   * id, para o backlog e as sprints (I9). Quem chama exclui as de projetos eliminados.
+   */
+  planningTasks(query: { teamId: string } | { taskIds: string[] }): Promise<PlanningTaskInfo[]>;
 }
 
 export const WORK_ITEM_LOCATOR = Symbol('WORK_ITEM_LOCATOR');

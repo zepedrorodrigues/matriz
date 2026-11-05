@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { HistoryModule } from './modules/history/history.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { OrganizationModule } from './modules/organization/organization.module';
+import { PlanningModule } from './modules/planning/planning.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
 import { WorkModule } from './modules/work/work.module';
 import { buildDataSourceOptions } from './shared/database/database.config';
@@ -14,8 +15,8 @@ import { HealthController } from './shared/health/health.controller';
 import { SharedModule } from './shared/shared.module';
 
 /**
- * Módulo raiz. Módulos de domínio em `src/modules/<módulo>` (DT03); o planning entra no incremento
- * respetivo (I9). O tracking tem, por agora, o painel inicial (I8).
+ * Módulo raiz. Módulos de domínio em `src/modules/<módulo>` (DT03). O planning tem, por agora, as sprints
+ * e o backlog (I9); o tracking, o painel inicial (I8).
  */
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { SharedModule } from './shared/shared.module';
     HistoryModule,
     OrganizationModule,
     WorkModule,
+    PlanningModule,
     TrackingModule,
     IdentityModule,
   ],

@@ -13,7 +13,8 @@ const ROLE_LABEL = { leader: 'Líder', member: 'Membro' } as const;
 /**
  * Estrutura da aplicação com sessão iniciada: cabeçalho com a navegação do wireframe (D47) e o
  * utilizador autenticado. A Administração aparece só ao administrador (wireframe §1, §3.1). As
- * entradas Backlog, Sprints, Acompanhamento e Alertas aparecem com os respetivos incrementos.
+ * entradas Acompanhamento e Alertas aparecem com os respetivos incrementos; Sprints (I9) abre o
+ * planeamento da equipa, com as sprints e o backlog.
  */
 export function Layout() {
   const auth = useAuth();
@@ -57,6 +58,7 @@ export function Layout() {
             Início
           </NavLink>
           <NavLink to="/projetos">Projetos</NavLink>
+          <NavLink to="/planeamento">Sprints</NavLink>
           {me.data.isAdmin ? <NavLink to="/administracao/contas">Administração</NavLink> : null}
         </nav>
         <span className="app-header__user">{me.data.name}</span>

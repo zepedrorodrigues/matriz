@@ -520,6 +520,259 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
 
+  /teams/{teamId}/sprints:
+    get:
+      tags: [Planeamento]
+      operationId: listTeamSprints
+      summary: Consultar as sprints de uma equipa
+      description: Membros da equipa e administrador. Da mais recente para a mais antiga (data de início).
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      responses:
+        '200':
+          description: Sprints da equipa.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Sprint'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Planeamento]
+      operationId: createSprint
+      summary: Criar uma sprint
+      description: |
+        Só o líder da equipa (§3.1, RN36). Fica «Planeada» (`planned`). Início igual ou anterior ao fim
+        (400) e sem sobreposição com outra sprint da equipa, em qualquer estado (409, RN31, CA04.8).
+        Equipa desativada → 422 (RN33). Fica no histórico da sprint.
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SprintDates'
+      responses:
+        '201':
+          description: Sprint criada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SprintDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /teams/{teamId}/backlog:
+    get:
+      tags: [Planeamento]
+      operationId: getTeamBacklog
+      summary: Consultar o backlog de uma equipa
+      description: |
+        Membros da equipa e administrador. Tarefas e subtarefas da equipa, de todos os projetos, que não
+        fazem parte da sprint ativa (glossário; CA04.2, CA04.3); `plannedSprintId` indica a sprint
+        «Planeada» em que já estão planeadas. Sem as eliminadas (RN38). Mais recentes primeiro, com o
+        total (D46). `plannable` indica se a tarefa pode ser planeada (não concluída e com estimativa
+        temporal, RN27).
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Backlog da equipa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BacklogPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sprints/{sprintId}:
+    get:
+      tags: [Planeamento]
+      operationId: getSprint
+      summary: Consultar uma sprint
+      description: |
+        Membros da equipa e administrador. `tasks`: as tarefas que fazem parte da sprint (ou nela
+        planeadas, se está «Planeada»); `leftTasks`: as que saíram de uma sprint ativa — retiradas
+        (`removed`, RN37) ou não concluídas no fim (`sprint_ended`, RN04).
+      parameters:
+        - $ref: '#/components/parameters/SprintId'
+      responses:
+        '200':
+          description: Sprint.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SprintDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Planeamento]
+      operationId: updateSprintDates
+      summary: Alterar as datas de uma sprint planeada
+      description: |
+        Só o líder da equipa, enquanto a sprint está «Planeada» (RN36, CA04.12); numa sprint ativa ou
+        terminada → 409 (CA04.13). As mesmas regras de datas da criação (RN31). Fica no histórico.
+      parameters:
+        - $ref: '#/components/parameters/SprintId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SprintDates'
+      responses:
+        '200':
+          description: Datas alteradas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SprintDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /sprints/{sprintId}/start:
+    post:
+      tags: [Planeamento]
+      operationId: startSprint
+      summary: Iniciar uma sprint
+      description: |
+        O líder da equipa ou o administrador (RN36, CA04.9, CA04.10), confirmando as datas ou
+        ajustando-as no corpo. Só uma sprint «Planeada» e só se a equipa não tiver outra ativa (409,
+        CA04.11). A data de fim não pode estar no passado (422). As tarefas planeadas passam a fazer
+        parte da sprint, com as estimativas desse momento guardadas para comparação (RN05, RN10,
+        CA04.5); pode iniciar-se sem tarefas (RN31). O início fica no histórico.
+      parameters:
+        - $ref: '#/components/parameters/SprintId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SprintStart'
+      responses:
+        '200':
+          description: Sprint iniciada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SprintDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /sprints/{sprintId}/tasks:
+    post:
+      tags: [Planeamento]
+      operationId: planSprintTask
+      summary: Planear uma tarefa numa sprint
+      description: |
+        Só o líder da equipa (RN08, CA04.6, CA08.3). Numa sprint «Planeada», a tarefa fica planeada nela
+        (CA04.3); numa «Ativa», passa a fazer parte dela e fica identificada como acrescentada depois do
+        início (RN37, CA04.16). A tarefa tem de ser da equipa da sprint, não estar eliminada nem
+        concluída e ter estimativa temporal (422, RN27, CA04.7); uma tarefa já noutra sprint em aberto
+        → 409. Sprint terminada → 409. Fica no histórico da sprint.
+      parameters:
+        - $ref: '#/components/parameters/SprintId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SprintTaskInput'
+      responses:
+        '201':
+          description: Tarefa planeada ou acrescentada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SprintDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /sprints/{sprintId}/tasks/{taskId}:
+    delete:
+      tags: [Planeamento]
+      operationId: removeSprintTask
+      summary: Retirar uma tarefa de uma sprint
+      description: |
+        Só o líder da equipa (RN37). Numa sprint «Planeada», a tarefa deixa de estar planeada nela
+        (CA04.14); numa «Ativa», volta ao backlog, a remoção fica no histórico e continua a contar como
+        planeada no início (CA04.15). Sprint terminada → 409; tarefa que não está na sprint → 404.
+      parameters:
+        - $ref: '#/components/parameters/SprintId'
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: Tarefa retirada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SprintDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
   /dashboard:
     get:
       tags: [Acompanhamento]
@@ -1798,6 +2051,164 @@ components:
         teamId:
           type: string
           format: uuid
+
+    SprintDates:
+      type: object
+      required: [startDate, endDate]
+      additionalProperties: false
+      properties:
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+          description: Igual ou posterior a `startDate` (RN31).
+
+    SprintStart:
+      type: object
+      additionalProperties: false
+      description: Datas ajustadas no início; se omitidas, confirmam-se as atuais (RN36).
+      properties:
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+
+    SprintTaskInput:
+      type: object
+      required: [taskId]
+      additionalProperties: false
+      properties:
+        taskId:
+          type: string
+          format: uuid
+
+    Sprint:
+      type: object
+      required: [id, teamId, startDate, endDate, workingDays, status, startedAt, closedAt, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        teamId:
+          type: string
+          format: uuid
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        workingDays:
+          type: integer
+          description: Dias úteis (segunda a sexta) entre as datas, inclusive (RN06).
+        status:
+          type: string
+          enum: [planned, active, closed]
+          description: «Planeada», «Ativa», «Terminada» (RN36).
+        startedAt:
+          type: [string, 'null']
+          format: date-time
+        closedAt:
+          type: [string, 'null']
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    PlanningTask:
+      type: object
+      required: [id, title, projectId, projectName, parentTaskId, state, priority, estimateHours, storyPoints, assignee, plannable]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        projectId:
+          type: string
+          format: uuid
+        projectName:
+          type: string
+        parentTaskId:
+          type: [string, 'null']
+          format: uuid
+        state:
+          $ref: '#/components/schemas/TaskState'
+        priority:
+          $ref: '#/components/schemas/Priority'
+        estimateHours:
+          type: [number, 'null']
+          description: Numa tarefa com subtarefas, soma das subtarefas (RN22).
+        storyPoints:
+          type: [integer, 'null']
+        assignee:
+          oneOf:
+            - $ref: '#/components/schemas/UserSummary'
+            - type: 'null'
+        plannable:
+          type: boolean
+          description: Não concluída e com estimativa temporal (RN27).
+
+    SprintTask:
+      allOf:
+        - $ref: '#/components/schemas/PlanningTask'
+        - type: object
+          required: [plannedAt, addedAfterStart, startEstimateHours, startStoryPoints, leftAt, leftReason]
+          properties:
+            plannedAt:
+              type: string
+              format: date-time
+            addedAfterStart:
+              type: boolean
+              description: Acrescentada a uma sprint ativa (RN37, CA04.16).
+            startEstimateHours:
+              type: [number, 'null']
+              description: Estimativa no início da sprint, ou quando foi acrescentada (RN10, RF27).
+            startStoryPoints:
+              type: [integer, 'null']
+            leftAt:
+              type: [string, 'null']
+              format: date-time
+            leftReason:
+              type: [string, 'null']
+              enum: [sprint_ended, removed, transferred, null]
+
+    SprintDetail:
+      allOf:
+        - $ref: '#/components/schemas/Sprint'
+        - type: object
+          required: [tasks, leftTasks]
+          properties:
+            tasks:
+              type: array
+              items:
+                $ref: '#/components/schemas/SprintTask'
+            leftTasks:
+              type: array
+              items:
+                $ref: '#/components/schemas/SprintTask'
+
+    BacklogPage:
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/PlanningTask'
+                  - type: object
+                    required: [plannedSprintId]
+                    properties:
+                      plannedSprintId:
+                        type: [string, 'null']
+                        format: uuid
 
     TeamSummary:
       type: object

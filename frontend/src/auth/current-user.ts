@@ -66,3 +66,9 @@ export const canAssignTask = leadsTask;
 
 /** RN03: só o administrador e o gestor escolhem alguém de outra equipa, com justificação. */
 export const canChooseOtherTeams = (me: CurrentUser, task: Task) => canManageProject(me, task.projectId);
+
+/** §3.1, RN36: criam e gerem sprints e planeiam tarefas só os líderes da equipa. */
+export const leadsTeam = (me: CurrentUser, teamId: string) => roleIn(me, teamId) === 'leader';
+
+/** RN36: iniciam a sprint o líder da equipa e o administrador. */
+export const canStartSprint = (me: CurrentUser, teamId: string) => me.isAdmin || leadsTeam(me, teamId);

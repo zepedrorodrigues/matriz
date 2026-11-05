@@ -123,6 +123,22 @@ export class OrganizationReader {
     return (row?.role as TeamRole | undefined) ?? null;
   }
 
+  /** Estado de uma equipa: null se não existir (planeamento, I9). */
+  async teamStatus(teamId: string): Promise<{ active: boolean } | null> {
+    const [row] = await this.db.query(`SELECT active FROM organization.team WHERE id = $1`, [teamId]);
+    return row ? { active: row.active } : null;
+  }
+
+  /** Nomes dos projetos não eliminados indicados (RN38: os eliminados ficam de fora). */
+  async projectNames(projectIds: string[]): Promise<Map<string, string>> {
+    if (projectIds.length === 0) return new Map();
+    const rows: { id: string; name: string }[] = await this.db.query(
+      `SELECT id, name FROM organization.project WHERE id = ANY($1::uuid[]) AND deleted_at IS NULL`,
+      [projectIds],
+    );
+    return new Map(rows.map((r) => [r.id, r.name]));
+  }
+
   /** Membros (líderes incluídos) de uma equipa ativa; vazio se a equipa estiver desativada (RN40). */
   async memberIds(teamId: string): Promise<string[]> {
     const rows: { user_id: string }[] = await this.db.query(

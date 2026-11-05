@@ -13,6 +13,8 @@ import { oidcConfig } from './auth/oidc-config';
 import { ProjectDetailPage } from './pages/projects/ProjectDetailPage';
 import { ProjectsPage } from './pages/projects/ProjectsPage';
 import { TaskDetailPage } from './pages/tasks/TaskDetailPage';
+import { SprintPage } from './pages/planning/SprintPage';
+import { TeamPlanningPage } from './pages/planning/TeamPlanningPage';
 import './styles.css';
 
 const queryClient: QueryClient = new QueryClient({
@@ -36,6 +38,8 @@ const routes = [
       { path: 'projetos', element: <ProjectsPage /> },
       { path: 'projetos/:projectId', element: <ProjectDetailPage /> },
       { path: 'tarefas/:taskId', element: <TaskDetailPage /> },
+      { path: 'planeamento', element: <TeamPlanningPage /> },
+      { path: 'sprints/:sprintId', element: <SprintPage /> },
       { path: 'administracao/contas', element: <AdminOnlyPage><AccountsPage /></AdminOnlyPage> },
       { path: 'administracao/equipas', element: <AdminOnlyPage><TeamsPage /></AdminOnlyPage> },
       { path: 'administracao/equipas/:teamId', element: <AdminOnlyPage><TeamDetailPage /></AdminOnlyPage> },

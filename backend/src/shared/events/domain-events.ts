@@ -14,6 +14,12 @@ export interface ChangeEvent {
   authorId: string;
 }
 
+/**
+ * Autor das ações do sistema, sem pessoa associada (p. ex. o fim automático de uma sprint, RN36):
+ * identificador reservado que não corresponde a nenhuma conta (decisão do humano, F19; database.md §2.6).
+ */
+export const SYSTEM_AUTHOR_ID = '00000000-0000-0000-0000-000000000000';
+
 type Handler = (event: ChangeEvent, manager: EntityManager) => Promise<void>;
 
 /**

@@ -26,12 +26,27 @@ export type AccessRequirement =
   | { kind: 'createProject' }
   | { kind: 'project'; action: ProjectAction; param: string }
   | { kind: 'objective'; action: 'createWork'; param: string }
-  | { kind: 'task'; action: TaskAction; param: string };
+  | { kind: 'task'; action: TaskAction; param: string }
+  | { kind: 'team'; action: TeamPlanningAction; param: string }
+  | { kind: 'sprint'; action: SprintAction; param: string };
+
+/** Planeamento (§3.1): consultar — membros da equipa e administrador; gerir sprints e planear — só o líder. */
+export type TeamPlanningAction = 'viewPlanning' | 'managePlanning';
+/** `start`: iniciar a sprint — o líder da equipa ou o administrador (RN36). */
+export type SprintAction = 'view' | 'manage' | 'start';
 
 export const ACCESS_REQUIREMENT = 'matriz:accessRequirement';
 
 /** Só o administrador: gerir contas, equipas e pertenças (§3.1, «Gerir utilizadores, papéis e equipas»). */
 export const AdminOnly = () => SetMetadata(ACCESS_REQUIREMENT, { kind: 'admin' } satisfies AccessRequirement);
+
+/** Operação de planeamento da equipa indicada no parâmetro de rota (I9). Equipa inexistente → 404. */
+export const TeamPlanningAccess = (action: TeamPlanningAction, param = 'teamId') =>
+  SetMetadata(ACCESS_REQUIREMENT, { kind: 'team', action, param } satisfies AccessRequirement);
+
+/** Operação sobre a sprint indicada no parâmetro de rota (I9). Sprint inexistente → 404. */
+export const SprintAccess = (action: SprintAction, param = 'sprintId') =>
+  SetMetadata(ACCESS_REQUIREMENT, { kind: 'sprint', action, param } satisfies AccessRequirement);
 
 /** Criar projetos: administrador ou líder de equipa (RN25, D48). */
 export const CanCreateProject = () => SetMetadata(ACCESS_REQUIREMENT, { kind: 'createProject' } satisfies AccessRequirement);

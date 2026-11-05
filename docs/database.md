@@ -223,7 +223,7 @@ No MVP, os alertas não são apagados nem arquivados, para não perder informaç
 | event_type | text | | P. ex. `state_changed`, `assignee_changed`, `team_transferred`, `estimate_changed`, `criterion_changed`, `due_date_changed`, `correction` (SEC09). |
 | old_value | jsonb | nulo | Valor anterior. |
 | new_value | jsonb | nulo | Valor novo; inclui a justificação nas atribuições a outra equipa (RN03). |
-| author_id | uuid | ref. lógica → user | |
+| author_id | uuid | ref. lógica → user | Nas ações do sistema sem pessoa associada (p. ex. o fim automático de uma sprint, RN36), o identificador reservado `00000000-0000-0000-0000-000000000000` («Sistema»), que não corresponde a nenhuma conta (F19). |
 | occurred_at | timestamptz | | |
 
 Sem `UPDATE` nem `DELETE` para a aplicação (SEC04); as retificações são novos eventos `correction` (SEC09).

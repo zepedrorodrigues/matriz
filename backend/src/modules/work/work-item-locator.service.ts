@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import type { TaskLocation, TaskState, WorkItemLocator } from '../../shared/ports/work-item-locator';
+import type { PlanningTaskInfo, TaskLocation, TaskState, WorkItemLocator } from '../../shared/ports/work-item-locator';
 
 /** Implementação de WorkItemLocator pelo módulo dono das tabelas do Trabalho (architecture.md §6). */
 @Injectable()
@@ -66,5 +66,58 @@ export class WorkItemLocatorService implements WorkItemLocator {
       [teamId],
     );
     return rows.map((r) => ({ projectId: r.project_id, count: r.n }));
+  }
+
+  async planningTasks(query: { teamId: string } | { taskIds: string[] }): Promise<PlanningTaskInfo[]> {
+    const byTeam = 'teamId' in query;
+    if (!byTeam && query.taskIds.length === 0) return [];
+    const rows: {
+      id: string;
+      title: string;
+      project_id: string;
+      team_id: string;
+      parent_task_id: string | null;
+      state: TaskState;
+      priority: PlanningTaskInfo['priority'];
+      estimate_hours: string | null;
+      story_points: number | null;
+      subtask_count: number;
+      subtask_hours: string | null;
+      subtask_points: number | null;
+      assignee_id: string | null;
+      created_at: Date;
+    }[] = await this.db.query(
+      `SELECT t.id, t.title, o.project_id, t.team_id, t.parent_task_id, t.state, t.priority, t.estimate_hours,
+              t.story_points, t.assignee_id, t.created_at, s.subtask_count, s.subtask_hours, s.subtask_points
+       FROM work.task t
+       LEFT JOIN work.task p ON p.id = t.parent_task_id
+       JOIN work.epic e ON e.id = coalesce(t.epic_id, p.epic_id)
+       JOIN work.objective o ON o.id = e.objective_id
+       LEFT JOIN LATERAL (
+         SELECT count(*)::int AS subtask_count, sum(st.estimate_hours) AS subtask_hours, sum(st.story_points)::int AS subtask_points
+         FROM work.task st WHERE st.parent_task_id = t.id AND st.deleted_at IS NULL
+       ) s ON true
+       WHERE ${byTeam ? 't.team_id = $1' : 't.id = ANY($1::uuid[])'}
+         AND t.deleted_at IS NULL AND (p.id IS NULL OR p.deleted_at IS NULL)
+       ORDER BY t.created_at DESC, t.id`,
+      [byTeam ? query.teamId : query.taskIds],
+    );
+    return rows.map((r) => {
+      const sum = r.subtask_count > 0;
+      const hours = sum ? r.subtask_hours : r.estimate_hours;
+      return {
+        id: r.id,
+        title: r.title,
+        projectId: r.project_id,
+        teamId: r.team_id,
+        parentTaskId: r.parent_task_id,
+        state: r.state,
+        priority: r.priority,
+        estimateHours: hours === null ? null : Number(hours),
+        storyPoints: sum ? r.subtask_points : r.story_points,
+        assigneeId: r.assignee_id,
+        createdAt: r.created_at.toISOString(),
+      };
+    });
   }
 }

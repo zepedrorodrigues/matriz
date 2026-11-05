@@ -1,7 +1,8 @@
 import { ForbiddenException, Inject, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
-import type { AccessRequirement, ProjectAction, TaskAction } from '../../shared/auth/access.decorators';
+import type { AccessRequirement, ProjectAction, SprintAction, TaskAction } from '../../shared/auth/access.decorators';
 import type { AuthenticatedUser } from '../../shared/auth/auth.decorators';
 import { USER_DIRECTORY, type UserDirectory } from '../../shared/ports/user-directory';
+import { SPRINT_LOCATOR, type SprintLocator } from '../../shared/ports/sprint-locator';
 import {
   DEVELOPMENT_STATES,
   TASK_STATES,
@@ -40,6 +41,7 @@ export class AccessService {
     private readonly organization: OrganizationReader,
     @Inject(WORK_ITEM_LOCATOR) private readonly work: WorkItemLocator,
     @Inject(USER_DIRECTORY) private readonly users: UserDirectory,
+    @Inject(SPRINT_LOCATOR) private readonly sprints: SprintLocator,
   ) {}
 
   /**
@@ -95,6 +97,17 @@ export class AccessService {
       }
       case 'task':
         return this.enforceTask(user, requirement.action, await this.existingTask(params[requirement.param]), body, query);
+      case 'team': {
+        const teamId = params[requirement.param];
+        if (!isUuid(teamId) || !(await this.organization.teamStatus(teamId))) throw new NotFoundException('A equipa não existe.');
+        return this.enforcePlanning(user, requirement.action === 'viewPlanning' ? 'view' : 'manage', teamId);
+      }
+      case 'sprint': {
+        const sprintId = params[requirement.param];
+        const teamId = isUuid(sprintId) ? await this.sprints.teamOfSprint(sprintId) : null;
+        if (!teamId) throw new NotFoundException('A sprint não existe.');
+        return this.enforcePlanning(user, requirement.action, teamId);
+      }
     }
   }
 
@@ -307,6 +320,27 @@ export class AccessService {
     if (role !== 'member' || task.createdBy !== user.id) {
       throw new ForbiddenException(
         'Definem os critérios quem criou a tarefa, o líder da equipa, os gestores do projeto e o administrador; os membros registam o cumprimento.',
+      );
+    }
+  }
+
+  /**
+   * §3.1, RN36: consultam o planeamento de uma equipa os seus membros e o administrador; criam e gerem
+   * sprints e planeiam tarefas só o líder (nem o administrador nem o gestor, RN08, CA04.6); iniciam a
+   * sprint o líder e o administrador (CA04.9, CA04.10).
+   */
+  private async enforcePlanning(user: AuthenticatedUser, action: SprintAction, teamId: string): Promise<void> {
+    const role = await this.organization.teamRole(user.id, teamId);
+    if (action === 'view') {
+      if (!user.isAdmin && !role) throw new ForbiddenException('Só os membros da equipa e o administrador consultam o seu planeamento.');
+      return;
+    }
+    if (action === 'start' && user.isAdmin) return;
+    if (role !== 'leader') {
+      throw new ForbiddenException(
+        action === 'start'
+          ? 'Só o líder da equipa e o administrador iniciam sprints (RN36).'
+          : 'Só o líder da equipa cria e gere sprints e planeia tarefas (RN08, RN36).',
       );
     }
   }
