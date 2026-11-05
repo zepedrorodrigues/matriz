@@ -113,6 +113,8 @@ As contas fictícias do Keycloak (`admin`, `gestor`, `ana`, `rui`, `bruno`, `sem
 
 Se o Keycloak correr noutra porta (`./scripts/keycloak-dev.ps1 -Port 8180`), `OIDC_ISSUER` e `VITE_OIDC_AUTHORITY` no `.env` têm de usar essa porta.
 
+O ecrã de início de sessão está em português (`defaultLocale: pt` no `keycloak/realm-matriz.json`). O Keycloak só importa o realm quando ele ainda não existe: uma alteração posterior ao `realm-matriz.json` não chega a um Keycloak já configurado e tem de ser aplicada pela consola ou pela API de administração (ou apagando o realm `matriz` e arrancando de novo o script, que volta a definir as palavras-passe).
+
 ### Sessão e autenticação (DT04)
 
 1. **Início de sessão.** Sem sessão, a aplicação encaminha para o Keycloak (Authorization Code + PKCE, cliente público `matriz-web`). As palavras-passe só existem no Keycloak, guardadas como hash (argon2); a Matriz nunca as recebe.

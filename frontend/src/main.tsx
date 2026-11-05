@@ -1,6 +1,6 @@
 import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from 'react-oidc-context';
 import { createBrowserRouter, RouterProvider } from 'react-router';
 import { ApiError } from './api/client';
@@ -12,7 +12,12 @@ import { ProjectsPage } from './pages/projects/ProjectsPage';
 import { TaskDetailPage } from './pages/tasks/TaskDetailPage';
 import './styles.css';
 
-const queryClient = new QueryClient({
+const queryClient: QueryClient = new QueryClient({
+  // Ex. 7: qualquer alteração confirmada pela API (criar, editar, eliminar, mudar o estado) pode mudar
+  // as contagens do painel inicial, que são marcadas como desatualizadas e pedidas de novo.
+  mutationCache: new MutationCache({
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+  }),
   // Um erro 4xx (401, 403, 404…) não melhora ao repetir; os restantes tentam uma vez mais.
   defaultOptions: {
     queries: { retry: (failures, error) => !(error instanceof ApiError && error.status < 500) && failures < 1 },

@@ -66,6 +66,25 @@ export class OrganizationReader {
     return row.visible === true;
   }
 
+  /**
+   * §3.1 Visibilidade (CAT06), em lista: projetos não eliminados em que participa uma equipa ativa do
+   * utilizador ou de que é gestor; o administrador vê todos. Ordenados pelo nome (painel inicial, CA07.9).
+   */
+  async visibleProjects(userId: string, isAdmin: boolean): Promise<{ id: string; name: string }[]> {
+    return this.db.query(
+      `SELECT p.id, p.name FROM organization.project p
+       WHERE p.deleted_at IS NULL AND ($2 OR EXISTS (
+           SELECT 1 FROM organization.project_manager pm WHERE pm.project_id = p.id AND pm.user_id = $1)
+         OR EXISTS (
+           SELECT 1 FROM organization.project_team pt
+           JOIN organization.team t ON t.id = pt.team_id AND t.active
+           JOIN organization.team_membership m ON m.team_id = t.id AND m.user_id = $1
+           WHERE pt.project_id = p.id))
+       ORDER BY lower(p.name), p.id`,
+      [userId, isAdmin],
+    );
+  }
+
   /** O projeto existe e não foi eliminado (RN38: um projeto eliminado responde como inexistente). */
   async projectExists(projectId: string): Promise<boolean> {
     const [row] = await this.db.query(

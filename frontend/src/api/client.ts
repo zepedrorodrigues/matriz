@@ -101,6 +101,12 @@ export interface ProjectInput {
 
 export const getCurrentUser = () => apiGet<CurrentUser>('/me');
 
+/** openapi.yaml: Dashboard — projetos visíveis com o número de tarefas por estado (CA07.9). */
+export interface Dashboard {
+  projects: { id: string; name: string; taskCounts: Record<TaskState, number>; totalTasks: number }[];
+}
+export const getDashboard = () => apiGet<Dashboard>('/dashboard');
+
 export function listProjects(params: { q?: string; page?: number; pageSize?: number }) {
   const search = new URLSearchParams();
   if (params.q) search.set('q', params.q);

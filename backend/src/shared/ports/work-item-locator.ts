@@ -38,6 +38,11 @@ export interface WorkItemLocator {
   locateTask(taskId: string): Promise<TaskLocation | null>;
   /** Projeto de um objetivo; null se não existir. */
   projectOfObjective(objectiveId: string): Promise<string | null>;
+  /**
+   * Número de tarefas por estado em cada projeto indicado — só tarefas de topo (sem subtarefas) e não
+   * eliminadas (RN38; regra do contrato confirmada no Ex. 1). Os projetos sem tarefas ficam de fora.
+   */
+  taskCountsByProject(projectIds: string[]): Promise<Map<string, Partial<Record<TaskState, number>>>>;
 }
 
 export const WORK_ITEM_LOCATOR = Symbol('WORK_ITEM_LOCATOR');

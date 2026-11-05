@@ -1,8 +1,11 @@
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from 'react-oidc-context';
-import { NavLink, Outlet } from 'react-router';
-import { ApiError, type CurrentUser } from './api/client';
+import { Link, NavLink, Outlet } from 'react-router';
+import { ApiError, getDashboard, type CurrentUser } from './api/client';
 import { StatusScreen } from './auth/AuthGate';
 import { useCurrentUser } from './auth/current-user';
+import { Notice } from './components/Notice';
+import { STATE_LABEL, TASK_STATES } from './domain/tasks';
 
 const ROLE_LABEL = { leader: 'Líder', member: 'Membro' } as const;
 
@@ -26,12 +29,20 @@ export function Layout() {
         message={
           noAccount
             ? 'Não existe uma conta ativa na Matriz para o seu utilizador. Peça ao administrador para a criar.'
-            : 'Não foi possível carregar o seu perfil. Tente novamente mais tarde.'
+            : 'Não foi possível carregar o seu perfil. Verifique a ligação e tente de novo.'
         }
       >
-        <button type="button" onClick={signOut}>
-          Terminar sessão
-        </button>
+        <div className="actions">
+          {noAccount ? null : (
+            // Ex. 7: com o backend em baixo, o utilizador volta a tentar sem perder a sessão.
+            <button type="button" onClick={() => void me.refetch()} disabled={me.isFetching}>
+              {me.isFetching ? 'A tentar…' : 'Tentar de novo'}
+            </button>
+          )}
+          <button type="button" className={noAccount ? undefined : 'button--secondary'} onClick={signOut}>
+            Terminar sessão
+          </button>
+        </div>
       </StatusScreen>
     );
   }
@@ -58,14 +69,58 @@ export function Layout() {
   );
 }
 
-/** Início provisório: perfil do utilizador. O painel inicial (Ex. 7, CA07.9) chega no I8. */
+/**
+ * Painel inicial (Ex. 7, CA07.9): utilizador autenticado e projetos que lhe são visíveis, com o número de
+ * tarefas em cada estado e o total (todas as tarefas de topo do projeto, não uma página). As contagens
+ * são pedidas de novo ao abrir o painel e depois de cada alteração confirmada pela API (main.tsx).
+ */
 export function HomePage() {
   const me = useCurrentUser();
+  const dashboard = useQuery({ queryKey: ['dashboard'], queryFn: getDashboard });
   if (!me.data) return null;
   return (
     <section className="page">
       <h1>Olá, {me.data.name}</h1>
       <Profile user={me.data} />
+
+      <section aria-labelledby="dashboard-title">
+        <h2 id="dashboard-title">Os seus projetos</h2>
+        {dashboard.isPending ? (
+          <Notice>A carregar os projetos…</Notice>
+        ) : dashboard.isError ? (
+          <div className="panel">
+            <Notice tone="error">Não foi possível carregar o painel. Verifique a ligação e tente de novo.</Notice>
+            <div className="actions">
+              <button type="button" onClick={() => void dashboard.refetch()} disabled={dashboard.isFetching}>
+                {dashboard.isFetching ? 'A tentar…' : 'Tentar de novo'}
+              </button>
+            </div>
+          </div>
+        ) : dashboard.data.projects.length === 0 ? (
+          <p className="muted">Ainda não tem acesso a nenhum projeto. Os projetos aparecem quando uma das suas equipas participa neles ou quando é gestor.</p>
+        ) : (
+          <ul className="card-list">
+            {dashboard.data.projects.map((p) => (
+              <li key={p.id} className="card">
+                <Link to={`/projetos/${p.id}`} className="card__title">
+                  {p.name}
+                </Link>
+                <p className="card__text">
+                  {p.totalTasks === 1 ? '1 tarefa' : `${p.totalTasks} tarefas`}
+                </p>
+                <dl className="state-counts" aria-label={`Tarefas por estado em ${p.name}`}>
+                  {TASK_STATES.map((s) => (
+                    <div key={s} className={p.taskCounts[s] === 0 ? 'state-counts__item state-counts__item--zero' : 'state-counts__item'}>
+                      <dt>{STATE_LABEL[s]}</dt>
+                      <dd>{p.taskCounts[s]}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </section>
   );
 }

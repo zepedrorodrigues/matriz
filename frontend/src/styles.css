@@ -269,6 +269,40 @@ button:disabled {
   margin: 0.35rem 0 0;
 }
 
+/* Painel inicial (I8): número de tarefas por estado; adapta-se à largura do ecrã. */
+.state-counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+}
+
+.state-counts__item {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.state-counts__item dt {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.state-counts__item dd {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.state-counts__item--zero dd {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.status-screen .actions {
+  margin-top: 1rem;
+}
+
 .pagination {
   display: flex;
   align-items: center;
