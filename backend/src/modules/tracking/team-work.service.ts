@@ -51,10 +51,19 @@ export class TeamWorkService {
     @Inject(USER_DIRECTORY) private readonly users: UserDirectory,
   ) {}
 
-  async forTeam(teamId: string, group: WorkGroup | undefined, page: number, pageSize: number): Promise<TeamWork> {
+  async forTeam(
+    teamId: string,
+    group: WorkGroup | undefined,
+    page: number,
+    pageSize: number,
+    viewer?: { id: string; isAdmin: boolean },
+  ): Promise<TeamWork> {
     const infos = await this.work.planningTasks({ teamId });
     const projects = await this.organization.projectNames([...new Set(infos.map((t) => t.projectId))]);
-    const live = infos.filter((t) => projects.has(t.projectId));
+    // CAT06, decisão 2a (I14): quem não é da equipa (o gestor de um dos seus projetos) vê só as tarefas e as
+    // contagens dos projetos que vê.
+    const scope = viewer ? await this.organization.projectScope(viewer, teamId) : null;
+    const live = infos.filter((t) => projects.has(t.projectId) && (!scope || scope.has(t.projectId)));
     const counts: Record<WorkGroup, number> = { planned: 0, in_progress: 0, done: 0, blocked: 0, overdue: 0 };
     for (const t of live) {
       counts[STAGE[t.state]]++;

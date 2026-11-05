@@ -27,12 +27,16 @@ export const teamsForNewTask = (me: CurrentUser, project: Project) =>
 export const leadsTask = (me: CurrentUser, task: Task) =>
   canManageProject(me, task.projectId) || roleIn(me, task.teamId) === 'leader';
 
-/** D49: editar o título e a descrição — também qualquer membro da equipa responsável. */
+/**
+ * D49: editar o título e a descrição — também qualquer membro da equipa responsável e, decisão 1a (I14), o
+ * responsável de outra equipa (RN03), que tem nesta tarefa os direitos do membro.
+ */
 export const canEditTask = (me: CurrentUser, task: Task) =>
-  canManageProject(me, task.projectId) || roleIn(me, task.teamId) !== undefined;
+  canManageProject(me, task.projectId) || roleIn(me, task.teamId) !== undefined || task.assignee?.id === me.id;
 
 /** Criar uma subtarefa: administrador, gestor ou quem pertence à equipa da tarefa principal (RN21, RN22). */
-export const canCreateSubtask = canEditTask;
+export const canCreateSubtask = (me: CurrentUser, task: Task) =>
+  canManageProject(me, task.projectId) || roleIn(me, task.teamId) !== undefined;
 
 /** RN26: estados que este utilizador pode escolher para a tarefa. */
 export function stateTargetsFor(me: CurrentUser, task: Task): TaskState[] {
@@ -58,8 +62,7 @@ export const canDefineCriteria = (me: CurrentUser, task: Task) =>
   (!DEVELOPMENT_STATES.includes(task.state) && roleIn(me, task.teamId) !== undefined && task.createdBy.id === me.id);
 
 /** §3.1: registar o cumprimento — o membro, só nas tarefas que lhe estão atribuídas. */
-export const canRecordCriteria = (me: CurrentUser, task: Task) =>
-  leadsTask(me, task) || (roleIn(me, task.teamId) !== undefined && task.assignee?.id === me.id);
+export const canRecordCriteria = (me: CurrentUser, task: Task) => leadsTask(me, task) || task.assignee?.id === me.id;
 
 /** §3.1, CA03.3, CA03.6: atribuem o responsável e gerem os participantes o administrador, o gestor e o líder (RN40). */
 export const canAssignTask = leadsTask;
@@ -74,8 +77,7 @@ export const leadsTeam = (me: CurrentUser, teamId: string) => roleIn(me, teamId)
 export const canStartSprint = (me: CurrentUser, teamId: string) => me.isAdmin || leadsTeam(me, teamId);
 
 /** §3.1, RN28: assinalam bloqueios o administrador, o gestor, o líder e o membro nas tarefas que lhe estão atribuídas. */
-export const canBlockTask = (me: CurrentUser, task: Task) =>
-  leadsTask(me, task) || (roleIn(me, task.teamId) !== undefined && task.assignee?.id === me.id);
+export const canBlockTask = (me: CurrentUser, task: Task) => leadsTask(me, task) || task.assignee?.id === me.id;
 
 /**
  * RN20, CA09.3, CA09.4, CA09.7: transferem o gestor do projeto e o administrador; só tarefas (as subtarefas

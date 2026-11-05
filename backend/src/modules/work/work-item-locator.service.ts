@@ -13,8 +13,8 @@ export class WorkItemLocatorService implements WorkItemLocator {
    * A tarefa herda o projeto do épico; a subtarefa, do épico da tarefa principal (RN23). Uma subtarefa
    * cuja tarefa principal foi eliminada também conta como eliminada (RN38).
    */
-  async locateTask(taskId: string): Promise<TaskLocation | null> {
-    const [row] = await this.db.query(
+  async locateTask(taskId: string, manager?: EntityManager): Promise<TaskLocation | null> {
+    const [row] = await (manager ?? this.db).query(
       `SELECT o.project_id, t.team_id, t.assignee_id, t.parent_task_id, t.state, t.created_by
        FROM work.task t
        LEFT JOIN work.task p ON p.id = t.parent_task_id
@@ -32,6 +32,11 @@ export class WorkItemLocatorService implements WorkItemLocator {
       state: row.state,
       createdBy: row.created_by,
     };
+  }
+
+  async lockTasks(taskIds: string[], manager: EntityManager): Promise<void> {
+    if (taskIds.length === 0) return;
+    await manager.query(`SELECT id FROM work.task WHERE id = ANY($1) ORDER BY id FOR SHARE`, [taskIds]);
   }
 
   async projectOfObjective(objectiveId: string): Promise<string | null> {

@@ -45,14 +45,14 @@ export class PlanningController {
 
   @Get('teams/:teamId/backlog')
   @TeamPlanningAccess('viewPlanning')
-  backlog(@Param('teamId') teamId: string, @Query() query: BacklogQuery): Promise<BacklogPage> {
-    return this.sprints.backlog(teamId, query.page ?? 1, query.pageSize ?? 20);
+  backlog(@CurrentUser() user: AuthenticatedUser, @Param('teamId') teamId: string, @Query() query: BacklogQuery): Promise<BacklogPage> {
+    return this.sprints.backlog(teamId, query.page ?? 1, query.pageSize ?? 20, user);
   }
 
   @Get('sprints/:sprintId')
   @SprintAccess('view')
-  get(@Param('sprintId') sprintId: string): Promise<SprintDetail> {
-    return this.sprints.get(sprintId);
+  get(@CurrentUser() user: AuthenticatedUser, @Param('sprintId') sprintId: string): Promise<SprintDetail> {
+    return this.sprints.get(sprintId, user);
   }
 
   @Patch('sprints/:sprintId')
@@ -78,8 +78,8 @@ export class PlanningController {
 
   @Get('sprints/:sprintId/progress')
   @SprintAccess('view')
-  progress(@Param('sprintId') sprintId: string): Promise<SprintProgress> {
-    return this.sprints.progress(sprintId);
+  progress(@CurrentUser() user: AuthenticatedUser, @Param('sprintId') sprintId: string): Promise<SprintProgress> {
+    return this.sprints.progress(sprintId, user);
   }
 
   @Get('sprints/:sprintId/capacity')

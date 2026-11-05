@@ -9,6 +9,8 @@ import { OrganizationReader } from '../organization/organization-reader.service'
 import { planningTimeZone, workingDays } from './sprint-calendar';
 
 export type SprintStatus = 'planned' | 'active' | 'closed';
+/** Quem consulta uma vista de planeamento (CAT06). */
+type Viewer = { id: string; isAdmin: boolean };
 export type LeftReason = 'sprint_ended' | 'removed' | 'transferred';
 
 export interface Sprint {
@@ -235,7 +237,10 @@ export class SprintsService {
     await this.db.transaction(async (tx) => {
       const sprint = await this.lockSprint(tx, sprintId);
       if (sprint.status === 'closed') throw new ConflictException('A sprint já terminou: não recebe tarefas.');
-      const [task] = await this.work.planningTasks({ taskIds: [taskId] });
+      // RN01, RN20 (revisão do I14): a tarefa fica bloqueada até ao fim; uma transferência em curso termina antes
+      // e a equipa lida a seguir já é a nova (ou a transferência espera e retira a tarefa desta sprint).
+      await this.work.lockTasks([taskId], tx);
+      const [task] = await this.work.planningTasks({ taskIds: [taskId] }, tx);
       const project = task ? await this.organization.projectNames([task.projectId]) : new Map<string, string>();
       if (!task || !project.has(task.projectId)) throw new UnprocessableEntityException('A tarefa não existe ou foi eliminada.');
       if (task.teamId !== sprint.team_id) {
@@ -334,7 +339,8 @@ export class SprintsService {
     return released;
   }
 
-  async get(sprintId: string): Promise<SprintDetail> {
+  /** `viewer`: quem consulta; o gestor que não é da equipa vê só as tarefas dos seus projetos (CAT06, decisão 2a). */
+  async get(sprintId: string, viewer?: Viewer): Promise<SprintDetail> {
     const [row]: SprintRow[] = await this.db.query(`SELECT ${SPRINT_COLUMNS} FROM planning.sprint WHERE id = $1`, [sprintId]);
     if (!row) throw new NotFoundException('A sprint não existe.');
     const links: SprintTaskRow[] = await this.db.query(
@@ -342,7 +348,9 @@ export class SprintsService {
        FROM planning.sprint_task WHERE sprint_id = $1 ORDER BY planned_at, task_id`,
       [sprintId],
     );
-    const tasks = await this.describe(await this.work.planningTasks({ taskIds: links.map((l) => l.task_id) }));
+    const tasks = await this.describe(
+      await this.scoped(await this.work.planningTasks({ taskIds: links.map((l) => l.task_id) }), viewer, row.team_id),
+    );
     const byId = new Map(tasks.map((t) => [t.id, t]));
     const items: SprintTask[] = links.flatMap((l) => {
       const t = byId.get(l.task_id);
@@ -366,7 +374,7 @@ export class SprintsService {
    * CA04.2, CA04.3: tarefas da equipa que não fazem parte da sprint ativa, de todos os projetos; as
    * planeadas numa sprint «Planeada» ficam assinaladas. Mais recentes primeiro, com o total (D46).
    */
-  async backlog(teamId: string, page: number, pageSize: number): Promise<BacklogPage> {
+  async backlog(teamId: string, page: number, pageSize: number, viewer?: Viewer): Promise<BacklogPage> {
     const links: { task_id: string; sprint_id: string; status: SprintStatus }[] = await this.db.query(
       `SELECT st.task_id, st.sprint_id, s.status FROM planning.sprint_task st JOIN planning.sprint s ON s.id = st.sprint_id
        WHERE s.team_id = $1 AND st.left_at IS NULL AND s.status IN ('planned', 'active')`,
@@ -374,7 +382,9 @@ export class SprintsService {
     );
     const inActive = new Set(links.filter((l) => l.status === 'active').map((l) => l.task_id));
     const plannedIn = new Map(links.filter((l) => l.status === 'planned').map((l) => [l.task_id, l.sprint_id]));
-    const all = (await this.describe(await this.work.planningTasks({ teamId }))).filter((t) => !inActive.has(t.id));
+    const all = (await this.describe(await this.scoped(await this.work.planningTasks({ teamId }), viewer, teamId))).filter(
+      (t) => !inActive.has(t.id),
+    );
     return {
       page,
       pageSize,
@@ -422,15 +432,15 @@ export class SprintsService {
    * «Entregue». Horas e story points em separado, com a estimativa do início (ou de quando foi acrescentada)
    * e a atual. Uma tarefa com subtarefas conta 0, como na capacidade (RN22).
    */
-  async progress(sprintId: string): Promise<SprintProgress> {
-    const [sprint] = await this.db.query(`SELECT status FROM planning.sprint WHERE id = $1`, [sprintId]);
+  async progress(sprintId: string, viewer?: Viewer): Promise<SprintProgress> {
+    const [sprint] = await this.db.query(`SELECT status, team_id FROM planning.sprint WHERE id = $1`, [sprintId]);
     if (!sprint) throw new NotFoundException('A sprint não existe.');
     const links: SprintTaskRow[] = await this.db.query(
       `SELECT task_id, planned_at, added_after_start, start_estimate_hours, start_story_points, left_at, left_reason
        FROM planning.sprint_task WHERE sprint_id = $1 ORDER BY planned_at, task_id`,
       [sprintId],
     );
-    const infos = await this.work.planningTasks({ taskIds: links.map((l) => l.task_id) });
+    const infos = await this.scoped(await this.work.planningTasks({ taskIds: links.map((l) => l.task_id) }), viewer, sprint.team_id);
     const projects = await this.organization.projectNames([...new Set(infos.map((t) => t.projectId))]);
     const byId = new Map(infos.filter((t) => projects.has(t.projectId)).map((t) => [t.id, t]));
     const started = sprint.status !== 'planned';
@@ -461,6 +471,12 @@ export class SprintsService {
       tasks: list.length,
     });
     return { sprintId, status: sprint.status, planned: totals(tasks), done: totals(tasks.filter((t) => t.done)), tasks };
+  }
+
+  /** CAT06, decisão 2a (I14): só as tarefas dos projetos que quem consulta vê, quando não é da equipa. */
+  private async scoped<T extends { projectId: string }>(items: T[], viewer: Viewer | undefined, teamId: string): Promise<T[]> {
+    const scope = viewer ? await this.organization.projectScope(viewer, teamId) : null;
+    return scope ? items.filter((t) => scope.has(t.projectId)) : items;
   }
 
   /** Nomes dos projetos e dos responsáveis; sem as tarefas de projetos eliminados (RN38). */

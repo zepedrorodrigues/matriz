@@ -1,3 +1,5 @@
+import type { EntityManager } from 'typeorm';
+
 /**
  * Consulta de nomes de utilizadores para as respostas da API (UserSummary). Implementada pelo módulo
  * Identidade e acesso, dono dos utilizadores; os outros módulos dependem só desta interface
@@ -11,6 +13,8 @@ export interface UserDirectory {
    * elegíveis, RN03, RN40). Um utilizador desativado nunca é elegível.
    */
   activeUsers(ids?: string[]): Promise<{ id: string; name: string }[]>;
+  /** Tem o papel global de administrador (§3.1). */
+  isAdmin(userId: string, manager?: EntityManager): Promise<boolean>;
 }
 
 export const USER_DIRECTORY = Symbol('USER_DIRECTORY');

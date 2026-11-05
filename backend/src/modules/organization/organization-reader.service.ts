@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 import { Project, ProjectManager, ProjectTeam, Team, TeamMembership, TeamRole } from './organization.entities';
 
 export interface UserTeam {
@@ -94,8 +94,8 @@ export class OrganizationReader {
     return row.found === true;
   }
 
-  async isProjectManager(userId: string, projectId: string): Promise<boolean> {
-    const [row] = await this.db.query(
+  async isProjectManager(userId: string, projectId: string, manager?: EntityManager): Promise<boolean> {
+    const [row] = await (manager ?? this.db).query(
       `SELECT EXISTS (SELECT 1 FROM organization.project_manager WHERE project_id = $2 AND user_id = $1) AS manager`,
       [userId, projectId],
     );
@@ -114,8 +114,8 @@ export class OrganizationReader {
   }
 
   /** Papel do utilizador numa equipa ativa, ou null se não pertencer a ela (RN21). */
-  async teamRole(userId: string, teamId: string): Promise<TeamRole | null> {
-    const [row] = await this.db.query(
+  async teamRole(userId: string, teamId: string, manager?: EntityManager): Promise<TeamRole | null> {
+    const [row] = await (manager ?? this.db).query(
       `SELECT m.role FROM organization.team_membership m JOIN organization.team t ON t.id = m.team_id AND t.active
        WHERE m.user_id = $1 AND m.team_id = $2`,
       [userId, teamId],
@@ -124,12 +124,22 @@ export class OrganizationReader {
   }
 
   /** Membros de uma equipa (líderes incluídos) com o papel e a alocação, para a capacidade (RN06, I10). */
-  async teamMembers(teamId: string): Promise<{ userId: string; role: TeamRole; allocationPct: number }[]> {
-    const rows: { user_id: string; role: TeamRole; allocation_pct: number }[] = await this.db.query(
+  async teamMembers(teamId: string, manager?: EntityManager): Promise<{ userId: string; role: TeamRole; allocationPct: number }[]> {
+    const rows: { user_id: string; role: TeamRole; allocation_pct: number }[] = await (manager ?? this.db).query(
       `SELECT user_id, role, allocation_pct FROM organization.team_membership WHERE team_id = $1`,
       [teamId],
     );
     return rows.map((r) => ({ userId: r.user_id, role: r.role, allocationPct: r.allocation_pct }));
+  }
+
+  /**
+   * CAT06, decisão 2a (I14): projetos cujas tarefas o utilizador pode ver nas vistas de uma equipa (backlog,
+   * sprints, trabalho da equipa). `null` = sem restrição (administrador ou quem pertence à equipa); senão,
+   * os projetos que vê — p. ex. o gestor de um dos projetos da equipa vê só as tarefas desse projeto.
+   */
+  async projectScope(user: { id: string; isAdmin: boolean }, teamId: string): Promise<Set<string> | null> {
+    if (user.isAdmin || (await this.teamRole(user.id, teamId))) return null;
+    return new Set((await this.visibleProjects(user.id, false)).map((p) => p.id));
   }
 
   /** É gestor de um projeto não eliminado em que a equipa participa (§3.1: consultar a capacidade, F20). */

@@ -371,6 +371,9 @@ export class AccessService {
     if (await this.organization.isProjectManager(user.id, task.projectId)) return 'manager';
     const teamRole = await this.organization.teamRole(user.id, task.teamId);
     if (teamRole) return teamRole;
+    // RN03, CA09.1, decisão 1a (I14): quem está atribuído por exceção, de outra equipa, tem nesta tarefa os
+    // direitos do membro (vê-la, mudar o estado, bloquear, registar critérios); o resto do projeto, não.
+    if (task.assigneeId === user.id) return 'member';
     return (await this.organization.isProjectVisibleToMember(user.id, task.projectId)) ? 'viewer' : 'none';
   }
 

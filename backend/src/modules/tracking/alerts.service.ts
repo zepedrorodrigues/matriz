@@ -76,27 +76,42 @@ export class AlertsService implements OnModuleInit, DailyTask {
     if (event.entityType === 'task') {
       const taskId = event.entityId;
       if (event.eventType === 'blocked') {
-        const task = await this.work.locateTask(taskId);
-        if (task) await this.insert(m, await this.leaders(task.teamId), { type: 'task_blocked', taskId, teamId: task.teamId });
+        const task = await this.work.locateTask(taskId, m);
+        if (task) await this.insert(m, await this.leaders(task.teamId, m), { type: 'task_blocked', taskId, teamId: task.teamId });
       } else if (event.eventType === 'reopened') {
-        const task = await this.work.locateTask(taskId);
+        const task = await this.work.locateTask(taskId, m);
         if (task) {
-          const to = [...(task.assigneeId ? [task.assigneeId] : []), ...(await this.leaders(task.teamId))];
+          const to = [...(task.assigneeId ? [task.assigneeId] : []), ...(await this.leaders(task.teamId, m))];
           await this.insert(m, to, { type: 'task_reopened', taskId, teamId: task.teamId });
         }
       } else if (event.eventType === 'created') {
-        // RN09, CA08.2: só quando quem cria é membro (não líder) da equipa da tarefa.
-        const teamId = (event.newValue as { teamId?: string } | null)?.teamId;
-        if (teamId && (await this.organization.teamRole(event.authorId, teamId)) === 'member') {
-          await this.insert(m, await this.leaders(teamId), { type: 'member_task_created', taskId, teamId });
+        // RN09, CA08.2: só quando quem cria age como membro da equipa da tarefa — não como líder, gestor do
+        // projeto ou administrador (os papéis acumulam-se e conta o mais abrangente, §3.1; revisão do I14).
+        const created = event.newValue as { teamId?: string; parentTaskId?: string } | null;
+        const task = created?.teamId ? await this.work.locateTask(taskId, m) : null;
+        if (
+          task &&
+          (await this.organization.teamRole(event.authorId, task.teamId, m)) === 'member' &&
+          !(await this.users.isAdmin(event.authorId, m)) &&
+          !(await this.organization.isProjectManager(event.authorId, task.projectId, m))
+        ) {
+          await this.insert(m, await this.leaders(task.teamId, m), { type: 'member_task_created', taskId, teamId: task.teamId });
         }
+        // RN22, CA05.8 (revisão do I14): a primeira subtarefa faz a principal deixar de contar na sua sprint.
+        if (created?.parentTaskId) await this.checkSprintsOf(created.parentTaskId, m);
+      } else if (event.eventType === 'deleted') {
+        // RN22: sem a subtarefa, a principal pode voltar a contar com a sua estimativa (revisão do I14).
+        const parentTaskId = (event.oldValue as { parentTaskId?: string } | null)?.parentTaskId;
+        if (parentTaskId) await this.checkSprintsOf(parentTaskId, m);
       }
-      if (TASK_LOAD_EVENTS.has(event.eventType)) {
-        for (const sprintId of await this.capacity.openSprintsOfTask(taskId, m)) await this.checkOverload(sprintId, m);
-      }
+      if (TASK_LOAD_EVENTS.has(event.eventType)) await this.checkSprintsOf(taskId, m);
     } else if (event.entityType === 'sprint' && SPRINT_EVENTS.has(event.eventType)) {
       await this.checkOverload(event.entityId, m);
     }
+  }
+
+  private async checkSprintsOf(taskId: string, m: EntityManager): Promise<void> {
+    for (const sprintId of await this.capacity.openSprintsOfTask(taskId, m)) await this.checkOverload(sprintId, m);
   }
 
   /**
@@ -106,7 +121,7 @@ export class AlertsService implements OnModuleInit, DailyTask {
   private async checkOverload(sprintId: string, m: EntityManager): Promise<void> {
     const state = await this.capacity.overloadState(sprintId, m);
     if (!state) return;
-    const members = await this.organization.teamMembers(state.teamId);
+    const members = await this.organization.teamMembers(state.teamId, m);
     const leaders = members.filter((x) => x.role === 'leader').map((x) => x.userId);
     const flags = new Set(
       ((await m.query(`SELECT subject_id FROM tracking.overload_flag WHERE sprint_id = $1`, [sprintId])) as { subject_id: string }[]).map(
@@ -142,7 +157,7 @@ export class AlertsService implements OnModuleInit, DailyTask {
     const live = await this.organization.projectNames([...new Set(overdue.map((t) => t.projectId))]);
     await this.db.transaction(async (m) => {
       for (const t of overdue.filter((x) => live.has(x.projectId))) {
-        const to = [...new Set([...(t.assigneeId ? [t.assigneeId] : []), ...(await this.leaders(t.teamId))])];
+        const to = [...new Set([...(t.assigneeId ? [t.assigneeId] : []), ...(await this.leaders(t.teamId, m))])];
         for (const recipient of to) {
           await m.query(
             `INSERT INTO tracking.alert (recipient_id, type, task_id, team_id, due_date) VALUES ($1, 'deadline_passed', $2, $3, $4)
@@ -204,8 +219,9 @@ export class AlertsService implements OnModuleInit, DailyTask {
     });
   }
 
-  private async leaders(teamId: string): Promise<string[]> {
-    return (await this.organization.teamMembers(teamId)).filter((x) => x.role === 'leader').map((x) => x.userId);
+  /** Lê na transação do evento, sem ocupar outra ligação do pool (revisão do I14, decisão 4a). */
+  private async leaders(teamId: string, m: EntityManager): Promise<string[]> {
+    return (await this.organization.teamMembers(teamId, m)).filter((x) => x.role === 'leader').map((x) => x.userId);
   }
 
   private async insert(

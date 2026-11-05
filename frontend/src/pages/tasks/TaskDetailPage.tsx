@@ -96,6 +96,8 @@ export function TaskDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['task', result.taskId] }),
       ...result.transferredSubtaskIds.map((id) => queryClient.invalidateQueries({ queryKey: ['task', id] })),
       queryClient.invalidateQueries({ queryKey: ['tasks', task.data?.projectId] }),
+      // A tarefa sai do backlog, da sprint e da capacidade de uma equipa e entra no backlog da outra (revisão do I14).
+      ...['backlog', 'sprint', 'sprints', 'sprint-progress', 'capacity', 'team-work'].map((key) => queryClient.invalidateQueries({ queryKey: [key] })),
     ]);
     setNotice(message);
   };

@@ -2,6 +2,8 @@ import { Controller, Get, Param, Query } from '@nestjs/common';
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { TeamPlanningAccess } from '../../shared/auth/access.decorators';
+import { CurrentUser } from '../../shared/auth/auth.decorators';
+import type { AuthenticatedUser } from '../../shared/auth/auth.decorators';
 import { TeamWorkService } from './team-work.service';
 import type { TeamWork, WorkGroup } from './team-work.service';
 
@@ -35,7 +37,7 @@ export class TeamWorkController {
 
   @Get()
   @TeamPlanningAccess('viewPlanning')
-  get(@Param('teamId') teamId: string, @Query() query: TeamWorkQuery): Promise<TeamWork> {
-    return this.work.forTeam(teamId, query.group, query.page ?? 1, query.pageSize ?? 20);
+  get(@CurrentUser() user: AuthenticatedUser, @Param('teamId') teamId: string, @Query() query: TeamWorkQuery): Promise<TeamWork> {
+    return this.work.forTeam(teamId, query.group, query.page ?? 1, query.pageSize ?? 20, user);
   }
 }

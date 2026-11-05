@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, In, Repository } from 'typeorm';
+import { EntityManager, FindOptionsWhere, In, Repository } from 'typeorm';
 import type { UserDirectory } from '../../shared/ports/user-directory';
 import { User } from './user.entity';
 
@@ -13,6 +13,11 @@ export class UserDirectoryService implements UserDirectory {
     if (ids.length === 0) return new Map();
     const rows = await this.users.find({ where: { id: In(ids) }, select: { id: true, name: true } });
     return new Map(rows.map((u) => [u.id, u.name]));
+  }
+
+  async isAdmin(userId: string, manager?: EntityManager): Promise<boolean> {
+    const repo = manager ? manager.getRepository(User) : this.users;
+    return (await repo.count({ where: { id: userId, isAdmin: true } })) > 0;
   }
 
   async activeUsers(ids?: string[]): Promise<{ id: string; name: string }[]> {

@@ -60,7 +60,13 @@ export interface TaskLocation {
  */
 export interface WorkItemLocator {
   /** Tarefa ou subtarefa não eliminada (RN38), com o projeto herdado do épico (RN23); senão null. */
-  locateTask(taskId: string): Promise<TaskLocation | null>;
+  /** `manager`: lê na transação de quem chama, sem ocupar outra ligação (I14, revisão). */
+  locateTask(taskId: string, manager?: EntityManager): Promise<TaskLocation | null>;
+  /**
+   * Bloqueia as linhas das tarefas (FOR SHARE) na transação de quem chama, para que a equipa lida a seguir
+   * não mude antes do fim da transação — p. ex. planear uma tarefa enquanto é transferida (RN01, RN20).
+   */
+  lockTasks(taskIds: string[], manager: EntityManager): Promise<void>;
   /** Projeto de um objetivo; null se não existir. */
   projectOfObjective(objectiveId: string): Promise<string | null>;
   /**

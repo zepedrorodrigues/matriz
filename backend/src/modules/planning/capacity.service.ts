@@ -97,12 +97,14 @@ export class CapacityService {
     if (!sprint) return null;
     const days = workingDays(sprint.start_date, sprint.end_date);
 
-    const [members, adjustments, links] = await Promise.all([
-      this.organization.teamMembers(sprint.team_id),
-      m.query(`SELECT user_id, available_hours FROM planning.availability_adjustment WHERE sprint_id = $1`, [sprintId]) as Promise<
-        { user_id: string; available_hours: string }[]
-      >,
-      m.query(`SELECT task_id FROM planning.sprint_task WHERE sprint_id = $1 AND left_at IS NULL`, [sprintId]) as Promise<{ task_id: string }[]>,
+    // Em sequência: numa transação, as consultas partilham uma só ligação (revisão do I14).
+    const members = await this.organization.teamMembers(sprint.team_id, m);
+    const adjustments: { user_id: string; available_hours: string }[] = await m.query(
+      `SELECT user_id, available_hours FROM planning.availability_adjustment WHERE sprint_id = $1`,
+      [sprintId],
+    );
+    const links: { task_id: string }[] = await m.query(`SELECT task_id FROM planning.sprint_task WHERE sprint_id = $1 AND left_at IS NULL`, [
+      sprintId,
     ]);
     const infos = await this.work.planningTasks({ taskIds: links.map((l) => l.task_id) }, m);
     const live = await this.organization.projectNames([...new Set(infos.map((t) => t.projectId))]);

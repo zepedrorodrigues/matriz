@@ -402,7 +402,15 @@ export class TasksService {
       }
       if (assignee) {
         const crossTeam =
-          next.assigneeId !== null && !(await this.organization.teamRole(next.assigneeId, current.teamId));
+          next.assigneeId !== null && !(await this.organization.teamRole(next.assigneeId, current.teamId, tx));
+        // RN03 (revisão do I14): o guarda verificou a elegibilidade antes do bloqueio; se a equipa mudou entretanto
+        // (uma transferência), a atribuição a outra equipa continua a exigir o gestor ou o administrador e a justificação.
+        if (
+          crossTeam &&
+          !(dto.assignmentJustification?.trim() && (user.isAdmin || (await this.organization.isProjectManager(user.id, current.projectId, tx))))
+        ) {
+          throw new ConflictException('A equipa responsável pela tarefa mudou entretanto. Abra a tarefa de novo e repita a atribuição.');
+        }
         await this.events.publish(
           {
             entityType: 'task',
@@ -462,13 +470,17 @@ export class TasksService {
         [taskId],
       );
       await tx.query(`UPDATE work.task SET deleted_at = now() WHERE id = $1`, [taskId]);
-      for (const deleted of [{ id: taskId, title: current.title }, ...subtasks]) {
+      const deletedItems = [
+        { id: taskId, title: current.title, parentTaskId: current.parentTaskId },
+        ...subtasks.map((s) => ({ ...s, parentTaskId: taskId })),
+      ];
+      for (const deleted of deletedItems) {
         await this.events.publish(
           {
             entityType: 'task',
             entityId: deleted.id,
             eventType: 'deleted',
-            oldValue: { title: deleted.title },
+            oldValue: { title: deleted.title, ...(deleted.parentTaskId ? { parentTaskId: deleted.parentTaskId } : {}) },
             newValue: null,
             authorId: user.id,
           },
@@ -557,8 +569,15 @@ export class TasksService {
           [taskId],
         );
       const [{ at }] = await tx.query(`SELECT now() AS at`);
+      // Uma só consulta dos membros de destino, na transação (revisão do I14).
+      const targetMembers = new Set((await this.organization.teamMembers(targetTeamId, tx)).map((x) => x.userId));
       for (const item of [task, ...subtasks]) {
-        const keeps = item.assignee_id !== null && (await this.organization.teamRole(item.assignee_id, targetTeamId)) !== null;
+        const keeps = item.assignee_id !== null && targetMembers.has(item.assignee_id);
+        // Decisão 3a (I14): os participantes mantêm-se e ficam registados na transferência (RN40, RN32).
+        const participants: { user_id: string }[] = await tx.query(
+          `SELECT user_id FROM work.task_participant WHERE task_id = $1 ORDER BY user_id`,
+          [item.id],
+        );
         const assigneeId = keeps ? item.assignee_id : null;
         await tx.query(`UPDATE work.task SET team_id = $2, assignee_id = $3 WHERE id = $1`, [item.id, targetTeamId, assigneeId]);
         await this.events.publish(
@@ -571,6 +590,7 @@ export class TasksService {
               teamId: targetTeamId,
               originalTeamId: item.original_team_id,
               assigneeId,
+              participantIds: participants.map((p) => p.user_id),
               ...(item.id === taskId ? {} : { withParentTaskId: taskId }),
             },
             authorId: user.id,
@@ -622,15 +642,21 @@ export class TasksService {
     dueDate: string | null;
     isBlocked: boolean;
     blockReason: string | null;
+    projectId: string;
+    parentTaskId: string | null;
   }> {
     const [row] = await tx.query(
-      `SELECT title, description, priority, state, estimate_hours, story_points, assignee_id, team_id,
-              to_char(due_date, 'YYYY-MM-DD') AS due_date, is_blocked, block_reason
-       FROM work.task WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`,
+      `SELECT t.title, t.description, t.priority, t.state, t.estimate_hours, t.story_points, t.assignee_id, t.team_id,
+              to_char(t.due_date, 'YYYY-MM-DD') AS due_date, t.is_blocked, t.block_reason, t.parent_task_id, o.project_id
+       FROM work.task t
+       LEFT JOIN work.task p ON p.id = t.parent_task_id
+       JOIN work.epic e ON e.id = coalesce(t.epic_id, p.epic_id)
+       JOIN work.objective o ON o.id = e.objective_id
+       WHERE t.id = $1 AND t.deleted_at IS NULL FOR UPDATE OF t`,
       [taskId],
     );
     if (!row) throw new NotFoundException('A tarefa não existe.');
-    const { estimate_hours, story_points, assignee_id, team_id, due_date, is_blocked, block_reason, ...rest } = row;
+    const { estimate_hours, story_points, assignee_id, team_id, due_date, is_blocked, block_reason, parent_task_id, project_id, ...rest } = row;
     return {
       ...rest,
       estimateHours: hours(estimate_hours),
@@ -640,6 +666,8 @@ export class TasksService {
       dueDate: due_date,
       isBlocked: is_blocked,
       blockReason: block_reason,
+      projectId: project_id,
+      parentTaskId: parent_task_id,
     };
   }
 }
