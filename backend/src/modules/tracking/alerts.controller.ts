@@ -13,6 +13,7 @@ export class AlertsQuery {
   @Type(() => Number)
   @IsInt({ message: 'A página tem de ser um número inteiro.' })
   @Min(1, { message: 'A página começa em 1.' })
+  @Max(100000, { message: 'A página tem de estar entre 1 e 100000.' })
   page?: number;
 
   @IsOptional()

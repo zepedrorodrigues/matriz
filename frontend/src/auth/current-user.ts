@@ -28,11 +28,11 @@ export const leadsTask = (me: CurrentUser, task: Task) =>
   canManageProject(me, task.projectId) || roleIn(me, task.teamId) === 'leader';
 
 /**
- * D49: editar o título e a descrição — também qualquer membro da equipa responsável e, decisão 1a (I14), o
- * responsável de outra equipa (RN03), que tem nesta tarefa os direitos do membro.
+ * D49: editar o título e a descrição — também qualquer membro da equipa responsável. O responsável de outra
+ * equipa (RN03) não edita: só atualiza o estado, os critérios e os bloqueios (F24).
  */
 export const canEditTask = (me: CurrentUser, task: Task) =>
-  canManageProject(me, task.projectId) || roleIn(me, task.teamId) !== undefined || task.assignee?.id === me.id;
+  canManageProject(me, task.projectId) || roleIn(me, task.teamId) !== undefined;
 
 /** Criar uma subtarefa: administrador, gestor ou quem pertence à equipa da tarefa principal (RN21, RN22). */
 export const canCreateSubtask = (me: CurrentUser, task: Task) =>

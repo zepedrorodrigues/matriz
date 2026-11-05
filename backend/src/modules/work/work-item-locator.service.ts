@@ -15,7 +15,7 @@ export class WorkItemLocatorService implements WorkItemLocator {
    */
   async locateTask(taskId: string, manager?: EntityManager): Promise<TaskLocation | null> {
     const [row] = await (manager ?? this.db).query(
-      `SELECT o.project_id, t.team_id, t.assignee_id, t.parent_task_id, t.state, t.created_by
+      `SELECT o.project_id, t.team_id, t.assignee_id, t.assignee_cross_team, t.parent_task_id, t.state, t.created_by
        FROM work.task t
        LEFT JOIN work.task p ON p.id = t.parent_task_id
        JOIN work.epic e ON e.id = coalesce(t.epic_id, p.epic_id)
@@ -28,6 +28,7 @@ export class WorkItemLocatorService implements WorkItemLocator {
       projectId: row.project_id,
       teamId: row.team_id,
       assigneeId: row.assignee_id,
+      assigneeCrossTeam: row.assignee_cross_team,
       parentTaskId: row.parent_task_id,
       state: row.state,
       createdBy: row.created_by,
@@ -106,6 +107,7 @@ export class WorkItemLocatorService implements WorkItemLocator {
       subtask_hours: string | null;
       subtask_points: number | null;
       assignee_id: string | null;
+      assignee_cross_team: boolean;
       created_at: Date;
       due_date: string | null;
       is_overdue: boolean;
@@ -113,7 +115,7 @@ export class WorkItemLocatorService implements WorkItemLocator {
       block_reason: string | null;
     }[] = await (manager ?? this.db).query(
       `SELECT t.id, t.title, o.project_id, t.team_id, t.parent_task_id, t.state, t.priority, t.estimate_hours,
-              t.story_points, t.assignee_id, t.created_at, s.subtask_count, s.subtask_hours, s.subtask_points,
+              t.story_points, t.assignee_id, t.assignee_cross_team, t.created_at, s.subtask_count, s.subtask_hours, s.subtask_points,
               to_char(t.due_date, 'YYYY-MM-DD') AS due_date, t.is_blocked, t.block_reason,
               coalesce(t.due_date < ${todaySql()} AND t.state NOT IN (${DONE_STATES_SQL}), false) AS is_overdue
        FROM work.task t
@@ -148,6 +150,7 @@ export class WorkItemLocatorService implements WorkItemLocator {
         isBlocked: r.is_blocked,
         blockReason: r.block_reason,
         assigneeId: r.assignee_id,
+        assigneeCrossTeam: r.assignee_cross_team,
         createdAt: r.created_at.toISOString(),
       };
     });

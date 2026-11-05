@@ -107,7 +107,7 @@ export class CapacityService {
       sprintId,
     ]);
     const infos = await this.work.planningTasks({ taskIds: links.map((l) => l.task_id) }, m);
-    const live = await this.organization.projectNames([...new Set(infos.map((t) => t.projectId))]);
+    const live = await this.organization.projectNames([...new Set(infos.map((t) => t.projectId))], m);
     // RN22, CA05.9: uma tarefa com subtarefas conta 0; contam as subtarefas, cada uma na sua sprint.
     const counted = infos.filter((t) => live.has(t.projectId) && !t.hasSubtasks);
     const adjusted = new Map(adjustments.map((a) => [a.user_id, Number(a.available_hours)]));

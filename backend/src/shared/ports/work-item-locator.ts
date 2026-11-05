@@ -47,6 +47,8 @@ export interface PlanningTaskInfo {
   isBlocked: boolean;
   blockReason: string | null;
   assigneeId: string | null;
+  /** A atribuição atual é a exceção do RN03 (alguém de outra equipa, com justificação; F24). */
+  assigneeCrossTeam: boolean;
   createdAt: string;
 }
 
@@ -55,6 +57,8 @@ export interface TaskLocation {
   projectId: string;
   teamId: string;
   assigneeId: string | null;
+  /** A atribuição atual é a exceção do RN03 (F24): só ela dá ao responsável de outra equipa acesso à tarefa. */
+  assigneeCrossTeam: boolean;
   parentTaskId: string | null;
   state: TaskState;
   /** Quem criou a tarefa: define os critérios antes de «A desenvolver» (RN24). */

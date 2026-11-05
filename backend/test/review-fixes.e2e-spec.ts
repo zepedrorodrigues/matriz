@@ -148,6 +148,8 @@ describe('I14 — correções da revisão', () => {
     const id = await task({ title: 'Atribuição em corrida' });
     const res = await whileTransferring(id, teamB, () => as('leaderA').patch(`/api/tasks/${id}`, { assigneeId: ids.memberA }).then((r) => r));
     expect(res.status).toBe(409);
+    // CR7 (Ficha 04): a mensagem não afirma uma causa que pode não ser a verdadeira.
+    expect(res.body.detail).toContain('A atribuição deixou de ser válida entretanto');
     expect((await t.db.query(`SELECT assignee_id FROM work.task WHERE id = $1`, [id]))[0].assignee_id).toBeNull();
   });
 

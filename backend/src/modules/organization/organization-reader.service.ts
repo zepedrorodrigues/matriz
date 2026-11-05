@@ -172,9 +172,9 @@ export class OrganizationReader {
   }
 
   /** Nomes dos projetos não eliminados indicados (RN38: os eliminados ficam de fora). */
-  async projectNames(projectIds: string[]): Promise<Map<string, string>> {
+  async projectNames(projectIds: string[], manager?: EntityManager): Promise<Map<string, string>> {
     if (projectIds.length === 0) return new Map();
-    const rows: { id: string; name: string }[] = await this.db.query(
+    const rows: { id: string; name: string }[] = await (manager ?? this.db).query(
       `SELECT id, name FROM organization.project WHERE id = ANY($1::uuid[]) AND deleted_at IS NULL`,
       [projectIds],
     );

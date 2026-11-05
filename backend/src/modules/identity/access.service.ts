@@ -23,7 +23,9 @@ const MEMBER_STATES: readonly TaskState[] = ['ready_for_development', 'in_develo
  * Papel mais abrangente do utilizador sobre uma tarefa (os papéis acumulam-se, §3.1): administrador,
  * gestor do projeto, líder ou membro da equipa responsável, ou apenas quem vê o projeto.
  */
-type TaskRole = 'admin' | 'manager' | 'leader' | 'member' | 'viewer' | 'none';
+type TaskRole = 'admin' | 'manager' | 'leader' | 'member' | 'assignee' | 'viewer' | 'none';
+/** Atualizam o estado e registam o cumprimento dos critérios das tarefas que lhes estão atribuídas (§3.1). */
+const WORKS_ASSIGNED: readonly TaskRole[] = ['member', 'assignee'];
 const LEADS_TASK: readonly TaskRole[] = ['admin', 'manager', 'leader'];
 /** RN03: só o administrador e o gestor do projeto atribuem a alguém de outra equipa, com justificação. */
 const CROSSES_TEAMS: readonly TaskRole[] = ['admin', 'manager'];
@@ -215,6 +217,11 @@ export class AccessService {
         return;
       case 'edit':
         // D49: editam o título e a descrição o administrador, o gestor do projeto e os membros da equipa responsável.
+        // F24 (S2): o responsável de outra equipa só assinala bloqueios; não edita o título, a descrição nem
+        // as estimativas (que entram na capacidade da equipa).
+        if (role === 'assignee' && Object.keys(body).some((k) => k !== 'isBlocked' && k !== 'blockReason')) {
+          throw new ForbiddenException('Como responsável de outra equipa, só atualiza o estado, os critérios e os bloqueios desta tarefa.');
+        }
         if (role === 'viewer') {
           throw new ForbiddenException(
             'Só o administrador, os gestores do projeto e os membros da equipa responsável editam esta tarefa.',
@@ -245,7 +252,7 @@ export class AccessService {
         if (
           (body.isBlocked !== undefined || body.blockReason !== undefined) &&
           !LEADS_TASK.includes(role) &&
-          !(role === 'member' && task.assigneeId === user.id)
+          !(WORKS_ASSIGNED.includes(role) && task.assigneeId === user.id)
         ) {
           throw new ForbiddenException('O membro só assinala bloqueios nas tarefas que lhe estão atribuídas.');
         }
@@ -266,7 +273,7 @@ export class AccessService {
         // Um estado desconhecido é recusado depois pela validação (400).
         if (!knownTarget) return;
         const mayMove =
-          role === 'member' &&
+          WORKS_ASSIGNED.includes(role) &&
           task.assigneeId === user.id &&
           MEMBER_STATES.includes(task.state) &&
           MEMBER_STATES.includes(target as TaskState);
@@ -282,13 +289,15 @@ export class AccessService {
       case 'updateCriterion':
         if (body.description !== undefined) this.enforceCriterionText(user, role, task);
         // §3.1: registar o cumprimento — o membro, só nas tarefas que lhe estão atribuídas.
-        if (body.isMet !== undefined && !LEADS_TASK.includes(role) && !(role === 'member' && task.assigneeId === user.id)) {
+        if (body.isMet !== undefined && !LEADS_TASK.includes(role) && !(WORKS_ASSIGNED.includes(role) && task.assigneeId === user.id)) {
           throw new ForbiddenException(
             'O membro só regista o cumprimento dos critérios das tarefas que lhe estão atribuídas.',
           );
         }
         return;
       case 'listEligible':
+        // F24 (S2): a lista de membros da equipa não é para quem está atribuído de fora.
+        if (role === 'assignee') throw new ForbiddenException('Só quem pertence à equipa responsável consulta os seus membros.');
         // RN03: só o gestor e o administrador consultam os utilizadores de outras equipas.
         if (query.scope === 'all' && !CROSSES_TEAMS.includes(role)) {
           throw new ForbiddenException('Só os gestores do projeto e o administrador consultam os utilizadores de outras equipas.');
@@ -371,9 +380,10 @@ export class AccessService {
     if (await this.organization.isProjectManager(user.id, task.projectId)) return 'manager';
     const teamRole = await this.organization.teamRole(user.id, task.teamId);
     if (teamRole) return teamRole;
-    // RN03, CA09.1, decisão 1a (I14): quem está atribuído por exceção, de outra equipa, tem nesta tarefa os
-    // direitos do membro (vê-la, mudar o estado, bloquear, registar critérios); o resto do projeto, não.
-    if (task.assigneeId === user.id) return 'member';
+    // RN03, CA09.1 (F23; Ficha 04, F24): quem está atribuído por exceção, de outra equipa, vê a tarefa, muda o
+    // estado, assinala bloqueios, regista o cumprimento dos critérios e comenta — nada mais, e só enquanto a
+    // atribuição for essa exceção (quem sai da equipa deixa de ter acesso, S1).
+    if (task.assigneeId === user.id && task.assigneeCrossTeam) return 'assignee';
     return (await this.organization.isProjectVisibleToMember(user.id, task.projectId)) ? 'viewer' : 'none';
   }
 

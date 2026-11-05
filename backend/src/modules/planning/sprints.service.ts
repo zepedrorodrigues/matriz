@@ -234,13 +234,14 @@ export class SprintsService {
    */
   async planTask(user: AuthenticatedUser, sprintId: string, taskId: string): Promise<SprintDetail> {
     await this.db.transaction(async (tx) => {
-      const sprint = await this.lockSprint(tx, sprintId);
-      if (sprint.status === 'closed') throw new ConflictException('A sprint já terminou: não recebe tarefas.');
       // RN01, RN20 (revisão do I14): a tarefa fica bloqueada até ao fim; uma transferência em curso termina antes
       // e a equipa lida a seguir já é a nova (ou a transferência espera e retira a tarefa desta sprint).
+      // Primeiro a tarefa, depois a sprint — a mesma ordem da transferência, para não haver deadlock (CR1).
       await this.work.lockTasks([taskId], tx);
+      const sprint = await this.lockSprint(tx, sprintId);
+      if (sprint.status === 'closed') throw new ConflictException('A sprint já terminou: não recebe tarefas.');
       const [task] = await this.work.planningTasks({ taskIds: [taskId] }, tx);
-      const project = task ? await this.organization.projectNames([task.projectId]) : new Map<string, string>();
+      const project = task ? await this.organization.projectNames([task.projectId], tx) : new Map<string, string>();
       if (!task || !project.has(task.projectId)) throw new UnprocessableEntityException('A tarefa não existe ou foi eliminada.');
       if (task.teamId !== sprint.team_id) {
         throw new UnprocessableEntityException('Só se planeiam tarefas do backlog da equipa da sprint (RN01).');

@@ -356,7 +356,9 @@ export class TasksService {
       await tx.query(
         `UPDATE work.task SET title = $2, description = $3, priority = $4::work.task_priority,
                               estimate_hours = $5, story_points = $6, assignee_id = $7, due_date = $8,
-                              is_blocked = $9, block_reason = $10
+                              is_blocked = $9, block_reason = $10,
+                              -- F24: a marca da exceção (RN03) só se mantém se o responsável não mudar
+                              assignee_cross_team = assignee_cross_team AND assignee_id IS NOT DISTINCT FROM $7::uuid
          WHERE id = $1`,
         [
           taskId,
@@ -406,8 +408,12 @@ export class TasksService {
           crossTeam &&
           !(dto.assignmentJustification?.trim() && (user.isAdmin || (await this.organization.isProjectManager(user.id, current.projectId, tx))))
         ) {
-          throw new ConflictException('A equipa responsável pela tarefa mudou entretanto. Abra a tarefa de novo e repita a atribuição.');
+          throw new ConflictException(
+            'A atribuição deixou de ser válida entretanto (mudou a equipa da tarefa ou a do utilizador). Abra a tarefa de novo e repita a atribuição.',
+          );
         }
+        // F24: a exceção do RN03 fica marcada na tarefa; atribuir a alguém da equipa, ou retirar, apaga a marca.
+        await tx.query(`UPDATE work.task SET assignee_cross_team = $2 WHERE id = $1`, [taskId, crossTeam]);
         await this.events.publish(
           {
             entityType: 'task',
@@ -469,7 +475,9 @@ export class TasksService {
       await tx.query(`UPDATE work.task SET deleted_at = now() WHERE id = $1`, [taskId]);
       const deletedItems = [
         { id: taskId, title: current.title, parentTaskId: current.parentTaskId },
-        ...subtasks.map((s) => ({ ...s, parentTaskId: taskId })),
+        // As subtarefas eliminadas com a principal não indicam a principal: a sobrecarga da sua sprint já é
+        // verificada pelo evento da própria principal (revisão da Ficha 04, CR4).
+        ...subtasks.map((s) => ({ ...s, parentTaskId: null })),
       ];
       for (const deleted of deletedItems) {
         await this.events.publish(
@@ -568,15 +576,21 @@ export class TasksService {
       const [{ at }] = await tx.query(`SELECT now() AS at`);
       // Uma só consulta dos membros de destino, na transação (revisão do I14).
       const targetMembers = new Set((await this.organization.teamMembers(targetTeamId, tx)).map((x) => x.userId));
+      // Os participantes de todas as tarefas numa só consulta (revisão da Ficha 04, CR6).
+      const participantRows: { task_id: string; user_id: string }[] = await tx.query(
+        `SELECT task_id, user_id FROM work.task_participant WHERE task_id = ANY($1) ORDER BY user_id`,
+        [[task.id, ...subtasks.map((x) => x.id)]],
+      );
       for (const item of [task, ...subtasks]) {
         const keeps = item.assignee_id !== null && targetMembers.has(item.assignee_id);
         // Decisão 3a (I14): os participantes mantêm-se e ficam registados na transferência (RN40, RN32).
-        const participants: { user_id: string }[] = await tx.query(
-          `SELECT user_id FROM work.task_participant WHERE task_id = $1 ORDER BY user_id`,
-          [item.id],
-        );
+        const participants = participantRows.filter((x) => x.task_id === item.id);
         const assigneeId = keeps ? item.assignee_id : null;
-        await tx.query(`UPDATE work.task SET team_id = $2, assignee_id = $3 WHERE id = $1`, [item.id, targetTeamId, assigneeId]);
+        await tx.query(`UPDATE work.task SET team_id = $2, assignee_id = $3, assignee_cross_team = false WHERE id = $1`, [
+          item.id,
+          targetTeamId,
+          assigneeId,
+        ]);
         await this.events.publish(
           {
             entityType: 'task',

@@ -179,7 +179,7 @@ export class AlertsService implements OnModuleInit, DailyTask {
       `SELECT ${ALERT_COLUMNS} FROM tracking.alert WHERE recipient_id = $1 ORDER BY created_at DESC, id LIMIT $2 OFFSET $3`,
       [user.id, pageSize, (page - 1) * pageSize],
     );
-    return { page, pageSize, total, unreadCount: unread, items: await this.describe(rows) };
+    return { page, pageSize, total, unreadCount: unread, items: await this.describe(rows, user) };
   }
 
   /** Só o destinatário; o alerta de outra pessoa responde como inexistente (SEC07). */
@@ -189,11 +189,15 @@ export class AlertsService implements OnModuleInit, DailyTask {
       [alertId, user.id],
     );
     if (rows.length === 0) throw new NotFoundException('O alerta não existe.');
-    const [alert] = await this.describe(rows);
+    const [alert] = await this.describe(rows, user);
     return alert;
   }
 
-  private async describe(rows: AlertRow[]): Promise<Alert[]> {
+  /**
+   * S3 (Ficha 04): os dados atuais da tarefa (título, estado, motivo do bloqueio) só para quem ainda a vê —
+   * projeto visível (CAT06) ou a exceção do RN03; senão o alerta fica, sem a tarefa.
+   */
+  private async describe(rows: AlertRow[], user: AuthenticatedUser): Promise<Alert[]> {
     const taskIds = [...new Set(rows.flatMap((r) => (r.task_id ? [r.task_id] : [])))];
     const [tasks, teams, names] = await Promise.all([
       this.work.planningTasks({ taskIds }),
@@ -201,7 +205,9 @@ export class AlertsService implements OnModuleInit, DailyTask {
       this.users.namesByIds([...new Set(rows.flatMap((r) => (r.user_id ? [r.user_id] : [])))]),
     ]);
     const live = await this.organization.projectNames([...new Set(tasks.map((t) => t.projectId))]);
-    const byId = new Map(tasks.filter((t) => live.has(t.projectId)).map((t) => [t.id, t]));
+    const visible = new Set((await this.organization.visibleProjects(user.id, user.isAdmin)).map((p) => p.id));
+    const seen = (t: (typeof tasks)[number]) => visible.has(t.projectId) || (t.assigneeId === user.id && t.assigneeCrossTeam);
+    const byId = new Map(tasks.filter((t) => live.has(t.projectId) && seen(t)).map((t) => [t.id, t]));
     return rows.map((r) => {
       const t = r.task_id ? byId.get(r.task_id) : undefined;
       const team = r.team_id && !r.task_id ? teams.get(r.team_id) : undefined;
