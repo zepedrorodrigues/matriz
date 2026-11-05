@@ -157,6 +157,9 @@ export interface TeamCreate {
   leaderOtherAllocations: { teamId: string; allocationPct: number }[];
 }
 export const listTeams = () => apiGet<TeamSummary[]>('/teams');
+/** openapi.yaml: addProjectTeam (CA01.3, CA01.5) — devolve as equipas do projeto. */
+export const addProjectTeam = (projectId: string, teamId: string) =>
+  apiRequest<TeamSummary[]>('POST', `/projects/${id(projectId)}/teams`, { teamId });
 export const getTeam = (teamId: string) => apiGet<TeamDetail>(`/teams/${id(teamId)}`);
 export const createTeam = (input: TeamCreate) => apiRequest<TeamDetail>('POST', '/teams', input);
 export const renameTeam = (teamId: string, name: string) => apiRequest<TeamDetail>('PATCH', `/teams/${id(teamId)}`, { name });

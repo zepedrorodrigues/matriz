@@ -1,5 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Length, Max, MaxLength, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, IsUUID, Length, Max, MaxLength, Min } from 'class-validator';
 
 /** RN42: os limites contam-se depois de retirar os espaços no início e no fim. */
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
@@ -56,4 +56,10 @@ export class ListProjectsQuery {
   @Min(1, { message: 'O tamanho da página tem de estar entre 1 e 100.' })
   @Max(100, { message: 'O tamanho da página tem de estar entre 1 e 100.' })
   pageSize?: number;
+}
+
+/** openapi.yaml: ProjectTeamInput (CA01.3). */
+export class ProjectTeamInputDto {
+  @IsUUID('all', { message: 'A equipa tem de ser um identificador válido.' })
+  teamId!: string;
 }

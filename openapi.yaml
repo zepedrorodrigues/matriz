@@ -674,7 +674,9 @@ paths:
       tags: [Organização]
       operationId: listProjectTeams
       summary: Consultar as equipas de um projeto
-      description: Equipas associadas ao projeto (CA01.4); são as que podem ser responsáveis pelas suas tarefas (RN23).
+      description: |
+        Equipas associadas ao projeto, ordenadas pelo nome, para quem vê o projeto (CA01.4); são as que
+        podem ser responsáveis pelas suas tarefas (RN23). Uma equipa desativada continua associada.
       parameters:
         - $ref: '#/components/parameters/ProjectId'
       responses:
@@ -692,6 +694,43 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Organização]
+      operationId: addProjectTeam
+      summary: Associar uma equipa a um projeto
+      description: |
+        O administrador e os gestores do projeto (§3.1, CA01.3). A equipa tem de existir e estar ativa
+        (422, RN33); uma equipa já associada responde 409 e a associação não fica duplicada (CA01.5).
+        Fica no histórico do projeto (`team_added`). A remoção de uma associação não está no MVP (F18).
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectTeamInput'
+      responses:
+        '201':
+          description: Equipa associada; devolve as equipas do projeto.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamSummary'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
 
   /projects/{projectId}/objectives:
     get:
@@ -1750,6 +1789,15 @@ components:
                 enum: [leader, member]
               allocationPct:
                 type: integer
+
+    ProjectTeamInput:
+      type: object
+      required: [teamId]
+      additionalProperties: false
+      properties:
+        teamId:
+          type: string
+          format: uuid
 
     TeamSummary:
       type: object

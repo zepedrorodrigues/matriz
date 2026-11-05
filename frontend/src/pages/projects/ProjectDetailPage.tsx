@@ -7,6 +7,7 @@ import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { Notice } from '../../components/Notice';
 import { ProjectForm } from './ProjectForm';
 import { ProjectTasks } from './ProjectTasks';
+import { ProjectTeams } from './ProjectTeams';
 
 const dateFormat = new Intl.DateTimeFormat('pt-PT', { dateStyle: 'long' });
 
@@ -121,17 +122,13 @@ export function ProjectDetailPage() {
             <dd>{p.objective ?? <span className="muted">Sem objetivo definido.</span>}</dd>
             <dt>Gestores</dt>
             <dd>{p.managers.map((m) => m.name).join(', ') || '—'}</dd>
-            <dt>Equipas</dt>
-            <dd>
-              {p.teams.length === 0
-                ? 'Nenhuma equipa associada.'
-                : p.teams.map((t) => (t.active ? t.name : `${t.name} (desativada)`)).join(', ')}
-            </dd>
             <dt>Criado em</dt>
             <dd>{dateFormat.format(new Date(p.createdAt))}</dd>
           </dl>
         </>
       )}
+
+      {!editing ? <ProjectTeams project={p} mayManage={mayManage} /> : null}
 
       {!editing && me.data ? <ProjectTasks project={p} me={me.data} /> : null}
 

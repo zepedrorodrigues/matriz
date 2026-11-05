@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, EntityManager } from 'typeorm';
 import type { AuthenticatedUser } from '../../shared/auth/auth.decorators';
@@ -119,12 +119,44 @@ export class ProjectsService {
     const managers = managerRows
       .map((m) => ({ id: m.user_id, name: names.get(m.user_id) ?? '' }))
       .sort((a, b) => a.name.localeCompare(b.name, 'pt'));
-    const teams: { id: string; name: string; active: boolean }[] = await this.db.query(
+    return { ...toSummary(row), managers, teams: await this.teams(projectId) };
+  }
+
+  /** CA01.4: equipas associadas ao projeto, ordenadas pelo nome (as desativadas continuam associadas). */
+  teams(projectId: string, manager: EntityManager = this.db.manager): Promise<{ id: string; name: string; active: boolean }[]> {
+    return manager.query(
       `SELECT t.id, t.name, t.active FROM organization.project_team pt JOIN organization.team t ON t.id = pt.team_id
-       WHERE pt.project_id = $1 ORDER BY lower(t.name)`,
+       WHERE pt.project_id = $1 ORDER BY lower(t.name), t.id`,
       [projectId],
     );
-    return { ...toSummary(row), managers, teams };
+  }
+
+  /**
+   * CA01.3, CA01.5, RN33: associa uma equipa ativa ao projeto; uma associação repetida é recusada (409) e
+   * não fica duplicada. A autorização (administrador ou gestor do projeto) foi verificada pelo guarda.
+   */
+  async addTeam(user: AuthenticatedUser, projectId: string, teamId: string): Promise<{ id: string; name: string; active: boolean }[]> {
+    return this.db.transaction(async (tx) => {
+      const [project] = await tx.query(`SELECT 1 FROM organization.project WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`, [projectId]);
+      if (!project) throw new NotFoundException('O projeto não existe.');
+      const [team] = await tx.query(`SELECT name, active FROM organization.team WHERE id = $1 FOR SHARE`, [teamId]);
+      if (!team?.active) throw new UnprocessableEntityException('A equipa não existe ou está desativada (RN33).');
+      const [existing] = await tx.query(`SELECT 1 FROM organization.project_team WHERE project_id = $1 AND team_id = $2`, [projectId, teamId]);
+      if (existing) throw new ConflictException('Esta equipa já está associada ao projeto.');
+      await tx.query(`INSERT INTO organization.project_team (project_id, team_id) VALUES ($1, $2)`, [projectId, teamId]);
+      await this.events.publish(
+        {
+          entityType: 'project',
+          entityId: projectId,
+          eventType: 'team_added',
+          oldValue: null,
+          newValue: { teamId, teamName: team.name },
+          authorId: user.id,
+        },
+        tx,
+      );
+      return this.teams(projectId, tx);
+    });
   }
 
   /** CA01.6: altera só os campos enviados; as equipas e os objetivos mantêm-se. */

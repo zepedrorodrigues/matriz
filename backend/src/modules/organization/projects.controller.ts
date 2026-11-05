@@ -3,13 +3,13 @@ import { CanCreateProject, ProjectAccess } from '../../shared/auth/access.decora
 import { CurrentUser } from '../../shared/auth/auth.decorators';
 import type { AuthenticatedUser } from '../../shared/auth/auth.decorators';
 import { ValidationFailedException } from '../../shared/errors/problem-details.filter';
-import { CreateProjectDto, ListProjectsQuery, UpdateProjectDto } from './project.dto';
+import { CreateProjectDto, ListProjectsQuery, ProjectTeamInputDto, UpdateProjectDto } from './project.dto';
 import { ProjectsService } from './projects.service';
 import type { ProjectDetail, ProjectPage } from './projects.service';
 
 /**
  * `/api/projects` (openapi.yaml: listProjects, createProject, getProject, updateProject,
- * deleteProject). A autorização de cada rota é declarada aqui e verificada pelo guarda global.
+ * deleteProject, listProjectTeams, addProjectTeam). A autorização de cada rota é declarada aqui e verificada pelo guarda global.
  */
 @Controller('projects')
 export class ProjectsController {
@@ -43,6 +43,23 @@ export class ProjectsController {
       throw new ValidationFailedException([{ field: '', message: 'Indique pelo menos o nome ou o objetivo.' }]);
     }
     return this.projects.update(user, projectId, dto);
+  }
+
+  @Get(':projectId/teams')
+  @ProjectAccess('view')
+  teams(@Param('projectId') projectId: string): Promise<{ id: string; name: string; active: boolean }[]> {
+    return this.projects.teams(projectId);
+  }
+
+  /** §3.1: associar equipas a projetos — administrador e gestores do projeto (a mesma regra de editar). */
+  @Post(':projectId/teams')
+  @ProjectAccess('edit')
+  addTeam(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('projectId') projectId: string,
+    @Body() dto: ProjectTeamInputDto,
+  ): Promise<{ id: string; name: string; active: boolean }[]> {
+    return this.projects.addTeam(user, projectId, dto.teamId);
   }
 
   @Delete(':projectId')
