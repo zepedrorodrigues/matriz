@@ -304,6 +304,36 @@ export class SprintsService {
     return this.get(sprintId);
   }
 
+  /**
+   * RN20, CA09.8, EC09.3 (I12): as tarefas transferidas saem da sprint em aberto em que estão, na transação
+   * da transferência. Numa sprint «Planeada» a ligação desaparece; numa «Ativa» fica com a saída
+   * (`transferred`) e continua a contar como planeada no início (RF27). O módulo Trabalho só envia as
+   * tarefas não concluídas (decisão 2a, F22). Fica `task_removed` no histórico da sprint.
+   */
+  async releaseTransferred(taskIds: string[], authorId: string, tx: EntityManager): Promise<Map<string, string>> {
+    const released = new Map<string, string>();
+    if (taskIds.length === 0) return released;
+    const links: { sprint_id: string; task_id: string; status: SprintStatus }[] = await tx.query(
+      `SELECT st.sprint_id, st.task_id, s.status FROM planning.sprint_task st JOIN planning.sprint s ON s.id = st.sprint_id
+       WHERE st.task_id = ANY($1) AND st.left_at IS NULL AND s.status <> 'closed'
+       ORDER BY st.sprint_id, st.task_id FOR UPDATE OF s, st`,
+      [taskIds],
+    );
+    for (const l of links) {
+      if (l.status === 'planned') {
+        await tx.query(`DELETE FROM planning.sprint_task WHERE sprint_id = $1 AND task_id = $2`, [l.sprint_id, l.task_id]);
+      } else {
+        await tx.query(
+          `UPDATE planning.sprint_task SET left_at = now(), left_reason = 'transferred' WHERE sprint_id = $1 AND task_id = $2`,
+          [l.sprint_id, l.task_id],
+        );
+      }
+      await this.publish(tx, authorId, l.sprint_id, 'task_removed', { taskId: l.task_id }, { taskId: l.task_id, sprintStatus: l.status, reason: 'transferred' });
+      released.set(l.task_id, l.sprint_id);
+    }
+    return released;
+  }
+
   async get(sprintId: string): Promise<SprintDetail> {
     const [row]: SprintRow[] = await this.db.query(`SELECT ${SPRINT_COLUMNS} FROM planning.sprint WHERE id = $1`, [sprintId]);
     if (!row) throw new NotFoundException('A sprint não existe.');

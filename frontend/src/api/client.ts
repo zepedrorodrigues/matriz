@@ -493,6 +493,20 @@ export function listTasks(projectId: string, params: { state?: TaskState; priori
 export const createTask = (projectId: string, input: TaskCreate) =>
   apiRequest<Task>('POST', `/projects/${id(projectId)}/tasks`, input);
 export const getTask = (taskId: string) => apiGet<Task>(`/tasks/${id(taskId)}`);
+
+/** openapi.yaml: TaskTransfer (RN14, RN20, RN22; US09). */
+export interface TaskTransfer {
+  taskId: string;
+  previousTeamId: string;
+  newTeamId: string;
+  originalTeamId: string;
+  transferredSubtaskIds: string[];
+  removedFromSprintId: string | null;
+  transferredBy: string;
+  transferredAt: string;
+}
+export const transferTask = (taskId: string, targetTeamId: string) =>
+  apiRequest<TaskTransfer>('POST', `/tasks/${id(taskId)}/transfer`, { targetTeamId });
 export const updateTask = (taskId: string, input: TaskUpdate) => apiRequest<Task>('PATCH', `/tasks/${id(taskId)}`, input);
 export const changeTaskState = (taskId: string, state: TaskState) =>
   apiRequest<Task>('POST', `/tasks/${id(taskId)}/state`, { state });

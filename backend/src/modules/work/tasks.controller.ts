@@ -3,12 +3,12 @@ import { ProjectAccess, TaskAccess } from '../../shared/auth/access.decorators';
 import { CurrentUser } from '../../shared/auth/auth.decorators';
 import type { AuthenticatedUser } from '../../shared/auth/auth.decorators';
 import { ValidationFailedException } from '../../shared/errors/problem-details.filter';
-import { CreateTaskDto, ListTasksQuery, StateChangeDto, UpdateTaskDto } from './work.dto';
+import { CreateTaskDto, ListTasksQuery, StateChangeDto, TransferTaskDto, UpdateTaskDto } from './work.dto';
 import { TasksService } from './tasks.service';
-import type { Task, TaskPage } from './tasks.service';
+import type { Task, TaskPage, TaskTransfer } from './tasks.service';
 
 /**
- * openapi.yaml: listProjectTasks, createTask, getTask, updateTask, deleteTask, changeTaskState.
+ * openapi.yaml: listProjectTasks, createTask, getTask, updateTask, deleteTask, changeTaskState, transferTask.
  * A autorização de cada rota é declarada aqui e verificada pelo guarda global (§3.1).
  */
 @Controller()
@@ -84,6 +84,13 @@ export class TasksController {
     @Body() dto: StateChangeDto,
   ): Promise<Task> {
     return this.tasks.changeState(user, taskId, dto.state);
+  }
+
+  @Post('tasks/:taskId/transfer')
+  @TaskAccess('transfer')
+  @HttpCode(200)
+  transfer(@CurrentUser() user: AuthenticatedUser, @Param('taskId') taskId: string, @Body() dto: TransferTaskDto): Promise<TaskTransfer> {
+    return this.tasks.transfer(user, taskId, dto.targetTeamId);
   }
 
   @Delete('tasks/:taskId')

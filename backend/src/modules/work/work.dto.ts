@@ -265,3 +265,9 @@ export class ListTasksQuery {
   @Max(100, { message: 'O tamanho da página tem de estar entre 1 e 100.' })
   pageSize?: number;
 }
+
+/** openapi.yaml: TransferTaskRequest (RN20, RN23, RN33). */
+export class TransferTaskDto {
+  @IsUUID('all', { message: 'A equipa de destino tem de ser um identificador válido.' })
+  targetTeamId!: string;
+}

@@ -76,3 +76,10 @@ export const canStartSprint = (me: CurrentUser, teamId: string) => me.isAdmin ||
 /** §3.1, RN28: assinalam bloqueios o administrador, o gestor, o líder e o membro nas tarefas que lhe estão atribuídas. */
 export const canBlockTask = (me: CurrentUser, task: Task) =>
   leadsTask(me, task) || (roleIn(me, task.teamId) !== undefined && task.assignee?.id === me.id);
+
+/**
+ * RN20, CA09.3, CA09.4, CA09.7: transferem o gestor do projeto e o administrador; só tarefas (as subtarefas
+ * acompanham a principal, RN22) e não concluídas.
+ */
+export const canTransferTask = (me: CurrentUser, task: Task) =>
+  canManageProject(me, task.projectId) && task.parentTaskId === null && task.state !== 'done' && task.state !== 'delivered';

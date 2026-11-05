@@ -115,3 +115,20 @@ export function validateBlockReason(text: string): string | undefined {
   const length = text.trim().length;
   return length < 1 || length > 2000 ? BLOCK_REASON_MESSAGE : undefined;
 }
+
+/** RN20, RN23, RN33: equipas para onde a tarefa pode ir — as ativas do projeto, menos a atual. */
+export function transferTargets<T extends { id: string; active: boolean }>(teams: readonly T[], currentTeamId: string): T[] {
+  return teams.filter((team) => team.active && team.id !== currentTeamId);
+}
+
+/** Consequências da transferência, mostradas antes de confirmar (RN15, RN20, RN22; decisões 1a e 2a, F22). */
+export function transferConsequences(input: { subtaskCount: number; targetName: string; hasAssignee: boolean }): string[] {
+  const lines = [
+    input.subtaskCount === 0
+      ? `A tarefa passa para «${input.targetName}»; a equipa original fica registada.`
+      : `A tarefa e ${input.subtaskCount === 1 ? 'a subtarefa' : `as ${input.subtaskCount} subtarefas`} passam para «${input.targetName}»; a equipa original fica registada.`,
+    'Se estiver planeada numa sprint em aberto, sai dessa sprint e fica no backlog da nova equipa (as subtarefas concluídas ficam na sprint).',
+  ];
+  if (input.hasAssignee) lines.push(`Se o responsável não for membro de «${input.targetName}», deixa de o ser.`);
+  return lines;
+}

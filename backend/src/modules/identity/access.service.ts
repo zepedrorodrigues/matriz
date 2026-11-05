@@ -307,6 +307,12 @@ export class AccessService {
           await this.enforceEligible(role, task, body.userId, body.justification);
         }
         return;
+      case 'transfer':
+        // RN20, CA09.3, CA09.4: só o gestor do projeto e o administrador transferem entre equipas.
+        if (!CROSSES_TEAMS.includes(role)) {
+          throw new ForbiddenException('Só os gestores do projeto e o administrador transferem tarefas entre equipas.');
+        }
+        return;
       case 'delete':
         if (!LEADS_TASK.includes(role)) {
           throw new ForbiddenException(

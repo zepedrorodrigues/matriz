@@ -19,7 +19,8 @@ export type TaskAction =
   | 'updateCriterion'
   | 'listEligible'
   | 'addParticipant'
-  | 'removeParticipant';
+  | 'removeParticipant'
+  | 'transfer';
 
 export type AccessRequirement =
   | { kind: 'admin' }

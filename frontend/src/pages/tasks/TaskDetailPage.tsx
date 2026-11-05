@@ -10,6 +10,7 @@ import {
   getTask,
   updateTask,
   type Task,
+  type TaskTransfer,
   type TaskUpdate,
 } from '../../api/client';
 import { canCreateSubtask, canEditEstimates, canEditTask, leadsTask, stateTargetsFor, useCurrentUser } from '../../auth/current-user';
@@ -23,6 +24,7 @@ import { CommentsPanel } from './CommentsPanel';
 import { CriteriaPanel } from './CriteriaPanel';
 import { TaskBadges } from './TaskBadges';
 import { TaskForm, type TaskFormValues } from './TaskForm';
+import { TransferPanel } from './TransferPanel';
 
 const dateTime = new Intl.DateTimeFormat('pt-PT', { dateStyle: 'long', timeStyle: 'short' });
 const date = new Intl.DateTimeFormat('pt-PT', { dateStyle: 'long' });
@@ -31,7 +33,7 @@ const errorText = (error: unknown) => (error instanceof ApiError ? error.message
 /**
  * Ecrã Detalhe da tarefa (Ficha PL 03, Ex. 5 e Ex. 7): dados, edição (com as estimativas, I5), estado,
  * prioridade, subtarefas, critérios de aceitação (I5), responsável e participantes (I6), comentários
- * (I7) e eliminação com confirmação. Cada ação aparece a quem a matriz o permite (§3.1); a API
+ * (I7), transferência para outra equipa (I12) e eliminação com confirmação. Cada ação aparece a quem a matriz o permite (§3.1); a API
  * decide sempre e a interface mostra o motivo de uma recusa.
  */
 export function TaskDetailPage() {
@@ -49,6 +51,7 @@ export function TaskDetailPage() {
   const [assignmentResetKey, setAssignmentResetKey] = useState(0);
   const [commentsResetKey, setCommentsResetKey] = useState(0);
   const [blockResetKey, setBlockResetKey] = useState(0);
+  const [transferResetKey, setTransferResetKey] = useState(0);
 
   const task = useQuery({ queryKey: ['task', taskId], queryFn: () => getTask(taskId), retry: false });
   const projectId = task.data?.projectId;
@@ -63,9 +66,10 @@ export function TaskDetailPage() {
    * antigo não pode ficar visível ao lado do resultado da nova operação (Ex. 8, caso 09).
    */
   const startOperation = (
-    current: 'update' | 'move' | 'addSubtask' | 'remove' | 'criteria' | 'assignment' | 'comments' | 'block',
+    current: 'update' | 'move' | 'addSubtask' | 'remove' | 'criteria' | 'assignment' | 'comments' | 'block' | 'transfer',
   ) => {
     setNotice(undefined);
+    if (current !== 'transfer') setTransferResetKey((n) => n + 1);
     if (current !== 'block') setBlockResetKey((n) => n + 1);
     if (current !== 'criteria') setCriteriaResetKey((n) => n + 1);
     if (current !== 'assignment') setAssignmentResetKey((n) => n + 1);
@@ -82,6 +86,16 @@ export function TaskDetailPage() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['tasks', updated.projectId] }),
       updated.parentTaskId ? queryClient.invalidateQueries({ queryKey: ['task', updated.parentTaskId] }) : null,
+    ]);
+    setNotice(message);
+  };
+
+  /** A transferência muda a equipa da tarefa e das subtarefas (e pode retirar o responsável): recarrega-se tudo. */
+  const applyTransfer = async (result: TaskTransfer, message: string) => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['task', result.taskId] }),
+      ...result.transferredSubtaskIds.map((id) => queryClient.invalidateQueries({ queryKey: ['task', id] })),
+      queryClient.invalidateQueries({ queryKey: ['tasks', task.data?.projectId] }),
     ]);
     setNotice(message);
   };
@@ -164,6 +178,8 @@ export function TaskDetailPage() {
   const mayLead = user ? leadsTask(user, t) : false;
   const targets = user ? stateTargetsFor(user, t) : [];
   const teamName = project.data?.teams.find((team) => team.id === t.teamId)?.name ?? '—';
+  // RN14, CA09.2: a equipa em que a tarefa foi criada, quando já não é a responsável.
+  const originalTeamName = project.data?.teams.find((team) => team.id === t.originalTeamId)?.name ?? 'equipa que já não participa no projeto';
   const isSubtask = t.parentTaskId !== null;
   // RN22: numa tarefa com subtarefas, a estimativa é a soma das subtarefas; RN10: proteção em desenvolvimento.
   const hasSubtasks = t.subtasks.length > 0;
@@ -263,6 +279,12 @@ export function TaskDetailPage() {
             <dd>{t.description ?? <span className="muted">Sem descrição.</span>}</dd>
             <dt>Equipa responsável</dt>
             <dd>{teamName}</dd>
+            {t.originalTeamId !== t.teamId ? (
+              <>
+                <dt>Equipa original</dt>
+                <dd>{originalTeamName}</dd>
+              </>
+            ) : null}
             <dt>Responsável pela execução</dt>
             <dd>{t.assignee?.name ?? <span className="muted">Sem responsável.</span>}</dd>
             <dt>Estimativa</dt>
@@ -387,6 +409,15 @@ export function TaskDetailPage() {
         me={user}
         resetKey={assignmentResetKey}
         onOperationStart={() => startOperation('assignment')}
+      />
+
+      <TransferPanel
+        task={t}
+        project={project.data}
+        me={user}
+        resetKey={transferResetKey}
+        onOperationStart={() => startOperation('transfer')}
+        onTransferred={applyTransfer}
       />
 
       <CommentsPanel taskId={t.id} resetKey={commentsResetKey} onOperationStart={() => startOperation('comments')} />

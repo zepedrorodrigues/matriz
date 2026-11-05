@@ -4,11 +4,15 @@ import { DataSource, EntityManager } from 'typeorm';
 import type { AuthenticatedUser } from '../../shared/auth/auth.decorators';
 import { todaySql } from '../../shared/config/time-zone';
 import { DomainEvents } from '../../shared/events/domain-events';
+import { SPRINT_LOCATOR, type SprintLocator } from '../../shared/ports/sprint-locator';
 import { USER_DIRECTORY, type UserDirectory } from '../../shared/ports/user-directory';
 import type { TaskState } from '../../shared/ports/work-item-locator';
 import { OrganizationReader } from '../organization/organization-reader.service';
 import { checkTransition } from './task-lifecycle';
 import type { CreateTaskDto, Priority, UpdateTaskDto } from './work.dto';
+
+/** Concluídas (RN26): «Terminada» e «Entregue». */
+const DONE_STATES: readonly TaskState[] = ['done', 'delivered'];
 
 export interface UserSummary {
   id: string;
@@ -48,6 +52,18 @@ export interface Task extends Omit<TaskSummary, 'subtaskCount'> {
   subtasks: TaskSummary[];
   createdBy: UserSummary;
   createdAt: string;
+}
+
+/** openapi.yaml: TaskTransfer (RN14, RN20, RN22). */
+export interface TaskTransfer {
+  taskId: string;
+  previousTeamId: string;
+  newTeamId: string;
+  originalTeamId: string;
+  transferredSubtaskIds: string[];
+  removedFromSprintId: string | null;
+  transferredBy: string;
+  transferredAt: string;
 }
 
 export interface TaskPage {
@@ -102,6 +118,7 @@ export class TasksService {
     private readonly events: DomainEvents,
     private readonly organization: OrganizationReader,
     @Inject(USER_DIRECTORY) private readonly users: UserDirectory,
+    @Inject(SPRINT_LOCATOR) private readonly sprints: SprintLocator,
   ) {}
 
   /**
@@ -499,6 +516,94 @@ export class TasksService {
       throw new UnprocessableEntityException('A tarefa principal não existe neste projeto.');
     }
     return { teamId: parent.team_id };
+  }
+
+  /**
+   * RN20, CA09.3, CA09.5, CA09.7, CA09.8 (I12): muda a equipa responsável da tarefa e das suas subtarefas
+   * (RN22), numa só transação. Recusa (409) a subtarefa isolada, a tarefa concluída e a mesma equipa; a
+   * equipa de destino tem de estar ativa e associada ao projeto (422; RN23, RN33). A equipa original não
+   * muda (RN14). O responsável mantém-se se for membro da equipa de destino; senão a atribuição é retirada
+   * e fica no histórico (RN15, decisão 1a, F22). As subtarefas concluídas mudam de equipa mas ficam na
+   * sprint em que foram feitas; as restantes saem da sprint em aberto (RN20, decisão 2a, F22). Cada
+   * tarefa fica com `team_transferred` no histórico, com a equipa anterior, a nova, a original e o
+   * responsável (RN32, CA09.2, CA06.6).
+   */
+  async transfer(user: AuthenticatedUser, taskId: string, targetTeamId: string): Promise<TaskTransfer> {
+    return this.db.transaction(async (tx) => {
+      const [task] = await tx.query(
+        `SELECT t.id, t.parent_task_id, t.state, t.team_id, t.original_team_id, t.assignee_id, o.project_id
+         FROM work.task t
+         LEFT JOIN work.task p ON p.id = t.parent_task_id
+         JOIN work.epic e ON e.id = coalesce(t.epic_id, p.epic_id)
+         JOIN work.objective o ON o.id = e.objective_id
+         WHERE t.id = $1 AND t.deleted_at IS NULL FOR UPDATE OF t`,
+        [taskId],
+      );
+      if (!task) throw new NotFoundException('A tarefa não existe.');
+      if (task.parent_task_id) {
+        throw new ConflictException('Só se transferem tarefas: a subtarefa acompanha a tarefa principal (RN22).');
+      }
+      if (DONE_STATES.includes(task.state)) {
+        throw new ConflictException('Uma tarefa em «Terminada» ou «Entregue» não pode ser transferida.');
+      }
+      if (task.team_id === targetTeamId) throw new ConflictException('A tarefa já pertence a esta equipa.');
+      if (!(await this.organization.isActiveTeamOfProject(targetTeamId, task.project_id))) {
+        throw new UnprocessableEntityException('A equipa de destino não está associada a este projeto ou foi desativada.');
+      }
+      const subtasks: { id: string; state: TaskState; team_id: string; original_team_id: string; assignee_id: string | null }[] =
+        await tx.query(
+          `SELECT id, state, team_id, original_team_id, assignee_id FROM work.task
+           WHERE parent_task_id = $1 AND deleted_at IS NULL ORDER BY id FOR UPDATE`,
+          [taskId],
+        );
+      const [{ at }] = await tx.query(`SELECT now() AS at`);
+      for (const item of [task, ...subtasks]) {
+        const keeps = item.assignee_id !== null && (await this.organization.teamRole(item.assignee_id, targetTeamId)) !== null;
+        const assigneeId = keeps ? item.assignee_id : null;
+        await tx.query(`UPDATE work.task SET team_id = $2, assignee_id = $3 WHERE id = $1`, [item.id, targetTeamId, assigneeId]);
+        await this.events.publish(
+          {
+            entityType: 'task',
+            entityId: item.id,
+            eventType: 'team_transferred',
+            oldValue: { teamId: item.team_id, assigneeId: item.assignee_id },
+            newValue: {
+              teamId: targetTeamId,
+              originalTeamId: item.original_team_id,
+              assigneeId,
+              ...(item.id === taskId ? {} : { withParentTaskId: taskId }),
+            },
+            authorId: user.id,
+          },
+          tx,
+        );
+        if (item.assignee_id !== assigneeId) {
+          await this.events.publish(
+            {
+              entityType: 'task',
+              entityId: item.id,
+              eventType: 'assignee_changed',
+              oldValue: { assigneeId: item.assignee_id },
+              newValue: { assigneeId: null, reason: 'transferred' },
+              authorId: user.id,
+            },
+            tx,
+          );
+        }
+      }
+      const open = [task, ...subtasks].filter((x) => !DONE_STATES.includes(x.state)).map((x) => x.id as string);
+      const released = await this.sprints.releaseTransferredTasks(open, user.id, tx);
+      return {
+        taskId,
+        previousTeamId: task.team_id,
+        newTeamId: targetTeamId,
+        originalTeamId: task.original_team_id,
+        transferredSubtaskIds: subtasks.map((s) => s.id),
+        removedFromSprintId: released.get(taskId) ?? null,
+        transferredBy: user.id,
+        transferredAt: (at as Date).toISOString(),
+      };
+    });
   }
 
   /** Bloqueia a linha da tarefa não eliminada durante a transação; senão 404 (RN38). */
