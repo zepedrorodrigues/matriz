@@ -21,7 +21,7 @@ Plano de testes da funcionalidade **tarefas** (criar, consultar, editar, elimina
 | A tarefa eliminada desaparece da base | RN38: eliminação lógica; sai das listagens e consultas, a linha mantém-se | Lógica, com histórico |
 
 3. **Seleção (Ex. 1.2):** os três cenários essenciais pedidos — título inválido (P-01), criação e consulta (P-02) e acesso de um utilizador sem autorização (P-03) — têm teste em todos os níveis aplicáveis (§3). Os restantes já tinham testes de integração dos incrementos anteriores; ficam registados para rastreabilidade.
-4. **Revisão humana:** a matriz e os pressupostos acima foram apresentados ao responsável do projeto antes de serem dados como fechados (ver §4).
+4. **Revisão humana:** a matriz e os pressupostos acima foram apresentados ao responsável do projeto, que os confirmou (§4).
 
 ## 2. Matriz de cenários
 
@@ -57,7 +57,7 @@ Plano de testes da funcionalidade **tarefas** (criar, consultar, editar, elimina
 ## 4. Decisões humanas
 
 - Plano da Ficha 04 aprovado pelo responsável (2026-11-05): Playwright como dependência de desenvolvimento, no Chrome instalado (sem descarregar browsers); o teste E2E lê a palavra-passe das contas fictícias do `.env` local e elimina o que cria; análise estática com o que existe no projeto (`npm audit`, `tsc`), sem ESLint nem Semgrep; revisão de código limitada ao diff desde a última revisão (`1679cc6..HEAD`).
-- Pressupostos da §1: [revisão humana: por confirmar pelo responsável]
+- Pressupostos da §1: confirmados pelo responsável (2026-11-05) — título inválido → 400 (contrato), sem autorização → 403 e inexistente → 404 (CAT06, RN38), e os restantes da tabela.
 - Revisões de código e de segurança: decisões 1a e 2a e a triagem dos achados (F24), em [`quality-security-review.md`](quality-security-review.md).
 
 ## 5. Execuções
