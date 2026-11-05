@@ -17,6 +17,7 @@ import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { Notice } from '../../components/Notice';
 import { SelectField } from '../../components/SelectField';
 import { STATE_LABEL, formatHours, type TaskState } from '../../domain/tasks';
+import { AssignmentPanel } from './AssignmentPanel';
 import { CriteriaPanel } from './CriteriaPanel';
 import { TaskBadges } from './TaskBadges';
 import { TaskForm, type TaskFormValues } from './TaskForm';
@@ -27,8 +28,8 @@ const errorText = (error: unknown) => (error instanceof ApiError ? error.message
 
 /**
  * Ecrã Detalhe da tarefa (Ficha PL 03, Ex. 5 e Ex. 7): dados, edição (com as estimativas, I5), estado,
- * prioridade, subtarefas, critérios de aceitação (I5) e eliminação com confirmação. Os participantes
- * são apresentados; a sua gestão chega no I6. Cada ação aparece a quem a matriz o permite (§3.1); a API
+ * prioridade, subtarefas, critérios de aceitação (I5), responsável e participantes (I6) e eliminação
+ * com confirmação. Cada ação aparece a quem a matriz o permite (§3.1); a API
  * decide sempre e a interface mostra o motivo de uma recusa.
  */
 export function TaskDetailPage() {
@@ -43,6 +44,7 @@ export function TaskDetailPage() {
   const [target, setTarget] = useState<TaskState | ''>('');
   const [notice, setNotice] = useState<string | undefined>((location.state as { notice?: string } | null)?.notice);
   const [criteriaResetKey, setCriteriaResetKey] = useState(0);
+  const [assignmentResetKey, setAssignmentResetKey] = useState(0);
 
   const task = useQuery({ queryKey: ['task', taskId], queryFn: () => getTask(taskId), retry: false });
   const projectId = task.data?.projectId;
@@ -56,9 +58,10 @@ export function TaskDetailPage() {
    * Ao iniciar uma operação, apaga-se o resultado das anteriores: uma mensagem de sucesso ou um erro
    * antigo não pode ficar visível ao lado do resultado da nova operação (Ex. 8, caso 09).
    */
-  const startOperation = (current: 'update' | 'move' | 'addSubtask' | 'remove' | 'criteria') => {
+  const startOperation = (current: 'update' | 'move' | 'addSubtask' | 'remove' | 'criteria' | 'assignment') => {
     setNotice(undefined);
     if (current !== 'criteria') setCriteriaResetKey((n) => n + 1);
+    if (current !== 'assignment') setAssignmentResetKey((n) => n + 1);
     if (current !== 'update') update.reset();
     if (current !== 'move') move.reset();
     if (current !== 'addSubtask') addSubtask.reset();
@@ -365,18 +368,12 @@ export function TaskDetailPage() {
         onOperationStart={() => startOperation('criteria')}
       />
 
-      <section className="panel" aria-labelledby="participants-title">
-        <h2 id="participants-title">Participantes</h2>
-        {t.participants.length === 0 ? (
-          <p className="muted">Sem participantes.</p>
-        ) : (
-          <ul>
-            {t.participants.map((p) => (
-              <li key={p.user.id}>{p.user.name}</li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <AssignmentPanel
+        task={t}
+        me={user}
+        resetKey={assignmentResetKey}
+        onOperationStart={() => startOperation('assignment')}
+      />
 
       {confirming ? (
         <ConfirmDialog

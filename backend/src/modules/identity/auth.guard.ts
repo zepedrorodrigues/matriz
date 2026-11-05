@@ -17,6 +17,7 @@ import { TokenVerifier } from './token-verifier.service';
 interface AuthRequest {
   headers: { authorization?: string };
   params: Record<string, string>;
+  query?: Record<string, unknown>;
   body?: unknown;
   user?: AuthenticatedUser;
 }
@@ -62,7 +63,9 @@ export class AuthGuard implements CanActivate {
 
     // Permissão declarada na rota (matriz §3.1); recusada antes do controlador, sem alterar dados (SEC02).
     const requirement = this.reflector.getAllAndOverride<AccessRequirement>(ACCESS_REQUIREMENT, [ctx.getHandler(), ctx.getClass()]);
-    if (requirement) await this.access.enforce(req.user, requirement, req.params, asRecord(req.body));
+    if (requirement) {
+      await this.access.enforce(req.user, requirement, req.params, asRecord(req.body), asRecord(req.query));
+    }
     return true;
   }
 }

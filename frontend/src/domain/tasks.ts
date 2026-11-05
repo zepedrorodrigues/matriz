@@ -89,3 +89,10 @@ export const formatHours = (hours: number) => String(hours).replace('.', ',');
 
 /** CA06.7: a descrição de um critério é obrigatória e não pode ter só espaços. */
 export const validateCriterionText = (text: string) => (text.trim() === '' ? CRITERION_MESSAGE : undefined);
+
+/**
+ * RN03, CA09.6: escolher alguém que não está entre os elegíveis da equipa responsável exige uma
+ * justificação. Sem utilizador escolhido (retirar o responsável), não.
+ */
+export const needsJustification = (userId: string, teamUserIds: readonly string[]) =>
+  userId !== '' && !teamUserIds.includes(userId);

@@ -161,6 +161,13 @@ export interface AcceptanceCriterion {
   metAt: string | null;
 }
 
+/** openapi.yaml: Participant (RN40) */
+export interface Participant {
+  user: UserSummary;
+  addedBy: UserSummary;
+  addedAt: string;
+}
+
 /** openapi.yaml: Task */
 export interface Task extends Omit<TaskSummary, 'subtaskCount'> {
   projectId: string;
@@ -171,7 +178,7 @@ export interface Task extends Omit<TaskSummary, 'subtaskCount'> {
   dueDate: string | null;
   blockReason: string | null;
   acceptanceCriteria: AcceptanceCriterion[];
-  participants: { user: UserSummary; addedBy: UserSummary; addedAt: string }[];
+  participants: Participant[];
   subtasks: TaskSummary[];
   createdBy: UserSummary;
   createdAt: string;
@@ -209,6 +216,9 @@ export interface TaskUpdate {
   priority?: Priority;
   estimateHours?: number | null;
   storyPoints?: number | null;
+  /** CA03.3, CA09.1: `null` retira o responsável; a justificação é obrigatória para outra equipa (RN03). */
+  assigneeId?: string | null;
+  assignmentJustification?: string;
 }
 
 const id = (value: string) => encodeURIComponent(value);
@@ -236,6 +246,14 @@ export const updateTask = (taskId: string, input: TaskUpdate) => apiRequest<Task
 export const changeTaskState = (taskId: string, state: TaskState) =>
   apiRequest<Task>('POST', `/tasks/${id(taskId)}/state`, { state });
 export const deleteTask = (taskId: string) => apiRequest<void>('DELETE', `/tasks/${id(taskId)}`);
+
+/** openapi.yaml: listEligibleUsers, listParticipants, addParticipant, removeParticipant (RN03, RN40). */
+export const listEligibleUsers = (taskId: string, scope: 'team' | 'all' = 'team') =>
+  apiGet<UserSummary[]>(`/tasks/${id(taskId)}/eligible-users?scope=${scope}`);
+export const addParticipant = (taskId: string, input: { userId: string; justification?: string }) =>
+  apiRequest<Participant>('POST', `/tasks/${id(taskId)}/participants`, input);
+export const removeParticipant = (taskId: string, userId: string) =>
+  apiRequest<void>('DELETE', `/tasks/${id(taskId)}/participants/${id(userId)}`);
 
 /** openapi.yaml: createAcceptanceCriterion, updateAcceptanceCriterion (RN13, RN24). */
 export const createCriterion = (taskId: string, input: { description: string }) =>

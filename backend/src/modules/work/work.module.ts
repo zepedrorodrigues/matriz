@@ -5,20 +5,29 @@ import { HierarchyController } from './hierarchy.controller';
 import { HierarchyService } from './hierarchy.service';
 import { CriteriaController } from './criteria.controller';
 import { CriteriaService } from './criteria.service';
+import { ParticipantsController } from './participants.controller';
+import { ParticipantsService } from './participants.service';
 import { TasksController } from './tasks.controller';
 import { TasksService } from './tasks.service';
 import { WorkItemLocatorService } from './work-item-locator.service';
 
 /**
- * Módulo Trabalho (architecture.md §5): hierarquia, tarefas e subtarefas, critérios de aceitação.
- * Depende do módulo Organização (equipas do projeto). Disponibiliza a interface WorkItemLocator, de `shared/`, ao
- * módulo Identidade e acesso, que a usa para aplicar a matriz de permissões sem ler estas tabelas.
+ * Módulo Trabalho (architecture.md §5): hierarquia, tarefas e subtarefas, critérios de aceitação,
+ * responsável e participantes. Depende do módulo Organização (equipas do projeto). Disponibiliza a
+ * interface WorkItemLocator, de `shared/`, ao módulo Identidade e acesso, que a usa para aplicar a
+ * matriz de permissões sem ler estas tabelas.
  */
 @Global()
 @Module({
   imports: [OrganizationModule],
-  controllers: [HierarchyController, TasksController, CriteriaController],
-  providers: [HierarchyService, TasksService, CriteriaService, { provide: WORK_ITEM_LOCATOR, useClass: WorkItemLocatorService }],
+  controllers: [HierarchyController, TasksController, CriteriaController, ParticipantsController],
+  providers: [
+    HierarchyService,
+    TasksService,
+    CriteriaService,
+    ParticipantsService,
+    { provide: WORK_ITEM_LOCATOR, useClass: WorkItemLocatorService },
+  ],
   exports: [WORK_ITEM_LOCATOR],
 })
 export class WorkModule {}

@@ -1,6 +1,7 @@
-import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import type { AccessRequirement, ProjectAction, TaskAction } from '../../shared/auth/access.decorators';
 import type { AuthenticatedUser } from '../../shared/auth/auth.decorators';
+import { USER_DIRECTORY, type UserDirectory } from '../../shared/ports/user-directory';
 import {
   DEVELOPMENT_STATES,
   TASK_STATES,
@@ -23,6 +24,10 @@ const MEMBER_STATES: readonly TaskState[] = ['ready_for_development', 'in_develo
  */
 type TaskRole = 'admin' | 'manager' | 'leader' | 'member' | 'viewer' | 'none';
 const LEADS_TASK: readonly TaskRole[] = ['admin', 'manager', 'leader'];
+/** RN03: só o administrador e o gestor do projeto atribuem a alguém de outra equipa, com justificação. */
+const CROSSES_TEAMS: readonly TaskRole[] = ['admin', 'manager'];
+
+const hasText = (value: unknown) => typeof value === 'string' && value.trim() !== '';
 
 /**
  * Avaliação da matriz de permissões (requirements.md §3.1, SEC02), consultando o módulo Organização
@@ -34,6 +39,7 @@ export class AccessService {
   constructor(
     private readonly organization: OrganizationReader,
     @Inject(WORK_ITEM_LOCATOR) private readonly work: WorkItemLocator,
+    @Inject(USER_DIRECTORY) private readonly users: UserDirectory,
   ) {}
 
   /**
@@ -60,13 +66,15 @@ export class AccessService {
   /**
    * Aplica a permissão declarada numa rota. Recusa sem alterar dados (SEC02): o guarda corre antes do
    * controlador. Identificador mal formado, elemento inexistente ou eliminado → 404 (RN38).
-   * O corpo do pedido só é lido quando a regra depende dele (equipa da nova tarefa, prioridade, estado).
+   * O corpo do pedido só é lido quando a regra depende dele (equipa da nova tarefa, prioridade, estado,
+   * responsável, participante); a query, só para o `scope` dos utilizadores elegíveis.
    */
   async enforce(
     user: AuthenticatedUser,
     requirement: AccessRequirement,
     params: Record<string, string>,
     body: Record<string, unknown> = {},
+    query: Record<string, unknown> = {},
   ): Promise<void> {
     switch (requirement.kind) {
       case 'createProject':
@@ -83,7 +91,7 @@ export class AccessService {
         return this.enforceProject(user, 'createWork', await this.existingProject(projectId), body);
       }
       case 'task':
-        return this.enforceTask(user, requirement.action, await this.existingTask(params[requirement.param]), body);
+        return this.enforceTask(user, requirement.action, await this.existingTask(params[requirement.param]), body, query);
     }
   }
 
@@ -125,8 +133,8 @@ export class AccessService {
    * da tarefa principal (RN22). Se o corpo não a identificar, a validação responde depois (400/422).
    */
   private async enforceCreateTask(user: AuthenticatedUser, projectId: string, body: Record<string, unknown>): Promise<void> {
-    if (await this.canManageProject(user, projectId)) return;
-    if (!(await this.canViewProject(user, projectId))) throw new ForbiddenException('Não tem acesso a este projeto.');
+    const manages = await this.canManageProject(user, projectId);
+    if (!manages && !(await this.canViewProject(user, projectId))) throw new ForbiddenException('Não tem acesso a este projeto.');
 
     let teamId: string | undefined;
     if (isUuid(body.teamId)) teamId = body.teamId;
@@ -134,9 +142,46 @@ export class AccessService {
       const parent = await this.work.locateTask(body.parentTaskId);
       if (parent?.projectId === projectId) teamId = parent.teamId;
     }
-    if (teamId && !(await this.organization.teamRole(user.id, teamId))) {
+    const teamRole = teamId ? await this.organization.teamRole(user.id, teamId) : null;
+    if (!manages && teamId && !teamRole) {
       throw new ForbiddenException('Só pode criar tarefas no backlog de uma equipa a que pertence (RN21).');
     }
+
+    // Decisão 4a (F15): na criação, o responsável é um membro da equipa responsável, atribuído por quem
+    // atribui tarefas (§3.1); alguém de outra equipa só na edição, com justificação (RN03).
+    if (isUuid(body.assigneeId) && teamId) {
+      if (!manages && teamRole !== 'leader') {
+        throw new ForbiddenException('Só o líder da equipa, os gestores do projeto e o administrador atribuem tarefas (CA03.6).');
+      }
+      await this.requireActiveUser(body.assigneeId);
+      if (!(await this.organization.teamRole(body.assigneeId, teamId))) {
+        throw new UnprocessableEntityException(
+          'Na criação, o responsável pela execução tem de ser da equipa responsável; a atribuição a alguém de outra equipa faz-se na edição, com justificação (RN03).',
+        );
+      }
+    }
+  }
+
+  /**
+   * RN03, RN40, CA03.15, CA09.1, CA09.6: o utilizador indicado tem de existir e estar ativo; se não for
+   * da equipa responsável, só o administrador e o gestor o escolhem, e com justificação (422).
+   */
+  private async enforceEligible(role: TaskRole, task: TaskLocation, userId: string, justification: unknown): Promise<void> {
+    await this.requireActiveUser(userId);
+    if (await this.organization.teamRole(userId, task.teamId)) return;
+    if (!CROSSES_TEAMS.includes(role)) {
+      throw new UnprocessableEntityException(
+        'Este utilizador não é da equipa responsável: só um gestor do projeto ou o administrador o pode escolher, com justificação (RN03).',
+      );
+    }
+    if (!hasText(justification)) {
+      throw new UnprocessableEntityException('Indique a justificação para escolher alguém de outra equipa (RN03).');
+    }
+  }
+
+  private async requireActiveUser(userId: string): Promise<void> {
+    const [found] = await this.users.activeUsers([userId]);
+    if (!found) throw new UnprocessableEntityException('O utilizador indicado não existe ou está desativado.');
   }
 
   private async enforceTask(
@@ -144,6 +189,7 @@ export class AccessService {
     action: TaskAction,
     task: TaskLocation,
     body: Record<string, unknown>,
+    query: Record<string, unknown> = {},
   ): Promise<void> {
     const role = await this.taskRole(user, task);
     if (role === 'none') throw new ForbiddenException('Não tem acesso a esta tarefa.');
@@ -175,6 +221,15 @@ export class AccessService {
             'Depois de a tarefa entrar em «A desenvolver», só o líder da equipa, os gestores do projeto e o administrador alteram as estimativas.',
           );
         }
+        // §3.1, CA03.3, CA03.6: atribuem o responsável o líder da equipa, o gestor e o administrador.
+        if (body.assigneeId !== undefined) {
+          if (!LEADS_TASK.includes(role)) {
+            throw new ForbiddenException(
+              'Só o líder da equipa responsável, os gestores do projeto e o administrador atribuem tarefas (CA03.6).',
+            );
+          }
+          if (isUuid(body.assigneeId)) await this.enforceEligible(role, task, body.assigneeId, body.assignmentJustification);
+        }
         return;
       case 'changeState': {
         if (LEADS_TASK.includes(role)) return;
@@ -203,6 +258,25 @@ export class AccessService {
           throw new ForbiddenException(
             'O membro só regista o cumprimento dos critérios das tarefas que lhe estão atribuídas.',
           );
+        }
+        return;
+      case 'listEligible':
+        // RN03: só o gestor e o administrador consultam os utilizadores de outras equipas.
+        if (query.scope === 'all' && !CROSSES_TEAMS.includes(role)) {
+          throw new ForbiddenException('Só os gestores do projeto e o administrador consultam os utilizadores de outras equipas.');
+        }
+        return;
+      case 'addParticipant':
+      case 'removeParticipant':
+        // RN40: gerem os participantes o líder da equipa responsável, o gestor e o administrador; o líder
+        // remove qualquer participante (decisão 3a, F15) e só associa membros da sua equipa.
+        if (!LEADS_TASK.includes(role)) {
+          throw new ForbiddenException(
+            'Só o líder da equipa responsável, os gestores do projeto e o administrador gerem os participantes.',
+          );
+        }
+        if (action === 'addParticipant' && isUuid(body.userId)) {
+          await this.enforceEligible(role, task, body.userId, body.justification);
         }
         return;
       case 'delete':

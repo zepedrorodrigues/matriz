@@ -60,3 +60,9 @@ export const canDefineCriteria = (me: CurrentUser, task: Task) =>
 /** §3.1: registar o cumprimento — o membro, só nas tarefas que lhe estão atribuídas. */
 export const canRecordCriteria = (me: CurrentUser, task: Task) =>
   leadsTask(me, task) || (roleIn(me, task.teamId) !== undefined && task.assignee?.id === me.id);
+
+/** §3.1, CA03.3, CA03.6: atribuem o responsável e gerem os participantes o administrador, o gestor e o líder (RN40). */
+export const canAssignTask = leadsTask;
+
+/** RN03: só o administrador e o gestor escolhem alguém de outra equipa, com justificação. */
+export const canChooseOtherTeams = (me: CurrentUser, task: Task) => canManageProject(me, task.projectId);

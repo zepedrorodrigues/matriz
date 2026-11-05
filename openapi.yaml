@@ -556,7 +556,10 @@ paths:
         `in_planning` e a prioridade, se omitida, é `medium` (RN39, CA03.11). O criador vem do token.
         Responde 422 quando o épico não é do projeto, a equipa não está associada ao projeto ou está
         desativada, a tarefa principal é de outro projeto ou é ela própria uma subtarefa (RN12), ou a
-        equipa indicada numa subtarefa difere da da tarefa principal (CA02.8).
+        equipa indicada numa subtarefa difere da da tarefa principal (CA02.8). O responsável pela
+        execução (`assigneeId`), na criação, é atribuído pelo líder da equipa, pelo gestor ou pelo
+        administrador (o membro recebe 403) e tem de ser um membro ativo da equipa responsável (422);
+        a atribuição a alguém de outra equipa faz-se na edição, com justificação (RN03).
       parameters:
         - $ref: '#/components/parameters/ProjectId'
       requestBody:
@@ -625,7 +628,11 @@ paths:
         o estado atual); cada estimativa muda sem alterar a outra (CA03.5); numa tarefa com
         subtarefas, a estimativa é a soma das subtarefas e não se define diretamente (RN22, 422);
         prioridade (RN39, CA03.12);
-        responsável pela execução segundo §3.1 e RN03; prazo pelo líder ou gestor (RN29); bloqueio
+        responsável pela execução (`assignee_changed` no histórico, RN15): atribuem-no o líder da
+        equipa, o gestor e o administrador (o membro recebe 403, CA03.6); responde 422 quando o
+        utilizador não existe ou está desativado, quando o líder escolhe alguém de outra equipa
+        (CA03.15) ou quando falta a justificação para outra equipa (RN03, CA09.6); `null` retira-o;
+        a equipa responsável não muda (RN20); prazo pelo líder ou gestor (RN29); bloqueio
         com motivo obrigatório (RN28). A equipa só muda por transferência (RN20) e o estado por
         `POST /tasks/{taskId}/state`.
       parameters:
@@ -792,7 +799,8 @@ paths:
       summary: Consultar os utilizadores elegíveis para uma tarefa
       description: |
         Utilizadores que podem ser responsável pela execução ou participantes. Com `scope=team`
-        (por omissão), os membros ativos da equipa responsável. Com `scope=all`, todos os
+        (por omissão), os membros ativos da equipa responsável, para quem vê a tarefa. Com
+        `scope=all`, todos os
         utilizadores ativos; só para o gestor de projeto e o administrador, que podem atribuir
         a alguém de outra equipa com justificação (RN03, RN40).
       parameters:
@@ -851,7 +859,10 @@ paths:
       description: |
         Líder da equipa responsável (só membros dessa equipa), gestor do projeto ou administrador
         (também de outra equipa, com justificação: RN03). Associar duas vezes o mesmo utilizador
-        é recusado com 409 (CA03.13–CA03.15).
+        é recusado com 409 (CA03.13–CA03.15). Responde 422 quando o utilizador não existe ou está
+        desativado, quando o líder escolhe alguém de outra equipa ou quando falta a justificação.
+        O responsável pela execução também pode ser participante. Fica no histórico
+        (`participant_added`, com a justificação).
       parameters:
         - $ref: '#/components/parameters/TaskId'
       requestBody:
@@ -885,7 +896,10 @@ paths:
       tags: [Trabalho]
       operationId: removeParticipant
       summary: Remover um participante
-      description: Com registo no histórico (CA03.16).
+      description: |
+        O líder da equipa responsável (qualquer participante, também de outra equipa), o gestor do
+        projeto ou o administrador. Com registo no histórico (`participant_removed`, CA03.16). Um
+        utilizador que não é participante responde 404.
       parameters:
         - $ref: '#/components/parameters/TaskId'
         - $ref: '#/components/parameters/UserId'
@@ -1459,7 +1473,7 @@ components:
         assigneeId:
           type: string
           format: uuid
-          description: Responsável pela execução (RN15).
+          description: Responsável pela execução (RN15); na criação, um membro da equipa responsável.
         priority:
           $ref: '#/components/schemas/Priority'
         estimateHours:
@@ -1495,7 +1509,10 @@ components:
         assignmentJustification:
           type: string
           minLength: 1
-          description: Obrigatória quando o responsável pela execução é de outra equipa (RN03, CA09.6).
+          pattern: \S
+          description: |
+            Obrigatória quando o responsável pela execução é de outra equipa (RN03, CA09.6); não pode
+            ter só espaços e só acompanha `assigneeId`.
         estimateHours:
           type: [number, 'null']
           minimum: 0
@@ -1574,7 +1591,8 @@ components:
         justification:
           type: string
           minLength: 1
-          description: Obrigatória quando o utilizador é de outra equipa (RN03).
+          pattern: \S
+          description: Obrigatória quando o utilizador é de outra equipa (RN03); não pode ter só espaços.
 
     Participant:
       type: object

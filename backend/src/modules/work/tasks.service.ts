@@ -164,10 +164,11 @@ export class TasksService {
       const priority = dto.priority ?? 'medium';
       const estimateHours = dto.estimateHours ?? null;
       const storyPoints = dto.storyPoints ?? null;
+      const assigneeId = dto.assigneeId ?? null;
       const [row] = await tx.query(
         `INSERT INTO work.task (epic_id, parent_task_id, title, description, team_id, original_team_id, priority,
-                                estimate_hours, story_points, created_by)
-         VALUES ($1, $2, $3, $4, $5, $5, $6::work.task_priority, $7, $8, $9) RETURNING id`,
+                                estimate_hours, story_points, assignee_id, created_by)
+         VALUES ($1, $2, $3, $4, $5, $5, $6::work.task_priority, $7, $8, $9, $10) RETURNING id`,
         [
           dto.parentTaskId ? null : dto.epicId,
           dto.parentTaskId ?? null,
@@ -177,6 +178,7 @@ export class TasksService {
           priority,
           estimateHours,
           storyPoints,
+          assigneeId,
           user.id,
         ],
       );
@@ -194,6 +196,7 @@ export class TasksService {
             teamId,
             estimateHours,
             storyPoints,
+            assigneeId,
             ...(dto.parentTaskId ? { parentTaskId: dto.parentTaskId } : { epicId: dto.epicId }),
           },
           authorId: user.id,
@@ -276,7 +279,9 @@ export class TasksService {
    * CA03.12, CA03.18, D49: altera só os campos enviados; a descrição vazia ou `null` fica sem valor.
    * CA03.5: cada estimativa muda sem alterar a outra; a alteração fica no histórico como
    * `estimate_changed` (RN10). RN22: numa tarefa com subtarefas, a estimativa é a soma das das
-   * subtarefas e não se define diretamente (422).
+   * subtarefas e não se define diretamente (422). CA03.3, CA09.1: o responsável pela execução muda sem
+   * mudar a equipa responsável (RN20); fica no histórico como `assignee_changed`, com a justificação
+   * quando é de outra equipa (RN03, RN15). A elegibilidade foi verificada antes pelo guarda.
    */
   async update(user: AuthenticatedUser, taskId: string, dto: UpdateTaskDto): Promise<Task> {
     await this.db.transaction(async (tx) => {
@@ -298,6 +303,7 @@ export class TasksService {
         priority: dto.priority ?? current.priority,
         estimateHours: dto.estimateHours === undefined ? current.estimateHours : dto.estimateHours,
         storyPoints: dto.storyPoints === undefined ? current.storyPoints : dto.storyPoints,
+        assigneeId: dto.assigneeId === undefined ? current.assigneeId : dto.assigneeId,
       };
       const diff = (keys: readonly (keyof typeof next)[]) => {
         const oldValue: Record<string, unknown> = {};
@@ -312,12 +318,13 @@ export class TasksService {
       };
       const fields = diff(['title', 'description', 'priority']);
       const estimates = diff(['estimateHours', 'storyPoints']);
-      if (!fields && !estimates) return;
+      const assignee = diff(['assigneeId']);
+      if (!fields && !estimates && !assignee) return;
       await tx.query(
         `UPDATE work.task SET title = $2, description = $3, priority = $4::work.task_priority,
-                              estimate_hours = $5, story_points = $6
+                              estimate_hours = $5, story_points = $6, assignee_id = $7
          WHERE id = $1`,
-        [taskId, next.title, next.description, next.priority, next.estimateHours, next.storyPoints],
+        [taskId, next.title, next.description, next.priority, next.estimateHours, next.storyPoints, next.assigneeId],
       );
       if (fields) {
         await this.events.publish({ entityType: 'task', entityId: taskId, eventType: 'updated', ...fields, authorId: user.id }, tx);
@@ -325,6 +332,24 @@ export class TasksService {
       if (estimates) {
         await this.events.publish(
           { entityType: 'task', entityId: taskId, eventType: 'estimate_changed', ...estimates, authorId: user.id },
+          tx,
+        );
+      }
+      if (assignee) {
+        const crossTeam =
+          next.assigneeId !== null && !(await this.organization.teamRole(next.assigneeId, current.teamId));
+        await this.events.publish(
+          {
+            entityType: 'task',
+            entityId: taskId,
+            eventType: 'assignee_changed',
+            oldValue: assignee.oldValue,
+            newValue: {
+              ...assignee.newValue,
+              ...(crossTeam ? { crossTeam: true, justification: dto.assignmentJustification } : {}),
+            },
+            authorId: user.id,
+          },
           tx,
         );
       }
@@ -439,14 +464,16 @@ export class TasksService {
     state: TaskState;
     estimateHours: number | null;
     storyPoints: number | null;
+    assigneeId: string | null;
+    teamId: string;
   }> {
     const [row] = await tx.query(
-      `SELECT title, description, priority, state, estimate_hours, story_points
+      `SELECT title, description, priority, state, estimate_hours, story_points, assignee_id, team_id
        FROM work.task WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`,
       [taskId],
     );
     if (!row) throw new NotFoundException('A tarefa não existe.');
-    const { estimate_hours, story_points, ...rest } = row;
-    return { ...rest, estimateHours: hours(estimate_hours), storyPoints: story_points };
+    const { estimate_hours, story_points, assignee_id, team_id, ...rest } = row;
+    return { ...rest, estimateHours: hours(estimate_hours), storyPoints: story_points, assigneeId: assignee_id, teamId: team_id };
   }
 }

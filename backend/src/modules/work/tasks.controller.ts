@@ -53,9 +53,14 @@ export class TasksController {
   @Patch('tasks/:taskId')
   @TaskAccess('edit')
   update(@CurrentUser() user: AuthenticatedUser, @Param('taskId') taskId: string, @Body() dto: UpdateTaskDto): Promise<Task> {
-    const fields = [dto.title, dto.description, dto.priority, dto.estimateHours, dto.storyPoints];
+    const fields = [dto.title, dto.description, dto.priority, dto.estimateHours, dto.storyPoints, dto.assigneeId];
     if (fields.every((value) => value === undefined)) {
       throw new ValidationFailedException([{ field: '', message: 'Indique pelo menos um campo a alterar.' }]);
+    }
+    if (dto.assignmentJustification !== undefined && !dto.assigneeId) {
+      throw new ValidationFailedException([
+        { field: 'assignmentJustification', message: 'A justificação acompanha a atribuição de um responsável (assigneeId).' },
+      ]);
     }
     return this.tasks.update(user, taskId, dto);
   }

@@ -104,6 +104,16 @@ export class OrganizationReader {
     return (row?.role as TeamRole | undefined) ?? null;
   }
 
+  /** Membros (líderes incluídos) de uma equipa ativa; vazio se a equipa estiver desativada (RN40). */
+  async memberIds(teamId: string): Promise<string[]> {
+    const rows: { user_id: string }[] = await this.db.query(
+      `SELECT m.user_id FROM organization.team_membership m JOIN organization.team t ON t.id = m.team_id AND t.active
+       WHERE m.team_id = $1`,
+      [teamId],
+    );
+    return rows.map((r) => r.user_id);
+  }
+
   /** É líder de uma equipa ativa associada ao projeto (§3.1: criar objetivos e épicos). */
   async leadsTeamOnProject(userId: string, projectId: string): Promise<boolean> {
     const [row] = await this.db.query(

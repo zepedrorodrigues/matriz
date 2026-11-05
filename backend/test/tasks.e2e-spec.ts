@@ -204,7 +204,7 @@ describe('I4 — hierarquia e tarefas', () => {
     it('Ex. 3.3 — o criador não pode ser indicado no pedido; campos de incrementos seguintes ainda não são aceites (400)', async () => {
       const before = await taskCount();
       await api('leaderA').post(`/api/projects/${projectId}/tasks`, { epicId, teamId: teamA, title: 'Com autor', createdBy: users.admin.id }).expect(400);
-      await api('leaderA').post(`/api/projects/${projectId}/tasks`, { epicId, teamId: teamA, title: 'Com responsável', assigneeId: users.memberA.id }).expect(400);
+      await api('leaderA').post(`/api/projects/${projectId}/tasks`, { epicId, teamId: teamA, title: 'Com prazo', dueDate: '2026-12-31' }).expect(400);
       expect(await taskCount()).toBe(before);
     });
   });

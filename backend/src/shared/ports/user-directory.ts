@@ -6,6 +6,11 @@
 export interface UserDirectory {
   /** Nome de cada utilizador encontrado, por id. */
   namesByIds(ids: string[]): Promise<Map<string, string>>;
+  /**
+   * Utilizadores ativos, ordenados pelo nome: os indicados ou, sem `ids`, todos (utilizadores
+   * elegíveis, RN03, RN40). Um utilizador desativado nunca é elegível.
+   */
+  activeUsers(ids?: string[]): Promise<{ id: string; name: string }[]>;
 }
 
 export const USER_DIRECTORY = Symbol('USER_DIRECTORY');

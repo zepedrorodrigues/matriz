@@ -11,6 +11,7 @@ import {
   STORY_POINTS,
   formatHours,
   lifecycleTargets,
+  needsJustification,
   parseEstimateHours,
   validateCriterionText,
   validateTaskText,
@@ -70,4 +71,11 @@ test('CA06.7 — a descrição de um critério é obrigatória e não pode ter s
   assert.ok(validateCriterionText(''));
   assert.ok(validateCriterionText('   '));
   assert.equal(validateCriterionText('  Exporta em PDF '), undefined);
+});
+
+test('RN03, CA09.6 — escolher alguém fora dos elegíveis da equipa exige justificação; retirar o responsável não', () => {
+  const team = ['a', 'b'];
+  assert.equal(needsJustification('a', team), false);
+  assert.equal(needsJustification('z', team), true);
+  assert.equal(needsJustification('', team), false);
 });
