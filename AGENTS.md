@@ -78,3 +78,19 @@ No plano e no fim de cada tarefa, o agente comunica de forma explícita:
 - **Pressupostos** — as interpretações feitas e em que se baseiam. Um pressuposto que determine o resultado e não esteja documentado nem aprovado é uma discrepância (§3).
 - **Alterações** — os ficheiros alterados e o que mudou, com referência aos IDs.
 - **Verificações** — o que foi verificado, como e com que resultado. O que não foi possível verificar é dito como tal.
+
+## 9. Comandos de execução e verificação
+
+A preparação do ambiente (PostgreSQL, Keycloak, `.env`) está no `README.md` › *Desenvolvimento*. A partir da raiz do repositório:
+
+| Para | Comando | Notas |
+|---|---|---|
+| Instalar dependências | `npm install` | Workspaces `backend` e `frontend`. |
+| Criar ou atualizar o esquema | `npm run db:migrate` | Migrations em `backend/migrations`. Altera a base `matriz`: só com autorização (§6). |
+| Dados de demonstração | `npm run db:seed` | Idempotente, nunca apaga dados. Também precisa de autorização (§6). |
+| Arrancar | `./scripts/keycloak-dev.ps1`, `npm run dev:backend`, `npm run dev:frontend` | Um terminal para cada. API em `:3000/api`, aplicação em `:5173`. |
+| Verificar os tipos | `npx tsc --noEmit -p tsconfig.json` | Em `backend/` e em `frontend/`. |
+| Testes | `npm test` | Backend (Jest; recria a base `matriz_test`) e frontend (`node:test`). Um ficheiro: `npx jest test/<ficheiro>` em `backend/`. |
+| Compilar | `npm run build` | |
+
+Antes de dar uma tarefa por concluída: tipos sem erros, `npm test` a passar e, quando a tarefa muda a interface, a verificação no browser. Os resultados registam-se em `docs/implementation-plan.md` §6 e, na entrega, em `docs/verification.md`. Os testes que verificam um critério de aceitação têm o seu ID no nome (p. ex. `CA03.18`).

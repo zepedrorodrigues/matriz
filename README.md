@@ -107,9 +107,30 @@ npm run dev:backend           # API em http://localhost:3000/api (GET /api/healt
 npm run dev:frontend          # aplicação em http://localhost:5173; /api encaminhado para o backend
 ```
 
-**Outros comandos:** `npm test` (testes de API do backend, que recriam a base `matriz_test`, e testes do frontend), `npm run build`, `npm run migration:revert -w backend`.
+**Testes:**
 
-As contas fictícias do Keycloak (`admin`, `gestor`, `ana`, `rui`, `bruno`, `sem-conta`, `sem-acesso`, com e-mail `@matriz.example`) usam a palavra-passe `MATRIZ_DEMO_PASSWORD` do `.env`. A `sem-acesso` nunca tem conta na Matriz: serve para testar um token válido sem conta (CAT02). A `sem-conta` também não vem no seed: serve para o administrador lhe criar a conta em Administração › Contas e verificar a ligação no primeiro acesso (CA01.13); depois disso, entra normalmente.
+```powershell
+npm test                      # backend e frontend
+npm test -w backend           # testes de API (Jest + supertest); recriam a base matriz_test com as migrations
+npm test -w frontend          # regras da interface (node:test), sem browser
+npx jest test/tasks.e2e-spec.ts   # um ficheiro, a partir de backend/
+```
+
+Os testes de API não precisam do Keycloak: assinam os próprios tokens com uma chave gerada no arranque. O resultado de cada verificação está em [`docs/verification.md`](docs/verification.md).
+
+**Outros comandos:** `npm run build` (backend e frontend), `npm start -w backend` (API compilada, a partir de `backend/dist`), `npm run migration:revert -w backend`.
+
+As contas fictícias do Keycloak (`admin`, `gestor`, `ana`, `rui`, `bruno`, `sem-conta`, `sem-acesso`, com e-mail `@matriz.example`) usam a palavra-passe `MATRIZ_DEMO_PASSWORD` do `.env`.
+
+| Conta (Keycloak) | Na Matriz (seed) | Serve para |
+|---|---|---|
+| `admin` | Alice Admin — papel de administrador; gere o projeto Arquivo Digital | Administração (contas, equipas); todas as permissões de gestor |
+| `gestor` | Gonçalo Gestor — gere o projeto Portal Interno, sem equipa | Gestor de projeto (transferências, atribuição a outras equipas) |
+| `ana` | Ana Exemplo — líder da Equipa Alfa (Portal Interno) | Líder: sprints, capacidade, atribuição, alertas |
+| `rui` | Rui Exemplo — membro da Equipa Alfa | Membro: tarefas atribuídas, bloqueios, comentários |
+| `bruno` | Bruno Beta — líder da Equipa Beta (Arquivo Digital) | Segundo utilizador com acessos distintos (Ex. 8, caso 08) |
+| `sem-conta` | — (criada pelo administrador) | Ligação da conta no primeiro acesso (CA01.13) |
+| `sem-acesso` | — (nunca tem conta) | Token válido sem conta → 403 (CAT02) | A `sem-acesso` nunca tem conta na Matriz: serve para testar um token válido sem conta (CAT02). A `sem-conta` também não vem no seed: serve para o administrador lhe criar a conta em Administração › Contas e verificar a ligação no primeiro acesso (CA01.13); depois disso, entra normalmente.
 
 Se o Keycloak correr noutra porta (`./scripts/keycloak-dev.ps1 -Port 8180`), `OIDC_ISSUER` e `VITE_OIDC_AUTHORITY` no `.env` têm de usar essa porta.
 
@@ -137,7 +158,7 @@ Pedidos diretos à API em desenvolvimento: o cliente `matriz-dev-cli` do realm a
 - [x] Ex. 5 — `AGENTS.md`
 - [x] Ex. 6 — Revisão crítica (human-in-the-loop) — Specification Pack v0.3, ver [`docs/review.md`](docs/review.md)
 - [x] Aula 2 (Ficha PL 02) — Architecture Pack: arquitetura, modelo de dados, API e wireframe, com revisão cruzada (human-in-the-loop), ver [`docs/review.md`](docs/review.md) §3
-- [ ] Aula 3 (Ficha PL 03) — Implementação do MVP: plano em [`docs/implementation-plan.md`](docs/implementation-plan.md)
+- [x] Aula 3 (Ficha PL 03) — Implementação do MVP: plano em [`docs/implementation-plan.md`](docs/implementation-plan.md), verificação em [`docs/verification.md`](docs/verification.md). Fica por fazer o I13 (consulta do histórico), fora do âmbito da ficha.
 
 **Em números:** 42 regras de negócio · 36 requisitos funcionais · 13 requisitos não funcionais · 10 user stories · 116 critérios de aceitação (110 nas US e 6 transversais), todos verificáveis · sem decisões funcionais pendentes.
 
