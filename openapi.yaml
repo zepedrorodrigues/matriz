@@ -944,8 +944,9 @@ paths:
       summary: Comentar uma tarefa
       description: |
         Quem vê o projeto pode comentar (RN41, CA10.1, CA10.4). O autor e a data/hora são definidos
-        pelo sistema; outros campos enviados, como um autor, são ignorados (CA10.5). Os comentários
-        não são editados nem eliminados.
+        pelo sistema; outros campos enviados, como um autor, são ignorados (CA10.5) — exceção, decidida
+        pelo humano (F16), à recusa de campos desconhecidos no resto da API. O texto é guardado sem os
+        espaços no início e no fim. Os comentários não são editados nem eliminados.
       parameters:
         - $ref: '#/components/parameters/TaskId'
       requestBody:
@@ -1731,7 +1732,9 @@ components:
           minLength: 1
           maxLength: 2000
           pattern: \S
-          description: 1 a 2000 caracteres, não só espaços (RN41); sem motivos pessoais (SEC06).
+          description: |
+            1 a 2000 caracteres, contados depois de retirar os espaços no início e no fim, não só
+            espaços (RN41); sem motivos pessoais (SEC06).
 
     Comment:
       type: object

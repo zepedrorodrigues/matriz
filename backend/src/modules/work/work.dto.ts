@@ -174,6 +174,22 @@ export class EligibleQuery {
   scope?: 'team' | 'all';
 }
 
+/** Paginação da listagem de comentários (CA10.2, D46). */
+export class ListCommentsQuery {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'A página tem de ser um número inteiro.' })
+  @Min(1, { message: 'A página começa em 1.' })
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'O tamanho da página tem de ser um número inteiro.' })
+  @Min(1, { message: 'O tamanho da página tem de estar entre 1 e 100.' })
+  @Max(100, { message: 'O tamanho da página tem de estar entre 1 e 100.' })
+  pageSize?: number;
+}
+
 /** openapi.yaml: AcceptanceCriterionInput (CA06.7). */
 export class CriterionInputDto {
   @Transform(trim)

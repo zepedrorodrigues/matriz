@@ -10,9 +10,11 @@ import { test } from 'node:test';
 import {
   STORY_POINTS,
   formatHours,
+  lastPage,
   lifecycleTargets,
   needsJustification,
   parseEstimateHours,
+  validateCommentText,
   validateCriterionText,
   validateTaskText,
 } from '../src/domain/tasks.ts';
@@ -78,4 +80,16 @@ test('RN03, CA09.6 — escolher alguém fora dos elegíveis da equipa exige just
   assert.equal(needsJustification('a', team), false);
   assert.equal(needsJustification('z', team), true);
   assert.equal(needsJustification('', team), false);
+});
+
+test('CA10.3, RN41 — comentário vazio, só com espaços ou com mais de 2000 caracteres é recusado; os limites contam sem os espaços', () => {
+  for (const text of ['', '   ', '\n\t ', 'x'.repeat(2001)]) assert.ok(validateCommentText(text), 'devia ser recusado');
+  assert.equal(validateCommentText('k'), undefined);
+  assert.equal(validateCommentText(`  ${'z'.repeat(2000)}  `), undefined);
+});
+
+test('CA10.2 — o comentário mais recente fica na última página', () => {
+  assert.equal(lastPage(0, 20), 1);
+  assert.equal(lastPage(20, 20), 1);
+  assert.equal(lastPage(21, 20), 2);
 });

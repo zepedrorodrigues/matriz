@@ -255,6 +255,27 @@ export const addParticipant = (taskId: string, input: { userId: string; justific
 export const removeParticipant = (taskId: string, userId: string) =>
   apiRequest<void>('DELETE', `/tasks/${id(taskId)}/participants/${id(userId)}`);
 
+/** openapi.yaml: Comment, CommentPage (RN41) */
+export interface Comment {
+  id: string;
+  taskId: string;
+  author: UserSummary;
+  body: string;
+  createdAt: string;
+}
+export interface CommentPage {
+  page: number;
+  pageSize: number;
+  total: number;
+  items: Comment[];
+}
+
+/** openapi.yaml: listComments, addComment (CA10.1, CA10.2). O autor e a data vêm do backend (CA10.5). */
+export const listComments = (taskId: string, page: number, pageSize = 20) =>
+  apiGet<CommentPage>(`/tasks/${id(taskId)}/comments?page=${page}&pageSize=${pageSize}`);
+export const addComment = (taskId: string, body: string) =>
+  apiRequest<Comment>('POST', `/tasks/${id(taskId)}/comments`, { body });
+
 /** openapi.yaml: createAcceptanceCriterion, updateAcceptanceCriterion (RN13, RN24). */
 export const createCriterion = (taskId: string, input: { description: string }) =>
   apiRequest<AcceptanceCriterion>('POST', `/tasks/${id(taskId)}/acceptance-criteria`, input);

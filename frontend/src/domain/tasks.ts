@@ -96,3 +96,14 @@ export const validateCriterionText = (text: string) => (text.trim() === '' ? CRI
  */
 export const needsJustification = (userId: string, teamUserIds: readonly string[]) =>
   userId !== '' && !teamUserIds.includes(userId);
+
+export const COMMENT_MESSAGE = 'O comentário tem de ter entre 1 e 2000 caracteres e não pode ter só espaços.';
+
+/** CA10.3, RN41: as mesmas regras da API, contadas depois de retirar os espaços no início e no fim. */
+export function validateCommentText(text: string): string | undefined {
+  const length = text.trim().length;
+  return length < 1 || length > 2000 ? COMMENT_MESSAGE : undefined;
+}
+
+/** Página onde fica o comentário número `total` (o mais recente), por ordem cronológica (CA10.2). */
+export const lastPage = (total: number, pageSize: number) => Math.max(1, Math.ceil(total / pageSize));
