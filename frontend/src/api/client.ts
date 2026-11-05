@@ -127,6 +127,44 @@ export function listUsers(params: { q?: string; page?: number; pageSize?: number
 }
 export const createUser = (input: { name: string; workEmail: string }) => apiRequest<UserAccount>('POST', '/users', input);
 
+/** openapi.yaml: TeamSummary, TeamDetail, UserMemberships (US01; RN06, RN33, RN34; F18). */
+export type TeamRole = 'leader' | 'member';
+export interface TeamSummary {
+  id: string;
+  name: string;
+  active: boolean;
+}
+export interface TeamDetail extends TeamSummary {
+  deactivatedAt: string | null;
+  createdAt: string;
+  openTaskCount: number;
+  members: { user: UserSummary; role: TeamRole; allocationPct: number; activeTotal: number }[];
+}
+export interface Membership {
+  teamId: string;
+  role: TeamRole;
+  allocationPct: number;
+}
+export interface UserMemberships {
+  userId: string;
+  activeTotal: number;
+  memberships: (Membership & { teamName: string; teamActive: boolean })[];
+}
+export interface TeamCreate {
+  name: string;
+  leaderId: string;
+  leaderAllocationPct: number;
+  leaderOtherAllocations: { teamId: string; allocationPct: number }[];
+}
+export const listTeams = () => apiGet<TeamSummary[]>('/teams');
+export const getTeam = (teamId: string) => apiGet<TeamDetail>(`/teams/${id(teamId)}`);
+export const createTeam = (input: TeamCreate) => apiRequest<TeamDetail>('POST', '/teams', input);
+export const renameTeam = (teamId: string, name: string) => apiRequest<TeamDetail>('PATCH', `/teams/${id(teamId)}`, { name });
+export const deactivateTeam = (teamId: string) => apiRequest<TeamDetail>('POST', `/teams/${id(teamId)}/deactivate`);
+export const getUserMemberships = (userId: string) => apiGet<UserMemberships>(`/users/${id(userId)}/memberships`);
+export const replaceUserMemberships = (userId: string, memberships: Membership[]) =>
+  apiRequest<UserMemberships>('PUT', `/users/${id(userId)}/memberships`, { memberships });
+
 /** openapi.yaml: Dashboard — projetos visíveis com o número de tarefas por estado (CA07.9). */
 export interface Dashboard {
   projects: { id: string; name: string; taskCounts: Record<TaskState, number>; totalTasks: number }[];

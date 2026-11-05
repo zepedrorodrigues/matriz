@@ -7,6 +7,8 @@ import { ApiError } from './api/client';
 import { AdminOnlyPage, HomePage, Layout, NotFoundPage } from './App';
 import { AuthGate } from './auth/AuthGate';
 import { AccountsPage } from './pages/admin/AccountsPage';
+import { TeamDetailPage } from './pages/admin/TeamDetailPage';
+import { TeamsPage } from './pages/admin/TeamsPage';
 import { oidcConfig } from './auth/oidc-config';
 import { ProjectDetailPage } from './pages/projects/ProjectDetailPage';
 import { ProjectsPage } from './pages/projects/ProjectsPage';
@@ -35,6 +37,8 @@ const routes = [
       { path: 'projetos/:projectId', element: <ProjectDetailPage /> },
       { path: 'tarefas/:taskId', element: <TaskDetailPage /> },
       { path: 'administracao/contas', element: <AdminOnlyPage><AccountsPage /></AdminOnlyPage> },
+      { path: 'administracao/equipas', element: <AdminOnlyPage><TeamsPage /></AdminOnlyPage> },
+      { path: 'administracao/equipas/:teamId', element: <AdminOnlyPage><TeamDetailPage /></AdminOnlyPage> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

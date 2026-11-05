@@ -43,6 +43,11 @@ export interface WorkItemLocator {
    * eliminadas (RN38; regra do contrato confirmada no Ex. 1). Os projetos sem tarefas ficam de fora.
    */
   taskCountsByProject(projectIds: string[]): Promise<Map<string, Partial<Record<TaskState, number>>>>;
+  /**
+   * Tarefas por concluir da equipa (CA01.10, RN33), por projeto: não eliminadas (nem a tarefa principal),
+   * fora de «Terminada» e «Entregue», subtarefas incluídas. Quem chama exclui os projetos eliminados.
+   */
+  openTaskCountsOfTeam(teamId: string): Promise<{ projectId: string; count: number }[]>;
 }
 
 export const WORK_ITEM_LOCATOR = Symbol('WORK_ITEM_LOCATOR');

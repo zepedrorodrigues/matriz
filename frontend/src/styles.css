@@ -459,6 +459,26 @@ button:disabled {
   white-space: pre-wrap;
 }
 
+/* Pertenças (I3): equipa, papel, alocação e «retirar» na mesma linha, que se reorganiza em ecrãs estreitos. */
+.membership-row {
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  align-items: end;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.75rem;
+}
+
+.field select,
+.membership-row input {
+  min-width: 0;
+}
+
+.allocation-set {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin: 0;
+}
+
 .breadcrumbs {
   margin-top: 0;
 }

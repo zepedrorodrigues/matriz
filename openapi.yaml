@@ -316,6 +316,210 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
 
+  /users/{userId}/memberships:
+    get:
+      tags: [Organização]
+      operationId: getUserMemberships
+      summary: Consultar as pertenças de um utilizador
+      description: |
+        Só o administrador (§3.1; as alocações são dados de capacidade, SEC07). Inclui as equipas
+        desativadas, que se mantêm para o histórico; `activeTotal` é a soma das alocações nas equipas
+        ativas, que tem de ser 100 para quem pertence a alguma (RN06, F18) — se não for (p. ex. depois
+        de uma equipa ser desativada), o utilizador tem de ser realocado.
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: Pertenças do utilizador.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserMemberships'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Organização]
+      operationId: replaceUserMemberships
+      summary: Definir as pertenças de um utilizador
+      description: |
+        Só o administrador (CA01.9). Substitui, numa só operação, o conjunto completo das pertenças do
+        utilizador em equipas ativas — equipa, papel e alocação (F18: a soma é sempre 100, RN06, por
+        isso não há operações por equipa). As pertenças em equipas desativadas não se alteram.
+        Responde 422 quando a soma não é 100 (exceto o conjunto vazio, RN21), quando uma equipa não
+        existe ou está desativada, ou quando a conta está desativada; 409 quando uma equipa ativa
+        ficaria sem líder (RN34, CA01.12). Cada pertença acrescentada, alterada ou retirada fica no
+        histórico da equipa.
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembershipsInput'
+      responses:
+        '200':
+          description: Pertenças guardadas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserMemberships'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /teams:
+    get:
+      tags: [Organização]
+      operationId: listTeams
+      summary: Consultar as equipas
+      description: |
+        Nome e estado das equipas, ordenadas pelo nome (CA01.8). Qualquer utilizador autenticado
+        (o gestor escolhe as equipas a associar aos seus projetos); só o administrador vê também as
+        equipas desativadas.
+      responses:
+        '200':
+          description: Equipas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Organização]
+      operationId: createTeam
+      summary: Criar uma equipa
+      description: |
+        Só o administrador (CA01.1). Indica o nome e o líder (RN34) com a alocação na nova equipa e as
+        alocações nas equipas ativas a que já pertence (`leaderOtherAllocations`, exatamente essas
+        equipas, com os papéis que já tem), somando 100 (RN06, F18). Nome repetido entre as equipas
+        ativas, sem distinguir maiúsculas → 409 (RN33); líder inexistente ou desativado, alocações
+        que não somam 100 ou que não correspondem às equipas atuais do líder → 422.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamCreate'
+      responses:
+        '201':
+          description: Equipa criada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /teams/{teamId}:
+    get:
+      tags: [Organização]
+      operationId: getTeam
+      summary: Consultar uma equipa
+      description: Só o administrador. Membros com o papel e a alocação (CA01.9), e o número de tarefas por concluir (CA01.10).
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      responses:
+        '200':
+          description: Equipa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Organização]
+      operationId: updateTeam
+      summary: Alterar o nome de uma equipa
+      description: |
+        Só o administrador (CA01.7); as associações a projetos, utilizadores e tarefas mantêm-se. As
+        regras do nome são as da criação (409 se repetido entre as equipas ativas).
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamUpdate'
+      responses:
+        '200':
+          description: Equipa alterada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /teams/{teamId}/deactivate:
+    post:
+      tags: [Organização]
+      operationId: deactivateTeam
+      summary: Desativar uma equipa
+      description: |
+        Só o administrador. Recusada com 409 enquanto a equipa tiver tarefas por concluir — não
+        eliminadas e fora de «Terminada» e «Entregue», subtarefas incluídas, de projetos não
+        eliminados (CA01.10, RN33). A equipa desativada deixa de receber tarefas e mantém o histórico
+        e as pertenças (CA01.11); os membros cuja soma de alocações nas equipas ativas deixa de ser 100
+        ficam para realocar (F18). Não há reativação.
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      responses:
+        '200':
+          description: Equipa desativada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
   /dashboard:
     get:
       tags: [Acompanhamento]
@@ -1078,6 +1282,13 @@ components:
       schema:
         type: string
         format: uuid
+    TeamId:
+      name: teamId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     UserId:
       name: userId
       in: path
@@ -1404,6 +1615,141 @@ components:
           items:
             type: string
             format: uuid
+
+    TeamCreate:
+      type: object
+      required: [name, leaderId, leaderAllocationPct, leaderOtherAllocations]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: \S
+          description: Até 100 caracteres depois de retirar os espaços; único entre as equipas ativas (RN33).
+        leaderId:
+          type: string
+          format: uuid
+        leaderAllocationPct:
+          type: integer
+          minimum: 1
+          maximum: 100
+        leaderOtherAllocations:
+          type: array
+          description: Uma entrada por cada equipa ativa a que o líder já pertence; vazio se não pertencer a nenhuma.
+          items:
+            type: object
+            required: [teamId, allocationPct]
+            additionalProperties: false
+            properties:
+              teamId:
+                type: string
+                format: uuid
+              allocationPct:
+                type: integer
+                minimum: 1
+                maximum: 100
+
+    TeamUpdate:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: \S
+
+    TeamDetail:
+      type: object
+      required: [id, name, active, deactivatedAt, createdAt, members, openTaskCount]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        active:
+          type: boolean
+        deactivatedAt:
+          type: [string, 'null']
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        openTaskCount:
+          type: integer
+          minimum: 0
+          description: Tarefas por concluir (CA01.10); com mais de 0, a equipa não pode ser desativada.
+        members:
+          type: array
+          items:
+            type: object
+            required: [user, role, allocationPct, activeTotal]
+            properties:
+              user:
+                $ref: '#/components/schemas/UserSummary'
+              role:
+                type: string
+                enum: [leader, member]
+              allocationPct:
+                type: integer
+              activeTotal:
+                type: integer
+                description: Soma das alocações do membro nas equipas ativas; diferente de 100 → realocar (F18).
+
+    MembershipsInput:
+      type: object
+      required: [memberships]
+      additionalProperties: false
+      properties:
+        memberships:
+          type: array
+          description: Conjunto completo das pertenças em equipas ativas; sem equipas repetidas; soma 100 ou vazio.
+          items:
+            type: object
+            required: [teamId, role, allocationPct]
+            additionalProperties: false
+            properties:
+              teamId:
+                type: string
+                format: uuid
+              role:
+                type: string
+                enum: [leader, member]
+              allocationPct:
+                type: integer
+                minimum: 1
+                maximum: 100
+
+    UserMemberships:
+      type: object
+      required: [userId, memberships, activeTotal]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        activeTotal:
+          type: integer
+        memberships:
+          type: array
+          items:
+            type: object
+            required: [teamId, teamName, teamActive, role, allocationPct]
+            properties:
+              teamId:
+                type: string
+                format: uuid
+              teamName:
+                type: string
+              teamActive:
+                type: boolean
+              role:
+                type: string
+                enum: [leader, member]
+              allocationPct:
+                type: integer
 
     TeamSummary:
       type: object

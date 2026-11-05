@@ -52,4 +52,19 @@ export class WorkItemLocatorService implements WorkItemLocator {
     for (const r of rows) counts.set(r.project_id, { ...counts.get(r.project_id), [r.state]: r.n });
     return counts;
   }
+
+  async openTaskCountsOfTeam(teamId: string): Promise<{ projectId: string; count: number }[]> {
+    const rows: { project_id: string; n: number }[] = await this.db.query(
+      `SELECT o.project_id, count(*)::int AS n
+       FROM work.task t
+       LEFT JOIN work.task p ON p.id = t.parent_task_id
+       JOIN work.epic e ON e.id = coalesce(t.epic_id, p.epic_id)
+       JOIN work.objective o ON o.id = e.objective_id
+       WHERE t.team_id = $1 AND t.deleted_at IS NULL AND (p.id IS NULL OR p.deleted_at IS NULL)
+         AND t.state NOT IN ('done', 'delivered')
+       GROUP BY o.project_id`,
+      [teamId],
+    );
+    return rows.map((r) => ({ projectId: r.project_id, count: r.n }));
+  }
 }
