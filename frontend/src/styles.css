@@ -23,7 +23,7 @@ body {
   background: var(--lg-bg);
 }
 
-button:not([data-slot]) {
+button:not([data-slot], [data-slot] button) {
   font: inherit;
   padding: 0.45rem 0.9rem;
   border: 1px solid var(--lg-accent);
@@ -33,7 +33,7 @@ button:not([data-slot]) {
   cursor: pointer;
 }
 
-button:not([data-slot]):focus-visible {
+button:not([data-slot], [data-slot] button):focus-visible {
   outline: 3px solid #f2b705;
   outline-offset: 2px;
 }
@@ -208,7 +208,7 @@ button:not([data-slot]):focus-visible {
   flex-wrap: wrap;
 }
 
-button:not([data-slot]):disabled {
+button:not([data-slot], [data-slot] button):disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -505,7 +505,7 @@ button:not([data-slot]):disabled {
   border-left: 4px solid var(--lg-accent);
 }
 
-/* Só elementos sem `data-slot`: os componentes do shadcn/ui marcam-se com ele e trazem o seu próprio estilo.
+/* Só elementos sem `data-slot` (nem dentro de um componente que o tenha): os componentes do shadcn/ui marcam-se com ele e trazem o seu próprio estilo.
    O reset do Tailwind (preflight) tira o tamanho, o peso e as margens aos títulos e parágrafos.
    Os ecrãs antigos dependiam dos valores por omissão do browser: repõem-se aqui, só nesta camada. */
 h1:not([data-slot]) { font-size: 2em; font-weight: 700; margin: 0.67em 0; }

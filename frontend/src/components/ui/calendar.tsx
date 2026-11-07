@@ -35,6 +35,8 @@ function Calendar({
   return (
     <DayPicker
       locale={locale}
+      // A semana começa à segunda em Portugal; o locale não o impõe por si (verificado no browser).
+      weekStartsOn={1}
       showOutsideDays={showOutsideDays}
       className={cn(
         "group/calendar bg-background p-3 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
