@@ -19,6 +19,7 @@ const TeamsPage = lazy(() => import('./pages/admin/TeamsPage').then((m) => ({ de
 const ProjectDetailPage = lazy(() => import('./pages/projects/ProjectDetailPage').then((m) => ({ default: m.ProjectDetailPage })));
 const ProjectsPage = lazy(() => import('./pages/projects/ProjectsPage').then((m) => ({ default: m.ProjectsPage })));
 const TaskDetailPage = lazy(() => import('./pages/tasks/TaskDetailPage').then((m) => ({ default: m.TaskDetailPage })));
+const SprintTaskDialog = lazy(() => import('./pages/tasks/TaskDetailPage').then((m) => ({ default: m.SprintTaskDialog })));
 const SprintPage = lazy(() => import('./pages/planning/SprintPage').then((m) => ({ default: m.SprintPage })));
 const TeamPlanningPage = lazy(() => import('./pages/planning/TeamPlanningPage').then((m) => ({ default: m.TeamPlanningPage })));
 
@@ -47,7 +48,8 @@ const routes = [
       { path: 'projetos/:projectId', element: <ProjectDetailPage /> },
       { path: 'tarefas/:taskId', element: <TaskDetailPage /> },
       { path: 'planeamento', element: <TeamPlanningPage /> },
-      { path: 'sprints/:sprintId', element: <SprintPage /> },
+      // O detalhe da tarefa abre em diálogo sobre o quadro, com endereço próprio (DT17).
+      { path: 'sprints/:sprintId', element: <SprintPage />, children: [{ path: 'tarefas/:taskId', element: <SprintTaskDialog /> }] },
       { path: 'alertas', element: <AlertsPage /> },
       { path: 'administracao/contas', element: <AdminOnlyPage><AccountsPage /></AdminOnlyPage> },
       { path: 'administracao/equipas', element: <AdminOnlyPage><TeamsPage /></AdminOnlyPage> },

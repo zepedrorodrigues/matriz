@@ -77,8 +77,11 @@ export function SprintBoard({
   busy,
   onMove,
   onRefuse,
+  taskHref,
 }: {
   cards: BoardCard[];
+  /** Endereço do detalhe de uma tarefa (no quadro, o diálogo sobre a sprint). */
+  taskHref: (taskId: string) => string;
   showBacklog: boolean;
   mayPlan: boolean;
   readOnly: boolean;
@@ -125,7 +128,8 @@ export function SprintBoard({
         },
       }}
     >
-      <div className="overflow-x-auto pb-2">
+      {/* relative: os textos sr-only (absolutos) dos cartões ficam recortados aqui e não alargam a página */}
+      <div className="relative overflow-x-auto pb-2">
         <div className="grid w-max auto-cols-[264px] grid-flow-col gap-3">
           {columns.map((column) => (
             <BoardColumn key={column} id={column} accepts={accepts(column)}>
@@ -133,7 +137,7 @@ export function SprintBoard({
                 .filter((c) => c.column === column)
                 .map((c) => (
                   <DraggableCard key={c.id} card={c} disabled={readOnly || busy}>
-                    <CardBody card={c} mayPlan={mayPlan} readOnly={readOnly || busy} onPick={(to) => drop(c, to)} />
+                    <CardBody card={c} mayPlan={mayPlan} readOnly={readOnly || busy} onPick={(to) => drop(c, to)} taskHref={taskHref} />
                   </DraggableCard>
                 ))}
             </BoardColumn>
@@ -197,12 +201,24 @@ function DraggableCard({ card, disabled, children }: { card: BoardCard; disabled
   );
 }
 
-function CardBody({ card, mayPlan, readOnly, onPick }: { card: BoardCard; mayPlan: boolean; readOnly: boolean; onPick: (to: ColumnId) => void }) {
+function CardBody({
+  card,
+  mayPlan,
+  readOnly,
+  onPick,
+  taskHref,
+}: {
+  card: BoardCard;
+  mayPlan: boolean;
+  readOnly: boolean;
+  onPick: (to: ColumnId) => void;
+  taskHref: (taskId: string) => string;
+}) {
   const options = readOnly ? [] : moveOptions(contextFor(card, mayPlan));
   return (
     <article className="flex flex-col gap-2 rounded-lg border bg-card p-3 shadow-xs hover:border-primary/40">
       <div className="flex items-start gap-1">
-        <Link to={`/tarefas/${card.id}`} className="flex-1 text-sm leading-snug font-medium text-foreground hover:underline">
+        <Link to={taskHref(card.id)} className="flex-1 text-sm leading-snug font-medium text-foreground hover:underline">
           {card.title}
         </Link>
         <DropdownMenu>
@@ -225,7 +241,7 @@ function CardBody({ card, mayPlan, readOnly, onPick }: { card: BoardCard; mayPla
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link to={`/tarefas/${card.id}`}>Abrir a tarefa</Link>
+              <Link to={taskHref(card.id)}>Abrir a tarefa</Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
