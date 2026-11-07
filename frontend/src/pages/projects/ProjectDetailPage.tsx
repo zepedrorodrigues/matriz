@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
@@ -66,12 +67,12 @@ function ProjectDetail() {
     },
   });
 
-  if (project.isPending) return <section className="page"><Notice>A carregar o projeto…</Notice></section>;
+  if (project.isPending) return <section className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-5 sm:px-6"><Notice>A carregar o projeto…</Notice></section>;
 
   if (project.isError) {
     const status = project.error instanceof ApiError ? project.error.status : 0;
     return (
-      <section className="page">
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-5 sm:px-6">
         <Notice tone="error">
           {status === 404
             ? 'Este projeto não existe ou foi eliminado.'
@@ -88,15 +89,15 @@ function ProjectDetail() {
   const mayManage = me.data ? canManageProject(me.data, p.id) : false;
 
   return (
-    <section className="page">
+    <section className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-5 sm:px-6">
       <p>
         <Link to="/projetos">← Projetos</Link>
       </p>
       {notice ? <Notice tone="success">{notice}</Notice> : null}
 
       {editing ? (
-        <div className="panel">
-          <h1>Editar projeto</h1>
+        <div className="flex flex-col gap-3 rounded-xl border bg-card p-4">
+          <h1 className="m-0 text-[22px] font-bold">Editar projeto</h1>
           <ProjectForm
             initial={{ name: p.name, objective: p.objective ?? '' }}
             submitLabel="Guardar alterações"
@@ -112,29 +113,28 @@ function ProjectDetail() {
         </div>
       ) : (
         <>
-          <div className="page__header">
-            <h1>{p.name}</h1>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h1 className="m-0 text-[22px] font-bold">{p.name}</h1>
             {mayManage ? (
-              <div className="actions">
-                <button
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline"
                   type="button"
-                  className="button--secondary"
                   onClick={() => {
                     setNotice(undefined);
                     setEditing(true);
                   }}
                 >
                   Editar
-                </button>
-                <button type="button" className="button--danger" onClick={() => setConfirming(true)}>
+                </Button>
+                <Button variant="destructive" type="button" onClick={() => setConfirming(true)}>
                   Eliminar
-                </button>
+                </Button>
               </div>
             ) : null}
           </div>
-          <dl className="profile">
+          <dl className="m-0 grid grid-cols-[minmax(0,11rem)_minmax(0,1fr)] gap-x-4 gap-y-2 rounded-xl border bg-card p-4 text-sm [&_dd]:m-0 [&_dd]:font-medium [&_dt]:text-muted-foreground">
             <dt>Objetivo</dt>
-            <dd>{p.objective ?? <span className="muted">Sem objetivo definido.</span>}</dd>
+            <dd>{p.objective ?? <span className="m-0 text-sm text-muted-foreground">Sem objetivo definido.</span>}</dd>
             <dt>Gestores</dt>
             <dd>{p.managers.map((m) => m.name).join(', ') || '—'}</dd>
             <dt>Criado em</dt>

@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApiError, createEpic, createObjective, type ElementInput, type Objective } from '../../api/client';
@@ -34,19 +35,19 @@ function ElementForm({
   };
 
   return (
-    <form className="form form--inline" onSubmit={submit} noValidate>
+    <form className="flex flex-col gap-3" onSubmit={submit} noValidate>
       {error && !serverErrors.title ? (
         <Notice tone="error">{error instanceof ApiError ? error.message : 'Não foi possível guardar. Tente novamente.'}</Notice>
       ) : null}
       <FormField label="Título" value={title} onChange={setTitle} error={clientError ?? serverErrors.title} required autoFocus />
       <FormField label="Descrição" value={description} onChange={setDescription} />
-      <div className="actions">
-        <button type="button" className="button--secondary" onClick={onCancel} disabled={busy}>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" type="button" onClick={onCancel} disabled={busy}>
           Cancelar
-        </button>
-        <button type="submit" disabled={busy}>
+        </Button>
+        <Button type="submit" disabled={busy}>
           {busy ? 'A criar…' : submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -87,13 +88,13 @@ export function HierarchyPanel({ projectId, objectives, mayCreate }: { projectId
   };
 
   return (
-    <section className="panel" aria-labelledby="hierarchy-title">
-      <div className="page__header">
-        <h2 id="hierarchy-title">Objetivos e épicos</h2>
+    <section className="flex flex-col gap-3 rounded-xl border bg-card p-4" aria-labelledby="hierarchy-title">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 id="hierarchy-title" className="m-0 text-base font-semibold">Objetivos e épicos</h2>
         {mayCreate && adding !== 'objective' ? (
-          <button type="button" className="button--secondary" onClick={() => open('objective')}>
+          <Button variant="outline" type="button" onClick={() => open('objective')}>
             Novo objetivo
-          </button>
+          </Button>
         ) : null}
       </div>
       {adding === 'objective' ? (
@@ -106,9 +107,9 @@ export function HierarchyPanel({ projectId, objectives, mayCreate }: { projectId
         />
       ) : null}
       {objectives.length === 0 ? (
-        <p className="muted">Este projeto ainda não tem objetivos. As tarefas pertencem a um épico de um objetivo.</p>
+        <p className="m-0 text-sm text-muted-foreground">Este projeto ainda não tem objetivos. As tarefas pertencem a um épico de um objetivo.</p>
       ) : (
-        <ul className="tree">
+        <ul className="m-0 flex list-none flex-col gap-1 p-0 [&_ul]:m-0 [&_ul]:mt-1 [&_ul]:flex [&_ul]:list-none [&_ul]:flex-col [&_ul]:gap-1 [&_ul]:border-l [&_ul]:pl-4">
           {objectives.map((o) => (
             <li key={o.id}>
               <strong>{o.title}</strong>
@@ -119,12 +120,12 @@ export function HierarchyPanel({ projectId, objectives, mayCreate }: { projectId
                   ))}
                 </ul>
               ) : (
-                <p className="muted">Sem épicos.</p>
+                <p className="m-0 text-sm text-muted-foreground">Sem épicos.</p>
               )}
               {mayCreate && adding !== o.id ? (
-                <button type="button" className="button--link" onClick={() => open(o.id)}>
+                <Button variant="link" className="h-auto self-start p-0" type="button" onClick={() => open(o.id)}>
                   Novo épico em «{o.title}»
-                </button>
+                </Button>
               ) : null}
               {adding === o.id ? (
                 <ElementForm

@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
@@ -84,10 +85,10 @@ export function ProjectTasks({ project, me }: { project: Project; me: CurrentUse
   return (
     <>
       <section aria-labelledby="tasks-title">
-        <div className="page__header">
-          <h2 id="tasks-title">Tarefas</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="tasks-title" className="m-0 text-base font-semibold">Tarefas</h2>
           {teams.length > 0 && hasEpics && !creating ? (
-            <button
+            <Button
               type="button"
               onClick={() => {
                 create.reset();
@@ -96,15 +97,15 @@ export function ProjectTasks({ project, me }: { project: Project; me: CurrentUse
               }}
             >
               Nova tarefa
-            </button>
+            </Button>
           ) : null}
         </div>
 
         {notice ? <Notice tone="success">{notice}</Notice> : null}
 
         {creating && objectives.data ? (
-          <div className="panel">
-            <h3>Nova tarefa</h3>
+          <div className="flex flex-col gap-3 rounded-xl border bg-card p-4">
+            <h3 className="m-0 text-sm font-semibold">Nova tarefa</h3>
             <TaskForm
               objectives={objectives.data.filter((o) => o.epics.length > 0)}
               teams={teams}
@@ -119,16 +120,16 @@ export function ProjectTasks({ project, me }: { project: Project; me: CurrentUse
         ) : null}
 
         {teams.length === 0 ? (
-          <p className="muted">
+          <p className="m-0 text-sm text-muted-foreground">
             {project.teams.length === 0
               ? 'Este projeto ainda não tem equipas associadas; sem equipa responsável não é possível criar tarefas.'
               : 'Só cria tarefas quem pertence a uma equipa do projeto, o gestor do projeto ou o administrador.'}
           </p>
         ) : objectives.data && !hasEpics ? (
-          <p className="muted">Para criar tarefas, o projeto precisa de um objetivo com pelo menos um épico (RN12).</p>
+          <p className="m-0 text-sm text-muted-foreground">Para criar tarefas, o projeto precisa de um objetivo com pelo menos um épico (RN12).</p>
         ) : null}
 
-        <div className="filters" role="group" aria-label="Filtrar tarefas">
+        <div className="flex flex-wrap items-end gap-3 [&>*]:min-w-48" role="group" aria-label="Filtrar tarefas">
           <SelectField label="Estado" value={state ?? ''} onChange={(v) => setFilter('state', v)}>
             <option value="">Todos</option>
             {TASK_STATES.map((s) => (
@@ -146,9 +147,9 @@ export function ProjectTasks({ project, me }: { project: Project; me: CurrentUse
             ))}
           </SelectField>
           {filtered ? (
-            <button type="button" className="button--link" onClick={() => setParams(new URLSearchParams(), { replace: true })}>
+            <Button variant="link" className="h-auto self-start p-0" type="button" onClick={() => setParams(new URLSearchParams(), { replace: true })}>
               Limpar filtros
-            </button>
+            </Button>
           ) : null}
         </div>
 
@@ -160,20 +161,20 @@ export function ProjectTasks({ project, me }: { project: Project; me: CurrentUse
           <Notice>{filtered ? 'Nenhuma tarefa corresponde aos filtros.' : 'Este projeto ainda não tem tarefas.'}</Notice>
         ) : (
           <>
-            <p className="muted" aria-live="polite">
+            <p className="m-0 text-sm text-muted-foreground" aria-live="polite">
               {tasks.data.total === 1 ? '1 tarefa' : `${tasks.data.total} tarefas`}
               {filtered ? ' com estes filtros' : ''}
             </p>
-            <ul className="card-list">
+            <ul className="m-0 flex list-none flex-col gap-2 p-0">
               {tasks.data.items.map((task) => (
-                <li key={task.id} className="card">
-                  <Link to={`/tarefas/${task.id}`} className="card__title">
+                <li key={task.id} className="flex flex-col gap-1.5 rounded-xl border bg-card p-4">
+                  <Link to={`/tarefas/${task.id}`} className="font-semibold text-foreground hover:underline">
                     {task.title}
                   </Link>
-                  <p className="card__text">
+                  <p className="m-0 text-sm text-foreground/80">
                     <TaskBadges state={task.state} priority={task.priority} isBlocked={task.isBlocked} isOverdue={task.isOverdue} />
                   </p>
-                  <p className="card__text muted">
+                  <p className="m-0 text-sm text-muted-foreground">
                     {teamName.get(task.teamId) ?? 'Equipa'}
                     {task.assignee ? ` · ${task.assignee.name}` : ' · sem responsável'}
                     {task.subtaskCount > 0 ? ` · ${task.subtaskCount === 1 ? '1 subtarefa' : `${task.subtaskCount} subtarefas`}` : ''}

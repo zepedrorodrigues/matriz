@@ -1,13 +1,10 @@
 /*
  * Tema da interface (DT17, direção «B · Quadro»). Tailwind CSS 4 e componentes do shadcn/ui.
- * Ordem das camadas: os estilos antigos (legacy) ficam abaixo dos componentes e das utilidades,
- * para que uma classe do Tailwind ganhe sempre a um seletor de elemento antigo (p. ex. `button`).
  */
-@layer theme, base, legacy, components, utilities;
+@layer theme, base, components, utilities;
 
 @import 'tailwindcss';
 @import 'tw-animate-css';
-@import './styles.css' layer(legacy);
 
 @custom-variant dark (&:is(.dark *));
 
@@ -117,6 +114,25 @@
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
+  }
+  /* Controlos nativos fora dos componentes (sem data-slot): o mesmo aspeto dos campos do shadcn/ui.
+     Sem isto, o reset do Tailwind deixava-os sem borda (a pesquisa de projetos ficava invisível). */
+  :where(input:not([type='checkbox'], [type='radio'], [data-slot]), select:not([data-slot]), textarea:not([data-slot])) {
+    min-height: 2.5rem;
+    width: 100%;
+    border: 1px solid var(--input);
+    border-radius: calc(var(--radius) - 2px);
+    background: var(--card);
+    padding: 0.4rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  :where(input:not([type='checkbox'], [type='radio'], [data-slot]), select:not([data-slot]), textarea:not([data-slot])):focus-visible {
+    border-color: var(--ring);
+    outline: 3px solid color-mix(in oklab, var(--ring) 50%, transparent);
+    outline-offset: 0;
+  }
+  :where(input, select, textarea)[aria-invalid='true'] {
+    border-color: var(--destructive);
   }
   /* Caixas de verificação nativas com a cor do tema */
   input[type='checkbox'] {

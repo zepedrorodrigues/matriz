@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError, addProjectTeam, listTeams, type Project } from '../../api/client';
@@ -35,25 +36,25 @@ export function ProjectTeams({ project, mayManage }: { project: Project; mayMana
   const available = (teams.data ?? []).filter((t) => t.active && !associated.includes(t.id));
 
   return (
-    <section className="panel" aria-labelledby="project-teams-title">
-      <h2 id="project-teams-title">Equipas do projeto</h2>
+    <section className="flex flex-col gap-3 rounded-xl border bg-card p-4" aria-labelledby="project-teams-title">
+      <h2 id="project-teams-title" className="m-0 text-base font-semibold">Equipas do projeto</h2>
       {success ? <Notice tone="success">{success}</Notice> : null}
       {add.error ? <Notice tone="error">{add.error instanceof ApiError ? add.error.message : 'Não foi possível associar a equipa.'}</Notice> : null}
       {project.teams.length === 0 ? (
-        <p className="muted">Nenhuma equipa associada. Sem equipas, o projeto não pode receber tarefas.</p>
+        <p className="m-0 text-sm text-muted-foreground">Nenhuma equipa associada. Sem equipas, o projeto não pode receber tarefas.</p>
       ) : (
         <ul>
           {project.teams.map((t) => (
             <li key={t.id}>
               {t.name}
-              {t.active ? null : <span className="muted"> (desativada)</span>}
+              {t.active ? null : <span className="m-0 text-sm text-muted-foreground"> (desativada)</span>}
             </li>
           ))}
         </ul>
       )}
       {mayManage ? (
         <form
-          className="form form--inline"
+          className="flex flex-col gap-3"
           onSubmit={(e) => {
             e.preventDefault();
             if (teamId && !add.isPending) add.mutate(teamId);
@@ -75,10 +76,10 @@ export function ProjectTeams({ project, mayManage }: { project: Project; mayMana
               </option>
             ))}
           </SelectField>
-          <div className="actions">
-            <button type="submit" disabled={!teamId || add.isPending}>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="submit" disabled={!teamId || add.isPending}>
               {add.isPending ? 'A associar…' : 'Associar equipa'}
-            </button>
+            </Button>
           </div>
         </form>
       ) : null}

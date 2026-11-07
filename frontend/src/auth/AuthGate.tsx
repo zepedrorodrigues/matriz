@@ -1,3 +1,5 @@
+import { Notice } from '@/components/Notice';
+import { Button } from '@/components/ui/button';
 import { useEffect, useState, type ReactNode } from 'react';
 import { hasAuthParams, useAuth } from 'react-oidc-context';
 import { useQueryClient } from '@tanstack/react-query';
@@ -50,18 +52,18 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (auth.error) {
     return (
       <StatusScreen message="Não foi possível iniciar sessão. Tente novamente." tone="error">
-        <button type="button" onClick={() => void auth.signinRedirect()}>
+        <Button type="button" onClick={() => void auth.signinRedirect()}>
           Iniciar sessão
-        </button>
+        </Button>
       </StatusScreen>
     );
   }
   if (!auth.isAuthenticated) {
     return expired ? (
       <StatusScreen message="A sua sessão expirou ou deixou de ser válida. Inicie sessão novamente." tone="warning">
-        <button type="button" onClick={() => void auth.signinRedirect()}>
+        <Button type="button" onClick={() => void auth.signinRedirect()}>
           Iniciar sessão
-        </button>
+        </Button>
       </StatusScreen>
     ) : (
       <StatusScreen message="A encaminhar para o início de sessão…" />
@@ -80,11 +82,9 @@ export function StatusScreen({
   children?: ReactNode;
 }) {
   return (
-    <main className="status-screen">
-      <h1>Matriz</h1>
-      <p className={`notice notice--${tone}`} role={tone === 'info' ? 'status' : 'alert'}>
-        {message}
-      </p>
+    <main className="mx-auto flex max-w-xl flex-col items-start gap-3 px-4 py-16">
+      <h1 className="m-0 text-[22px] font-bold">Matriz</h1>
+      <Notice tone={tone}>{message}</Notice>
       {children}
     </main>
   );

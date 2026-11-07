@@ -168,3 +168,23 @@ Ambiente: Docker 29.6.1 (Docker Desktop), `deploy/compose.yaml` com PostgreSQL 1
 
 - **Início de sessão no browser através do proxy.** O emissor tem de ser o mesmo para o browser e para o backend no contentor (`host.docker.internal`). Nesta máquina, o ficheiro `hosts` aponta `host.docker.internal` para `192.168.1.230`, um endereço antigo (o atual é `192.168.1.176`), e o Keycloak só escuta em `127.0.0.1`. Dentro dos contentores o nome funciona, porque o Docker Desktop o encaminha para o computador.
 - O primeiro teste da falha de `backend-2` deu 6/20, porque a instância `backend-1` tinha acabado de ser reiniciada e ainda não estava pronta; repetido à espera do estado `healthy`, deu 20/20.
+
+## Reformulação visual (2026-11-07, DT17)
+
+Branch `feat/reformulacao-visual`. Chrome, sessões da Ana Exemplo (líder) e da Alice Admin (administradora); Keycloak, API e frontend locais.
+
+| Verificação | Resultado |
+|---|---|
+| Tipos, `npm test -w frontend`, build | Sem erros; 40 testes (8 das regras do quadro, 3 do papel no cabeçalho); nenhum ficheiro acima de 500 kB (entrada da aplicação 27,6 kB) |
+| E2E (SEC-01, E2E-01) | 2 a passar, no fim de cada fase. Na fase 3 o SEC-01 falhou: a mensagem acordada do 403 tinha sido reformulada; reposta palavra por palavra |
+| Regras do quadro, por mutação | Aceitar qualquer coluna faz falhar exatamente os 3 testes de RN26 |
+| Quadro (Ana) | Arrasto recusado com o motivo («Já está concluída.»); arrasto que planeia e atualiza a capacidade; menu «Mover para…» com os destinos de RN26; «Devolver ao backlog» |
+| Administradora | «Administração» no menu; capacidade só com os totais (SEC07); sem coluna de backlog (não é líder) |
+| Diálogo da tarefa | Abre sobre o quadro com endereço próprio; Escape na confirmação de «Eliminar» cancela só a confirmação; o fundo da confirmação cobre a janela (958×854) |
+| Largura da página | Sem deslocamento horizontal (antes da correção, 1345 px numa janela de 958) |
+| Datas | Calendário em português, semana a começar à segunda |
+| Todos os ecrãs sem o `styles.css` | Início, Projetos, detalhe do projeto, Alertas, Contas, Equipas, detalhe da equipa, Sprint, Planeamento e detalhe da tarefa vistos no browser; corrigidos os controlos nativos sem borda (pesquisa) e os distintivos esticados |
+
+**Incidente:** num teste do menu por teclado, a tarefa «Implementar a pesquisa de ferramentas» passou de «A desenvolver» para «Em planeamento» na base `matriz` local (tecla a menos). Foi reposta em três passos (RN26) e devolvida ao backlog; as mudanças de estado ficaram registadas.
+
+**Não verificado:** a vista do membro; a submissão de cada painel do detalhe (bloquear, critérios, participantes, transferir, comentar) no browser — a lógica não mudou, só a apresentação.

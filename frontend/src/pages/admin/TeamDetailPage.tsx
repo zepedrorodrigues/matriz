@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useParams } from 'react-router';
@@ -56,10 +57,10 @@ export function TeamDetailPage() {
     },
   });
 
-  if (team.isPending) return <section className="page"><Notice>A carregar a equipa…</Notice></section>;
+  if (team.isPending) return <section className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-5 sm:px-6"><Notice>A carregar a equipa…</Notice></section>;
   if (team.isError) {
     return (
-      <section className="page">
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-5 sm:px-6">
         <AdminNav />
         <Notice tone="error">
           {team.error instanceof ApiError && team.error.status === 404 ? 'Esta equipa não existe.' : 'Não foi possível carregar a equipa.'}
@@ -77,16 +78,16 @@ export function TeamDetailPage() {
   };
 
   return (
-    <section className="page">
+    <section className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-5 sm:px-6">
       <AdminNav />
-      <p className="breadcrumbs">
+      <p className="m-0 text-[13px] text-muted-foreground">
         <Link to="/administracao/equipas">← Equipas</Link>
       </p>
       {notice ? <Notice tone="success">{notice}</Notice> : null}
 
       {renaming ? (
-        <form className="panel form" onSubmit={submitRename} noValidate>
-          <h1>Alterar o nome</h1>
+        <form className="flex flex-col gap-3 rounded-xl border bg-card p-4" onSubmit={submitRename} noValidate>
+          <h1 className="m-0 text-[22px] font-bold">Alterar o nome</h1>
           {rename.error && !(rename.error instanceof ApiError && rename.error.status === 400) ? <Notice tone="error">{errorText(rename.error)}</Notice> : null}
           <FormField
             label="Nome"
@@ -97,25 +98,24 @@ export function TeamDetailPage() {
             required
             autoFocus
           />
-          <div className="actions">
-            <button type="button" className="button--secondary" onClick={() => setRenaming(false)} disabled={rename.isPending}>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" type="button" onClick={() => setRenaming(false)} disabled={rename.isPending}>
               Cancelar
-            </button>
-            <button type="submit" disabled={rename.isPending}>
+            </Button>
+            <Button type="submit" disabled={rename.isPending}>
               {rename.isPending ? 'A guardar…' : 'Guardar nome'}
-            </button>
+            </Button>
           </div>
         </form>
       ) : (
-        <div className="page__header">
-          <h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="m-0 text-[22px] font-bold">
             {t.name}
-            {t.active ? null : <span className="badge"> Desativada</span>}
+            {t.active ? null : <span className="inline-flex w-fit items-center rounded bg-muted px-1.5 text-xs font-semibold text-muted-foreground"> Desativada</span>}
           </h1>
-          <div className="actions">
-            <button
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline"
               type="button"
-              className="button--secondary"
               onClick={() => {
                 rename.reset();
                 setNewName(t.name);
@@ -123,62 +123,60 @@ export function TeamDetailPage() {
               }}
             >
               Alterar o nome
-            </button>
+            </Button>
             {t.active ? (
-              <button
+              <Button variant="destructive"
                 type="button"
-                className="button--danger"
                 onClick={() => {
                   deactivate.reset();
                   setConfirming(true);
                 }}
               >
                 Desativar
-              </button>
+              </Button>
             ) : null}
           </div>
         </div>
       )}
 
-      <p className="muted">
+      <p className="m-0 text-sm text-muted-foreground">
         {t.active
           ? `${t.openTaskCount === 1 ? '1 tarefa' : `${t.openTaskCount} tarefas`} por concluir.`
           : `Desativada em ${new Date(t.deactivatedAt!).toLocaleString('pt-PT')}: não recebe tarefas; o histórico e as pertenças mantêm-se.`}
       </p>
 
-      <section className="panel" aria-labelledby="members-title">
-        <h2 id="members-title">Membros</h2>
+      <section className="flex flex-col gap-3 rounded-xl border bg-card p-4" aria-labelledby="members-title">
+        <h2 id="members-title" className="m-0 text-base font-semibold">Membros</h2>
         {t.members.length === 0 ? (
-          <p className="muted">Sem membros.</p>
+          <p className="m-0 text-sm text-muted-foreground">Sem membros.</p>
         ) : (
-          <ul className="criteria">
+          <ul className="m-0 flex list-none flex-col p-0">
             {t.members.map((m) => (
-              <li key={m.user.id} className="criteria__item">
+              <li key={m.user.id} className="flex flex-col gap-1.5 border-b py-2.5 last:border-b-0">
                 <span>
                   <strong>{m.user.name}</strong> · {ROLE[m.role]} · {m.allocationPct} %
                 </span>
                 {m.activeTotal !== 100 ? (
-                  <span className="field__error">
+                  <span className="m-0 text-xs font-medium text-destructive">
                     Por realocar: soma {m.activeTotal} % nas equipas ativas (tem de ser 100 %).
                   </span>
                 ) : null}
-                <button
+                <Button variant="link" className="h-auto self-start p-0"
                   type="button"
-                  className="button--link"
                   onClick={() => {
                     setNotice(undefined);
                     setEditing({ userId: m.user.id, userName: m.user.name });
                   }}
                 >
                   Gerir as pertenças de {m.user.name}
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
         )}
 
         {t.active && !editing ? (
-          <div className="form form--inline">
+          <div className="flex flex-col gap-3">
             <SelectField label="Acrescentar membro" value={newMemberId} onChange={setNewMemberId} hint="Depois, ajuste as alocações para somarem 100 %.">
               <option value="">Escolha a conta</option>
               {(accounts.data?.items ?? [])
@@ -189,8 +187,8 @@ export function TeamDetailPage() {
                   </option>
                 ))}
             </SelectField>
-            <div className="actions">
-              <button
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
                 type="button"
                 disabled={!newMemberId}
                 onClick={() => {
@@ -201,7 +199,7 @@ export function TeamDetailPage() {
                 }}
               >
                 Continuar
-              </button>
+              </Button>
             </div>
           </div>
         ) : null}

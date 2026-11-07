@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useState, type FormEvent } from 'react';
 import { ApiError, type ProjectInput } from '../../api/client';
 import { FormField } from '../../components/FormField';
@@ -48,19 +49,19 @@ export function ProjectForm({ initial, submitLabel, busyLabel, error, busy, onSu
   };
 
   return (
-    <form className="form" onSubmit={submit} noValidate>
+    <form className="flex flex-col gap-3" onSubmit={submit} noValidate>
       {generalError ? <Notice tone="error">{generalError}</Notice> : null}
       <FormField label="Nome" value={name} onChange={setName} error={errors.name} maxLength={100} hint="Entre 3 e 100 caracteres" required autoFocus />
       <FormField label="Objetivo" value={objective} onChange={setObjective} error={errors.objective} maxLength={1000} multiline />
-      <div className="actions">
+      <div className="flex flex-wrap items-center gap-2">
         {onCancel ? (
-          <button type="button" className="button--secondary" onClick={onCancel} disabled={busy}>
+          <Button variant="outline" type="button" onClick={onCancel} disabled={busy}>
             Cancelar
-          </button>
+          </Button>
         ) : null}
-        <button type="submit" disabled={busy}>
+        <Button type="submit" disabled={busy}>
           {busy ? busyLabel : submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
   );

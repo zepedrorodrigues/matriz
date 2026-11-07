@@ -162,7 +162,7 @@ export function CriteriaPanel({ task, me, onOperationStart, resetKey }: Criteria
                       </label>
                     ) : (
                       <span>
-                        <span className="inline-flex items-center rounded bg-muted px-1.5 text-xs font-semibold text-muted-foreground">{c.isMet ? 'Cumprido' : 'Por cumprir'}</span> {c.description}
+                        <span className="inline-flex w-fit items-center rounded bg-muted px-1.5 text-xs font-semibold text-muted-foreground">{c.isMet ? 'Cumprido' : 'Por cumprir'}</span> {c.description}
                       </span>
                     )}
                     {c.isMet || mayRecord ? (

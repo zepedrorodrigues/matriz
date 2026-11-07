@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError, getUserMemberships, listTeams, replaceUserMemberships, type TeamRole } from '../../api/client';
@@ -78,14 +79,14 @@ export function MembershipEditor({ userId, userName, addTeamId, onDone, onCancel
   };
 
   return (
-    <form className="panel form" onSubmit={submit} noValidate aria-label={`Pertenças de ${userName}`}>
-      <h3>Pertenças de {userName}</h3>
+    <form className="flex flex-col gap-3 rounded-xl border bg-card p-4" onSubmit={submit} noValidate aria-label={`Pertenças de ${userName}`}>
+      <h3 className="m-0 text-sm font-semibold">Pertenças de {userName}</h3>
       {save.error ? <Notice tone="error">{save.error instanceof ApiError ? save.error.message : 'Não foi possível guardar.'}</Notice> : null}
-      {rows.length === 0 ? <p className="muted">Sem equipas ativas. Guardar assim retira o utilizador de todas as equipas.</p> : null}
+      {rows.length === 0 ? <p className="m-0 text-sm text-muted-foreground">Sem equipas ativas. Guardar assim retira o utilizador de todas as equipas.</p> : null}
 
       {rows.map((r, i) => (
-        <div key={i} className="form__row membership-row">
-          <div className="field">
+        <div key={i} className="grid items-end gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto]">
+          <div className="flex flex-col gap-1.5">
             <label htmlFor={`m-team-${i}`}>Equipa</label>
             <select id={`m-team-${i}`} value={r.teamId} onChange={(e) => update(i, { teamId: e.target.value })}>
               <option value="">Escolha a equipa</option>
@@ -96,14 +97,14 @@ export function MembershipEditor({ userId, userName, addTeamId, onDone, onCancel
               ))}
             </select>
           </div>
-          <div className="field">
+          <div className="flex flex-col gap-1.5">
             <label htmlFor={`m-role-${i}`}>Papel</label>
             <select id={`m-role-${i}`} value={r.role} onChange={(e) => update(i, { role: e.target.value as TeamRole })}>
               <option value="member">Membro</option>
               <option value="leader">Líder</option>
             </select>
           </div>
-          <div className="field">
+          <div className="flex flex-col gap-1.5">
             <label htmlFor={`m-pct-${i}`}>Alocação (%)</label>
             <input
               id={`m-pct-${i}`}
@@ -115,38 +116,38 @@ export function MembershipEditor({ userId, userName, addTeamId, onDone, onCancel
               onChange={(e) => update(i, { allocationPct: e.target.value })}
             />
             {submitted && check.rows[i] ? (
-              <span id={`m-err-${i}`} className="field__error">
+              <span id={`m-err-${i}`} className="m-0 text-xs font-medium text-destructive">
                 {check.rows[i]}
               </span>
             ) : null}
           </div>
-          <button type="button" className="button--link" onClick={() => setRows(rows.filter((_, j) => j !== i))}>
+          <Button variant="link" className="h-auto self-start p-0" type="button" onClick={() => setRows(rows.filter((_, j) => j !== i))}>
             Retirar da equipa
-          </button>
+          </Button>
         </div>
       ))}
 
-      <p className={total === 100 || rows.length === 0 ? 'muted' : 'field__error'} aria-live="polite">
+      <p className={total === 100 || rows.length === 0 ? 'm-0 text-sm text-muted-foreground' : 'm-0 text-sm font-medium text-destructive'} aria-live="polite">
         Total: {total} %{rows.length > 0 && total !== 100 ? ' — tem de ser 100 %' : ''}
       </p>
       {submitted && check.total ? <Notice tone="error">{check.total}</Notice> : null}
 
       {inactive.length > 0 ? (
-        <p className="field__hint">
+        <p className="text-xs text-muted-foreground">
           Equipas desativadas (mantidas no histórico, não contam para a soma): {inactive.map((m) => `${m.teamName} (${m.allocationPct} %)`).join(', ')}.
         </p>
       ) : null}
 
-      <div className="actions">
-        <button type="button" className="button--secondary" onClick={() => setRows([...rows, { teamId: '', role: 'member', allocationPct: '' }])}>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" type="button" onClick={() => setRows([...rows, { teamId: '', role: 'member', allocationPct: '' }])}>
           Acrescentar equipa
-        </button>
-        <button type="button" className="button--secondary" onClick={onCancel} disabled={save.isPending}>
+        </Button>
+        <Button variant="outline" type="button" onClick={onCancel} disabled={save.isPending}>
           Cancelar
-        </button>
-        <button type="submit" disabled={save.isPending}>
+        </Button>
+        <Button type="submit" disabled={save.isPending}>
           {save.isPending ? 'A guardar…' : 'Guardar pertenças'}
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useState, type FormEvent } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router';
@@ -69,15 +70,15 @@ export function AccountsPage() {
   };
 
   return (
-    <section className="page">
+    <section className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-5 sm:px-6">
       <AdminNav />
-      <h1>Contas de utilizador</h1>
+      <h1 className="m-0 text-[22px] font-bold">Contas de utilizador</h1>
       {notice ? <Notice tone="success">{notice}</Notice> : null}
 
-      <form className="panel form" onSubmit={submit} noValidate>
-        <h2>Nova conta</h2>
+      <form className="flex flex-col gap-3 rounded-xl border bg-card p-4" onSubmit={submit} noValidate>
+        <h2 className="m-0 text-base font-semibold">Nova conta</h2>
         {generalError ? <Notice tone="error">{generalError}</Notice> : null}
-        <div className="form__row">
+        <div className="grid gap-3 sm:grid-cols-2">
           <FormField label="Nome" value={name} onChange={setName} error={errors.name} maxLength={100} required />
           <FormField
             label="E-mail profissional"
@@ -88,59 +89,58 @@ export function AccountsPage() {
             required
           />
         </div>
-        <div className="actions">
-          <button type="submit" disabled={create.isPending}>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="submit" disabled={create.isPending}>
             {create.isPending ? 'A criar…' : 'Criar conta'}
-          </button>
+          </Button>
         </div>
       </form>
 
-      <form className="search" role="search" onSubmit={search}>
+      <form className="flex flex-wrap items-end gap-2 [&>*:first-child]:min-w-64 [&>*:first-child]:flex-1" role="search" onSubmit={search}>
         <label htmlFor="account-search">Pesquisar pelo nome ou e-mail</label>
         <input id="account-search" type="search" value={searchText} maxLength={100} onChange={(e) => setSearchText(e.target.value)} />
-        <button type="submit" className="button--secondary">
+        <Button variant="outline" type="submit">
           Pesquisar
-        </button>
+        </Button>
         {q ? (
-          <button
+          <Button variant="link" className="h-auto self-start p-0"
             type="button"
-            className="button--link"
             onClick={() => {
               setSearchText('');
               setParams(new URLSearchParams());
             }}
           >
             Limpar pesquisa
-          </button>
+          </Button>
         ) : null}
       </form>
 
       {accounts.isPending ? (
         <Notice>A carregar as contas…</Notice>
       ) : accounts.isError ? (
-        <div className="panel">
+        <div className="flex flex-col gap-3 rounded-xl border bg-card p-4">
           <Notice tone="error">Não foi possível carregar as contas.</Notice>
-          <div className="actions">
-            <button type="button" onClick={() => void accounts.refetch()} disabled={accounts.isFetching}>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" onClick={() => void accounts.refetch()} disabled={accounts.isFetching}>
               Tentar de novo
-            </button>
+            </Button>
           </div>
         </div>
       ) : accounts.data.total === 0 ? (
         <Notice>{q ? `Nenhuma conta corresponde a «${q}».` : 'Ainda não há contas.'}</Notice>
       ) : (
         <>
-          <p className="muted" aria-live="polite">
+          <p className="m-0 text-sm text-muted-foreground" aria-live="polite">
             {accounts.data.total === 1 ? '1 conta' : `${accounts.data.total} contas`}
             {q ? ` para «${q}»` : ''}
           </p>
-          <ul className="card-list">
+          <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {accounts.data.items.map((a) => (
-              <li key={a.id} className="card">
-                <span className="card__title">{a.name}</span>
-                {a.isAdmin ? <span className="badge"> Administrador</span> : null}
-                <p className="card__text">
-                  {a.workEmail} · <span className="muted">{accountStatus(a)}</span>
+              <li key={a.id} className="flex flex-col gap-1.5 rounded-xl border bg-card p-4">
+                <span className="font-semibold text-foreground hover:underline">{a.name}</span>
+                {a.isAdmin ? <span className="inline-flex w-fit items-center rounded bg-muted px-1.5 text-xs font-semibold text-muted-foreground"> Administrador</span> : null}
+                <p className="m-0 text-sm text-foreground/80">
+                  {a.workEmail} · <span className="m-0 text-sm text-muted-foreground">{accountStatus(a)}</span>
                 </p>
               </li>
             ))}

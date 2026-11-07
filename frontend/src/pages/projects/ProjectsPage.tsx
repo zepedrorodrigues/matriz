@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useState, type FormEvent } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
@@ -60,21 +61,21 @@ export function ProjectsPage() {
   const mayCreate = me.data ? canCreateProject(me.data) : false;
 
   return (
-    <section className="page">
-      <div className="page__header">
-        <h1>Projetos</h1>
+    <section className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-5 sm:px-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="m-0 text-[22px] font-bold">Projetos</h1>
         {mayCreate && !creating ? (
-          <button type="button" onClick={() => setCreating(true)}>
+          <Button type="button" onClick={() => setCreating(true)}>
             Novo projeto
-          </button>
+          </Button>
         ) : null}
       </div>
 
       {flash ? <Notice tone="success">{flash}</Notice> : null}
 
       {creating ? (
-        <div className="panel">
-          <h2>Novo projeto</h2>
+        <div className="flex flex-col gap-3 rounded-xl border bg-card p-4">
+          <h2 className="m-0 text-base font-semibold">Novo projeto</h2>
           <ProjectForm
             submitLabel="Criar projeto"
             busyLabel="A criar…"
@@ -89,23 +90,22 @@ export function ProjectsPage() {
         </div>
       ) : null}
 
-      <form className="search" role="search" onSubmit={search}>
+      <form className="flex flex-wrap items-end gap-2 [&>*:first-child]:min-w-64 [&>*:first-child]:flex-1" role="search" onSubmit={search}>
         <label htmlFor="project-search">Pesquisar pelo nome</label>
         <input id="project-search" type="search" value={searchText} maxLength={100} onChange={(e) => setSearchText(e.target.value)} />
-        <button type="submit" className="button--secondary">
+        <Button variant="outline" type="submit">
           Pesquisar
-        </button>
+        </Button>
         {q ? (
-          <button
+          <Button variant="link" className="h-auto self-start p-0"
             type="button"
-            className="button--link"
             onClick={() => {
               setSearchText('');
               setParams(new URLSearchParams());
             }}
           >
             Limpar pesquisa
-          </button>
+          </Button>
         ) : null}
       </form>
 
@@ -117,17 +117,17 @@ export function ProjectsPage() {
         <Notice>{q ? `Nenhum projeto corresponde a «${q}».` : 'Ainda não tem projetos visíveis.'}</Notice>
       ) : (
         <>
-          <p className="muted" aria-live="polite">
+          <p className="m-0 text-sm text-muted-foreground" aria-live="polite">
             {projects.data.total === 1 ? '1 projeto' : `${projects.data.total} projetos`}
             {q ? ` para «${q}»` : ''}
           </p>
-          <ul className="card-list">
+          <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {projects.data.items.map((p) => (
-              <li key={p.id} className="card">
-                <Link to={`/projetos/${p.id}`} className="card__title">
+              <li key={p.id} className="flex flex-col gap-1.5 rounded-xl border bg-card p-4">
+                <Link to={`/projetos/${p.id}`} className="font-semibold text-foreground hover:underline">
                   {p.name}
                 </Link>
-                <p className="card__text">{p.objective ?? <span className="muted">Sem objetivo definido.</span>}</p>
+                <p className="m-0 text-sm text-foreground/80">{p.objective ?? <span className="m-0 text-sm text-muted-foreground">Sem objetivo definido.</span>}</p>
               </li>
             ))}
           </ul>

@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router';
@@ -80,16 +81,16 @@ export function TeamsPage() {
   const fieldErrors = create.error instanceof ApiError && create.error.status === 400 ? create.error.fieldErrors() : {};
 
   return (
-    <section className="page">
+    <section className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-5 sm:px-6">
       <AdminNav />
-      <h1>Equipas</h1>
+      <h1 className="m-0 text-[22px] font-bold">Equipas</h1>
 
-      <form className="panel form" onSubmit={submit} noValidate>
-        <h2>Nova equipa</h2>
+      <form className="flex flex-col gap-3 rounded-xl border bg-card p-4" onSubmit={submit} noValidate>
+        <h2 className="m-0 text-base font-semibold">Nova equipa</h2>
         {create.error && Object.keys(fieldErrors).length === 0 ? (
           <Notice tone="error">{create.error instanceof ApiError ? create.error.message : 'Não foi possível criar a equipa.'}</Notice>
         ) : null}
-        <div className="form__row">
+        <div className="grid gap-3 sm:grid-cols-2">
           <FormField label="Nome" value={name} onChange={setName} error={errors.name ?? fieldErrors.name} maxLength={100} required />
           <SelectField label="Líder" value={leaderId} onChange={chooseLeader} error={errors.leaderId} required>
             <option value="">Escolha o líder</option>
@@ -105,9 +106,9 @@ export function TeamsPage() {
 
         {leaderId && leaderTeams.isPending ? <Notice>A carregar as equipas do líder…</Notice> : null}
         {leaderId && leaderTeams.data ? (
-          <fieldset className="allocation-set">
+          <fieldset className="m-0 flex flex-col gap-3 rounded-lg border p-3">
             <legend>Alocações do líder (somam 100 %)</legend>
-            <div className="form__row">
+            <div className="grid gap-3 sm:grid-cols-2">
               <FormField label="Na nova equipa (%)" value={leaderPct} onChange={setLeaderPct} error={errors.leaderPct} />
               {leaderActive.map((m) => (
                 <FormField
@@ -120,17 +121,17 @@ export function TeamsPage() {
                 />
               ))}
             </div>
-            <p className={total === 100 ? 'muted' : 'field__error'} aria-live="polite">
+            <p className={total === 100 ? 'm-0 text-sm text-muted-foreground' : 'm-0 text-sm font-medium text-destructive'} aria-live="polite">
               Total: {total} %
             </p>
             {errors.total ? <Notice tone="error">{errors.total}</Notice> : null}
           </fieldset>
         ) : null}
 
-        <div className="actions">
-          <button type="submit" disabled={create.isPending}>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="submit" disabled={create.isPending}>
             {create.isPending ? 'A criar…' : 'Criar equipa'}
-          </button>
+          </Button>
         </div>
       </form>
 
@@ -141,13 +142,13 @@ export function TeamsPage() {
       ) : teams.data.length === 0 ? (
         <Notice>Ainda não há equipas.</Notice>
       ) : (
-        <ul className="card-list">
+        <ul className="m-0 flex list-none flex-col gap-2 p-0">
           {teams.data.map((t) => (
-            <li key={t.id} className="card">
-              <Link to={`/administracao/equipas/${t.id}`} className="card__title">
+            <li key={t.id} className="flex flex-col gap-1.5 rounded-xl border bg-card p-4">
+              <Link to={`/administracao/equipas/${t.id}`} className="font-semibold text-foreground hover:underline">
                 {t.name}
               </Link>
-              {t.active ? null : <span className="badge"> Desativada</span>}
+              {t.active ? null : <span className="inline-flex w-fit items-center rounded bg-muted px-1.5 text-xs font-semibold text-muted-foreground"> Desativada</span>}
             </li>
           ))}
         </ul>
