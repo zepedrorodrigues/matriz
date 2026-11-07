@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Label } from '@/components/ui/label';
@@ -74,6 +74,11 @@ export function DatePicker({
           />
         </PopoverContent>
       </Popover>
+      {!required && selected ? (
+        <Button type="button" variant="ghost" size="sm" className="h-8 self-start px-2 text-muted-foreground" aria-label={`Apagar a data: ${label}`} onClick={() => onChange('')}>
+          <X aria-hidden="true" /> Sem data
+        </Button>
+      ) : null}
       {hint ? (
         <span id={`${id}-hint`} className="text-xs text-muted-foreground">
           {hint}

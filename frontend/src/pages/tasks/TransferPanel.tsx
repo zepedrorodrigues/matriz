@@ -6,6 +6,7 @@ import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { Notice } from '../../components/Notice';
 import { SelectField } from '../../components/SelectField';
 import { transferConsequences, transferTargets } from '../../domain/tasks';
+import { Button } from '@/components/ui/button';
 
 interface TransferPanelProps {
   task: Task;
@@ -60,16 +61,16 @@ export function TransferPanel({ task, project, me, onOperationStart, resetKey, o
   };
 
   return (
-    <section className="panel" aria-labelledby="transfer-title">
-      <h2 id="transfer-title">Transferir para outra equipa</h2>
+    <section className="flex flex-col gap-3 rounded-xl border bg-card p-4" aria-labelledby="transfer-title">
+      <h2 id="transfer-title" className="m-0 text-sm font-semibold">Transferir para outra equipa</h2>
       {transfer.error ? (
         <Notice tone="error">{transfer.error instanceof ApiError ? transfer.error.message : 'Não foi possível transferir a tarefa.'}</Notice>
       ) : null}
       {targets.length === 0 ? (
-        <p className="muted">O projeto não tem outra equipa ativa para onde transferir a tarefa.</p>
+        <p className="m-0 text-sm text-muted-foreground">O projeto não tem outra equipa ativa para onde transferir a tarefa.</p>
       ) : (
-        <form className="form" onSubmit={submit} noValidate>
-          <div className="form__row">
+        <form className="flex flex-col gap-3" onSubmit={submit} noValidate>
+          <div className="grid gap-3 sm:grid-cols-2">
             <SelectField label="Equipa de destino" value={targetId} onChange={setTargetId} error={error} required>
               <option value="">Escolha a equipa</option>
               {targets.map((t) => (
@@ -79,10 +80,10 @@ export function TransferPanel({ task, project, me, onOperationStart, resetKey, o
               ))}
             </SelectField>
           </div>
-          <div className="actions">
-            <button type="submit" className="button--secondary" disabled={transfer.isPending}>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" type="submit" disabled={transfer.isPending}>
               Transferir…
-            </button>
+            </Button>
           </div>
         </form>
       )}

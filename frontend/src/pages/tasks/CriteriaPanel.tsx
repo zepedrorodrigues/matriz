@@ -5,6 +5,7 @@ import { canDefineCriteria, canRecordCriteria } from '../../auth/current-user';
 import { FormField } from '../../components/FormField';
 import { Notice } from '../../components/Notice';
 import { FINISHED_STATES, validateCriterionText } from '../../domain/tasks';
+import { Button } from '@/components/ui/button';
 
 const dateTime = new Intl.DateTimeFormat('pt-PT', { dateStyle: 'medium', timeStyle: 'short' });
 const errorText = (error: unknown) => (error instanceof ApiError ? error.message : 'Não foi possível concluir a operação.');
@@ -115,21 +116,21 @@ export function CriteriaPanel({ task, me, onOperationStart, resetKey }: Criteria
     .find((error) => error && !fieldError(error));
 
   return (
-    <section className="panel" aria-labelledby="criteria-title">
-      <h2 id="criteria-title">Critérios de aceitação</h2>
+    <section className="flex flex-col gap-3 rounded-xl border bg-card p-4" aria-labelledby="criteria-title">
+      <h2 id="criteria-title" className="m-0 text-sm font-semibold">Critérios de aceitação</h2>
       {success ? <Notice tone="success">{success}</Notice> : null}
       {generalError ? <Notice tone="error">{errorText(generalError)}</Notice> : null}
 
       {task.acceptanceCriteria.length === 0 ? (
-        <p className="muted">Sem critérios de aceitação. São precisos para passar a «Pronto a desenvolver».</p>
+        <p className="m-0 text-sm text-muted-foreground">Sem critérios de aceitação. São precisos para passar a «Pronto a desenvolver».</p>
       ) : (
-        <ul className="criteria">
+        <ul className="m-0 flex list-none flex-col p-0">
           {task.acceptanceCriteria.map((c) => {
             const lockedMet = finished && c.isMet;
             return (
-              <li key={c.id} className="criteria__item">
+              <li key={c.id} className="flex flex-col gap-1.5 border-b py-2.5 last:border-b-0">
                 {editingId === c.id ? (
-                  <form className="form form--inline" onSubmit={(e) => submitEdit(e, c.id, c.description)} noValidate>
+                  <form className="flex flex-col gap-3" onSubmit={(e) => submitEdit(e, c.id, c.description)} noValidate>
                     <FormField
                       label="Descrição do critério"
                       value={editText}
@@ -138,19 +139,19 @@ export function CriteriaPanel({ task, me, onOperationStart, resetKey }: Criteria
                       required
                       autoFocus
                     />
-                    <div className="actions">
-                      <button type="button" className="button--secondary" onClick={() => setEditingId(null)} disabled={edit.isPending}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button variant="outline" type="button" onClick={() => setEditingId(null)} disabled={edit.isPending}>
                         Cancelar
-                      </button>
-                      <button type="submit" disabled={edit.isPending}>
+                      </Button>
+                      <Button type="submit" disabled={edit.isPending}>
                         {edit.isPending ? 'A guardar…' : 'Guardar critério'}
-                      </button>
+                      </Button>
                     </div>
                   </form>
                 ) : (
                   <>
                     {mayRecord ? (
-                      <label className="criteria__check">
+                      <label className="flex items-start gap-2 text-sm">
                         <input
                           type="checkbox"
                           checked={c.isMet}
@@ -161,11 +162,11 @@ export function CriteriaPanel({ task, me, onOperationStart, resetKey }: Criteria
                       </label>
                     ) : (
                       <span>
-                        <span className="badge">{c.isMet ? 'Cumprido' : 'Por cumprir'}</span> {c.description}
+                        <span className="inline-flex items-center rounded bg-muted px-1.5 text-xs font-semibold text-muted-foreground">{c.isMet ? 'Cumprido' : 'Por cumprir'}</span> {c.description}
                       </span>
                     )}
                     {c.isMet || mayRecord ? (
-                      <span className="field__hint">
+                      <span className="text-xs text-muted-foreground">
                         {c.isMet && c.metBy && c.metAt
                           ? `Cumprido · registado por ${c.metBy.name}, ${dateTime.format(new Date(c.metAt))}`
                           : 'Por cumprir'}
@@ -173,9 +174,8 @@ export function CriteriaPanel({ task, me, onOperationStart, resetKey }: Criteria
                       </span>
                     ) : null}
                     {mayDefine ? (
-                      <button
+                      <Button variant="link" className="h-auto self-start p-0"
                         type="button"
-                        className="button--link"
                         disabled={busy}
                         onClick={() => {
                           edit.reset();
@@ -185,7 +185,7 @@ export function CriteriaPanel({ task, me, onOperationStart, resetKey }: Criteria
                         }}
                       >
                         Editar texto
-                      </button>
+                      </Button>
                     ) : null}
                   </>
                 )}
@@ -197,9 +197,9 @@ export function CriteriaPanel({ task, me, onOperationStart, resetKey }: Criteria
 
       {mayDefine ? (
         finished ? (
-          <p className="muted">Para acrescentar critérios a uma tarefa «Terminada» ou «Entregue», recue-a primeiro de estado.</p>
+          <p className="m-0 text-sm text-muted-foreground">Para acrescentar critérios a uma tarefa «Terminada» ou «Entregue», recue-a primeiro de estado.</p>
         ) : (
-          <form className="form form--inline" onSubmit={submitNew} noValidate>
+          <form className="flex flex-col gap-3" onSubmit={submitNew} noValidate>
             <FormField
               label="Novo critério"
               value={draft}
@@ -210,10 +210,10 @@ export function CriteriaPanel({ task, me, onOperationStart, resetKey }: Criteria
               error={draftError ?? fieldError(add.error)}
               hint="Cada critério fica por cumprir até alguém registar o cumprimento."
             />
-            <div className="actions">
-              <button type="submit" disabled={add.isPending}>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="submit" disabled={add.isPending}>
                 {add.isPending ? 'A acrescentar…' : 'Acrescentar critério'}
-              </button>
+              </Button>
             </div>
           </form>
         )

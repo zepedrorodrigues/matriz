@@ -5,6 +5,7 @@ import { canBlockTask } from '../../auth/current-user';
 import { FormField } from '../../components/FormField';
 import { Notice } from '../../components/Notice';
 import { validateBlockReason } from '../../domain/tasks';
+import { Button } from '@/components/ui/button';
 
 interface BlockPanelProps {
   task: Task;
@@ -51,8 +52,8 @@ export function BlockPanel({ task, me, onOperationStart, resetKey, onChanged }: 
   const serverField = change.error instanceof ApiError && change.error.status === 400 ? change.error.fieldErrors().blockReason : undefined;
 
   return (
-    <section className="panel" aria-labelledby="block-title">
-      <h2 id="block-title">Bloqueio</h2>
+    <section className="flex flex-col gap-3 rounded-xl border bg-card p-4" aria-labelledby="block-title">
+      <h2 id="block-title" className="m-0 text-sm font-semibold">Bloqueio</h2>
       {change.error && !serverField ? <Notice tone="error">{change.error instanceof ApiError ? change.error.message : 'Não foi possível guardar.'}</Notice> : null}
       {task.isBlocked ? (
         <>
@@ -60,15 +61,15 @@ export function BlockPanel({ task, me, onOperationStart, resetKey, onChanged }: 
             Bloqueada: {task.blockReason}
           </Notice>
           {mayBlock ? (
-            <div className="actions">
-              <button type="button" className="button--secondary" disabled={change.isPending} onClick={() => change.mutate({ isBlocked: false })}>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" type="button" disabled={change.isPending} onClick={() => change.mutate({ isBlocked: false })}>
                 {change.isPending ? 'A guardar…' : 'Retirar o bloqueio'}
-              </button>
+              </Button>
             </div>
           ) : null}
         </>
       ) : editing ? (
-        <form className="form" onSubmit={submit} noValidate>
+        <form className="flex flex-col gap-3" onSubmit={submit} noValidate>
           <FormField
             label="Motivo do bloqueio"
             value={reason}
@@ -80,22 +81,21 @@ export function BlockPanel({ task, me, onOperationStart, resetKey, onChanged }: 
             required
             autoFocus
           />
-          <div className="actions">
-            <button type="button" className="button--secondary" onClick={() => setEditing(false)} disabled={change.isPending}>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" type="button" onClick={() => setEditing(false)} disabled={change.isPending}>
               Cancelar
-            </button>
-            <button type="submit" disabled={change.isPending}>
+            </Button>
+            <Button type="submit" disabled={change.isPending}>
               {change.isPending ? 'A guardar…' : 'Assinalar bloqueio'}
-            </button>
+            </Button>
           </div>
         </form>
       ) : (
         <>
-          <p className="muted">Sem bloqueio. O bloqueio não muda o estado da tarefa.</p>
-          <div className="actions">
-            <button
+          <p className="m-0 text-sm text-muted-foreground">Sem bloqueio. O bloqueio não muda o estado da tarefa.</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline"
               type="button"
-              className="button--secondary"
               onClick={() => {
                 change.reset();
                 setError(undefined);
@@ -104,7 +104,7 @@ export function BlockPanel({ task, me, onOperationStart, resetKey, onChanged }: 
               }}
             >
               Assinalar bloqueio
-            </button>
+            </Button>
           </div>
         </>
       )}

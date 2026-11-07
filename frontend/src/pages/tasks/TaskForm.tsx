@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useState, type FormEvent } from 'react';
 import { ApiError, type Objective } from '../../api/client';
 import { DateField } from '../../components/DateField';
@@ -125,12 +126,12 @@ export function TaskForm({
   };
 
   return (
-    <form className="form" onSubmit={submit} noValidate>
+    <form className="flex flex-col gap-3" onSubmit={submit} noValidate>
       {generalError ? <Notice tone="error">{generalError}</Notice> : null}
       <FormField label="Título" value={title} onChange={setTitle} error={errors.title} maxLength={150} hint="Entre 3 e 150 caracteres" required autoFocus />
       <FormField label="Descrição" value={description} onChange={setDescription} error={errors.description} maxLength={2000} multiline />
       {withHierarchy ? (
-        <div className="form__row">
+        <div className="grid gap-3 sm:grid-cols-2">
           <SelectField label="Épico" value={epicId} onChange={setEpicId} error={errors.epicId} required>
             <option value="">Escolha um épico</option>
             {objectives.map((o) => (
@@ -168,7 +169,7 @@ export function TaskForm({
         ))}
       </SelectField>
       {estimatesEditable ? (
-        <div className="form__row">
+        <div className="grid gap-3 sm:grid-cols-2">
           <FormField
             label="Estimativa temporal (horas)"
             value={hours}
@@ -192,32 +193,32 @@ export function TaskForm({
           </SelectField>
         </div>
       ) : (
-        <div className="field">
-          <span className="field__label">Estimativas</span>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium">Estimativas</span>
           <span>
             {hours === '' ? 'Sem estimativa temporal' : `${hours} h`} · {points === '' ? 'sem story points' : `${points} SP`}
           </span>
-          {estimatesHint ? <span className="field__hint">{estimatesHint}</span> : null}
+          {estimatesHint ? <span className="text-xs text-muted-foreground">{estimatesHint}</span> : null}
         </div>
       )}
       {dueDateEditable ? (
         <DateField label="Prazo" value={dueDate} onChange={setDueDate} error={errors.dueDate} required={false} hint="Opcional; uma data" />
       ) : (
-        <div className="field">
-          <span className="field__label">Prazo</span>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium">Prazo</span>
           <span>{dueDate ? formatDate(dueDate) : 'Sem prazo'}</span>
-          <span className="field__hint">Só o líder da equipa, o gestor do projeto e o administrador alteram o prazo (RN29).</span>
+          <span className="text-xs text-muted-foreground">Só o líder da equipa, o gestor do projeto e o administrador alteram o prazo (RN29).</span>
         </div>
       )}
-      <div className="actions">
+      <div className="flex flex-wrap items-center gap-2">
         {onCancel ? (
-          <button type="button" className="button--secondary" onClick={onCancel} disabled={busy}>
+          <Button variant="outline" type="button" onClick={onCancel} disabled={busy}>
             Cancelar
-          </button>
+          </Button>
         ) : null}
-        <button type="submit" disabled={busy}>
+        <Button type="submit" disabled={busy}>
           {busy ? busyLabel : submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -183,8 +184,8 @@ export function AssignmentPanel({ task, me, onOperationStart, resetKey }: Assign
       : null;
 
   return (
-    <section className="panel" aria-labelledby="assignment-title">
-      <h2 id="assignment-title">Responsável e participantes</h2>
+    <section className="flex flex-col gap-3 rounded-xl border bg-card p-4" aria-labelledby="assignment-title">
+      <h2 id="assignment-title" className="m-0 text-sm font-semibold">Responsável e participantes</h2>
       {success ? <Notice tone="success">{success}</Notice> : null}
       {error ? <Notice tone="error">{errorText(error)}</Notice> : null}
       {teamUsers.isError ? <Notice tone="error">Não foi possível carregar os utilizadores elegíveis.</Notice> : null}
@@ -192,13 +193,13 @@ export function AssignmentPanel({ task, me, onOperationStart, resetKey }: Assign
       {mayAssign ? (
         <>
           {mayCross ? (
-            <label className="criteria__check">
+            <label className="flex items-start gap-2 text-sm">
               <input type="checkbox" checked={includeOthers} onChange={(e) => setIncludeOthers(e.target.checked)} disabled={busy} />
               <span>Mostrar também utilizadores de outras equipas (exige justificação)</span>
             </label>
           ) : null}
 
-          <form className="form form--inline" onSubmit={submitAssign} noValidate>
+          <form className="flex flex-col gap-3" onSubmit={submitAssign} noValidate>
             <SelectField
               label="Responsável pela execução"
               value={assigneeId}
@@ -221,34 +222,34 @@ export function AssignmentPanel({ task, me, onOperationStart, resetKey }: Assign
                 required
               />
             ) : null}
-            <div className="actions">
-              <button type="submit" disabled={busy || assigneeId === (task.assignee?.id ?? '')}>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="submit" disabled={busy || assigneeId === (task.assignee?.id ?? '')}>
                 {assign.isPending ? 'A atribuir…' : 'Guardar responsável'}
-              </button>
+              </Button>
             </div>
           </form>
         </>
       ) : (
         <p>
-          <strong>Responsável pela execução:</strong> {task.assignee?.name ?? <span className="muted">Sem responsável.</span>}
+          <strong>Responsável pela execução:</strong> {task.assignee?.name ?? <span className="m-0 text-sm text-muted-foreground">Sem responsável.</span>}
         </p>
       )}
 
-      <h3>Participantes</h3>
+      <h3 className="m-0 mt-2 text-sm font-semibold">Participantes</h3>
       {task.participants.length === 0 ? (
-        <p className="muted">Sem participantes.</p>
+        <p className="m-0 text-sm text-muted-foreground">Sem participantes.</p>
       ) : (
-        <ul className="criteria">
+        <ul className="m-0 flex list-none flex-col p-0">
           {task.participants.map((p) => (
-            <li key={p.user.id} className="criteria__item">
+            <li key={p.user.id} className="flex flex-col gap-1.5 border-b py-2.5 last:border-b-0">
               <span>{p.user.name}</span>
-              <span className="field__hint">
+              <span className="text-xs text-muted-foreground">
                 Associado por {p.addedBy.name}, {dateTime.format(new Date(p.addedAt))}
               </span>
               {mayAssign ? (
-                <button type="button" className="button--link" disabled={busy} onClick={() => remove.mutate(p.user)}>
+                <Button variant="link" className="h-auto self-start p-0" type="button" disabled={busy} onClick={() => remove.mutate(p.user)}>
                   {remove.isPending && remove.variables?.id === p.user.id ? 'A remover…' : `Remover ${p.user.name}`}
-                </button>
+                </Button>
               ) : null}
             </li>
           ))}
@@ -256,7 +257,7 @@ export function AssignmentPanel({ task, me, onOperationStart, resetKey }: Assign
       )}
 
       {mayAssign ? (
-        <form className="form form--inline" onSubmit={submitParticipant} noValidate>
+        <form className="flex flex-col gap-3" onSubmit={submitParticipant} noValidate>
           <SelectField
             label="Associar participante"
             value={participantId}
@@ -279,10 +280,10 @@ export function AssignmentPanel({ task, me, onOperationStart, resetKey }: Assign
               required
             />
           ) : null}
-          <div className="actions">
-            <button type="submit" disabled={busy}>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="submit" disabled={busy}>
               {add.isPending ? 'A associar…' : 'Associar participante'}
-            </button>
+            </Button>
           </div>
         </form>
       ) : null}

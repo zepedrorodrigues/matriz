@@ -1,4 +1,8 @@
 import { useId } from 'react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 
 interface FormFieldProps {
   label: string;
@@ -14,7 +18,7 @@ interface FormFieldProps {
 
 /**
  * Campo de formulário com etiqueta, ajuda, contador e mensagem de erro associados ao campo
- * (aria-describedby, aria-invalid), para formulários consistentes (Ficha PL 03, Ex. 7).
+ * (aria-describedby, aria-invalid), para formulários consistentes (Ficha PL 03, Ex. 7; aspeto DT17).
  */
 export function FormField({ label, value, onChange, error, hint, maxLength, multiline, required, autoFocus }: FormFieldProps) {
   const id = useId();
@@ -31,21 +35,57 @@ export function FormField({ label, value, onChange, error, hint, maxLength, mult
     onChange: (e: { target: { value: string } }) => onChange(e.target.value),
   };
   return (
-    <div className="field">
-      <label htmlFor={id}>
+    <FieldShell id={id} label={label} required={required} hintId={hintId} errorId={errorId} error={error} hint={hint || maxLength ? <>
+      {hint}
+      {hint && maxLength ? ' · ' : ''}
+      {maxLength ? `${value.trim().length}/${maxLength}` : ''}
+    </> : undefined}>
+      {multiline ? <Textarea rows={4} className="bg-card" {...common} /> : <Input type="text" className="h-10 bg-card" {...common} />}
+    </FieldShell>
+  );
+}
+
+/** Estrutura comum dos campos: etiqueta (com * nos obrigatórios), controlo, ajuda e erro. */
+export function FieldShell({
+  id,
+  label,
+  required,
+  hint,
+  hintId,
+  error,
+  errorId,
+  children,
+  className,
+}: {
+  id: string;
+  label: string;
+  required?: boolean;
+  hint?: React.ReactNode;
+  hintId: string;
+  error?: string;
+  errorId: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn('flex min-w-0 flex-col gap-1.5', className)}>
+      <Label htmlFor={id}>
         {label}
-        {required ? <span aria-hidden="true"> *</span> : null}
-      </label>
-      {multiline ? <textarea rows={4} {...common} /> : <input type="text" {...common} />}
-      {hint || maxLength ? (
-        <span id={hintId} className="field__hint">
+        {required ? (
+          <span aria-hidden="true" className="text-destructive">
+            {' '}
+            *
+          </span>
+        ) : null}
+      </Label>
+      {children}
+      {hint ? (
+        <span id={hintId} className="text-xs text-muted-foreground">
           {hint}
-          {hint && maxLength ? ' · ' : ''}
-          {maxLength ? `${value.trim().length}/${maxLength}` : ''}
         </span>
       ) : null}
       {error ? (
-        <span id={errorId} className="field__error">
+        <span id={errorId} className="text-xs font-medium text-destructive">
           {error}
         </span>
       ) : null}

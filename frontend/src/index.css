@@ -118,6 +118,14 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
   }
+  /* Caixas de verificação nativas com a cor do tema */
+  input[type='checkbox'] {
+    accent-color: var(--primary);
+    width: 1rem;
+    height: 1rem;
+    margin-top: 0.15rem;
+    flex: none;
+  }
   /* Foco sempre visível com teclado (RNF12, WCAG 2.4.7) */
   :focus-visible {
     outline: 3px solid var(--ring);

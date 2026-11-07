@@ -1,6 +1,10 @@
-import { useId } from 'react';
+import { DatePicker } from './date-picker';
 
-/** Campo de data com a mesma estrutura do FormField: etiqueta, ajuda e erro associados (Ex. 7). */
+/**
+ * Campo de data com a mesma estrutura do FormField: etiqueta, ajuda e erro associados (Ex. 7). Mostra e
+ * escolhe a data em pt-PT (DD/MM/AAAA, semana à segunda, RNF10), qualquer que seja o idioma do browser
+ * (DT17); quando não é obrigatório, «Sem data» apaga-a. O valor continua a ser AAAA-MM-DD.
+ */
 export function DateField({
   label,
   value,
@@ -16,33 +20,5 @@ export function DateField({
   hint?: string;
   required?: boolean;
 }) {
-  const id = useId();
-  const describedBy = [hint ? `${id}-hint` : null, error ? `${id}-error` : null].filter(Boolean).join(' ') || undefined;
-  return (
-    <div className="field">
-      <label htmlFor={id}>
-        {label}
-        {required ? <span aria-hidden="true"> *</span> : null}
-      </label>
-      <input
-        id={id}
-        type="date"
-        value={value}
-        required={required}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy}
-        onChange={(e) => onChange(e.target.value)}
-      />
-      {hint ? (
-        <span id={`${id}-hint`} className="field__hint">
-          {hint}
-        </span>
-      ) : null}
-      {error ? (
-        <span id={`${id}-error`} className="field__error">
-          {error}
-        </span>
-      ) : null}
-    </div>
-  );
+  return <DatePicker label={label} value={value} onChange={onChange} error={error} hint={hint} required={required} />;
 }

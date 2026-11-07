@@ -56,7 +56,15 @@ export function SprintTaskDialog() {
   const close = () => navigate({ pathname: `/sprints/${sprintId}`, search: location.search });
   return (
     <Dialog open onOpenChange={(open) => (open ? undefined : close())}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-6xl" aria-describedby={undefined}>
+      {/* Sem transform (centrado por margens): a confirmação de «Eliminar», fixa, tem de cobrir a janela e não só o diálogo. */}
+      <DialogContent
+        className="top-[4vh] right-0 left-0 mx-auto max-h-[92vh] translate-none! overflow-y-auto sm:max-w-6xl"
+        aria-describedby={undefined}
+        // Com uma confirmação aberta por cima (Eliminar, Transferir), o Escape cancela só a confirmação.
+        onEscapeKeyDown={(e) => {
+          if (document.querySelector('[role=alertdialog]')) e.preventDefault();
+        }}
+      >
         <DialogTitle className="sr-only">Detalhe da tarefa</DialogTitle>
         <TaskDetail key={taskId} taskId={taskId} inDialog onDeleted={close} />
       </DialogContent>

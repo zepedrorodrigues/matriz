@@ -5,6 +5,7 @@ import { FormField } from '../../components/FormField';
 import { Notice } from '../../components/Notice';
 import { Pagination } from '../../components/Pagination';
 import { lastPage, validateCommentText } from '../../domain/tasks';
+import { Button } from '@/components/ui/button';
 
 const PAGE_SIZE = 20;
 const dateTime = new Intl.DateTimeFormat('pt-PT', { dateStyle: 'medium', timeStyle: 'short' });
@@ -70,8 +71,8 @@ export function CommentsPanel({ taskId, onOperationStart, resetKey }: CommentsPa
   const data = comments.data;
 
   return (
-    <section className="panel" aria-labelledby="comments-title">
-      <h2 id="comments-title">Comentários{data ? ` (${data.total})` : ''}</h2>
+    <section className="flex flex-col gap-3 rounded-xl border bg-card p-4" aria-labelledby="comments-title">
+      <h2 id="comments-title" className="m-0 text-sm font-semibold">Comentários{data ? ` (${data.total})` : ''}</h2>
       {success ? <Notice tone="success">{success}</Notice> : null}
 
       {comments.isError ? (
@@ -79,16 +80,16 @@ export function CommentsPanel({ taskId, onOperationStart, resetKey }: CommentsPa
       ) : !data ? (
         <Notice>A carregar os comentários…</Notice>
       ) : data.total === 0 ? (
-        <p className="muted">Ainda não há comentários.</p>
+        <p className="m-0 text-sm text-muted-foreground">Ainda não há comentários.</p>
       ) : (
         <>
-          <ol className="criteria" aria-label="Comentários por ordem cronológica">
+          <ol className="m-0 flex list-none flex-col p-0" aria-label="Comentários por ordem cronológica">
             {data.items.map((c) => (
-              <li key={c.id} className="criteria__item">
-                <span className="field__hint">
+              <li key={c.id} className="flex flex-col gap-1.5 border-b py-2.5 last:border-b-0">
+                <span className="text-xs text-muted-foreground">
                   <strong>{c.author.name}</strong> · <time dateTime={c.createdAt}>{dateTime.format(new Date(c.createdAt))}</time>
                 </span>
-                <span className="comment__body">{c.body}</span>
+                <span className="m-0 whitespace-pre-line text-sm">{c.body}</span>
               </li>
             ))}
           </ol>
@@ -96,7 +97,7 @@ export function CommentsPanel({ taskId, onOperationStart, resetKey }: CommentsPa
         </>
       )}
 
-      <form className="form form--inline" onSubmit={submit} noValidate>
+      <form className="flex flex-col gap-3" onSubmit={submit} noValidate>
         {generalError ? <Notice tone="error">{generalError}</Notice> : null}
         <FormField
           label="Novo comentário"
@@ -110,10 +111,10 @@ export function CommentsPanel({ taskId, onOperationStart, resetKey }: CommentsPa
           hint="Descreva o trabalho, nunca motivos pessoais"
           multiline
         />
-        <div className="actions">
-          <button type="submit" disabled={add.isPending}>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="submit" disabled={add.isPending}>
             {add.isPending ? 'A publicar…' : 'Publicar comentário'}
-          </button>
+          </Button>
         </div>
       </form>
     </section>
