@@ -1,4 +1,5 @@
 import type { EntityManager } from 'typeorm';
+import { todaySql } from '../config/time-zone';
 
 /** Estados de uma tarefa (RN17), pela ordem do ciclo de vida (RN26). Valores técnicos do contrato. */
 export const TASK_STATES = [
@@ -26,6 +27,9 @@ export const DEVELOPMENT_STATES: readonly TaskState[] = ['in_development', 'in_t
 export const DONE_STATES: readonly TaskState[] = ['done', 'delivered'];
 /** A mesma lista para SQL: `t.state NOT IN (${DONE_STATES_SQL})` (valores fixos do código, não do pedido). */
 export const DONE_STATES_SQL = DONE_STATES.map((s) => `'${s}'`).join(', ');
+
+/** RF28: prazo ultrapassado no dia indicado (por omissão, hoje no fuso da aplicação) e tarefa não concluída (RN26). */
+export const overdueSql = (day = todaySql()) => `coalesce(t.due_date < ${day} AND t.state NOT IN (${DONE_STATES_SQL}), false)`;
 
 /** Tarefa vista pelo módulo Planeamento: o necessário para o backlog e as sprints (I9). */
 export interface PlanningTaskInfo {
@@ -97,9 +101,9 @@ export interface WorkItemLocator {
    */
   planningTasks(query: TeamTaskQuery | { taskIds: string[] }, manager?: EntityManager): Promise<PlanningTaskInfo[]>;
   /** Quantas tarefas `planningTasks` devolveria para a equipa, sem a página (o total do backlog, D46). */
-  countTeamTasks(query: Omit<TeamTaskQuery, 'limit' | 'offset'>): Promise<number>;
+  countTeamTasks(query: TeamTaskFilter): Promise<number>;
   /** Contagens das tarefas da equipa numa só consulta, para a vista de trabalho (CA07.1, D46). */
-  teamTaskCounts(query: Pick<TeamTaskQuery, 'teamId' | 'projectIds'>): Promise<TeamTaskCounts>;
+  teamTaskCounts(query: TeamTaskFilter): Promise<TeamTaskCounts>;
   /** Projetos das tarefas não eliminadas da equipa, para quem chama excluir os eliminados (RN38). */
   projectsOfTeamTasks(teamId: string): Promise<string[]>;
   /**
@@ -126,6 +130,9 @@ export interface TeamTaskQuery {
   limit?: number;
   offset?: number;
 }
+
+/** As condições de TeamTaskQuery, sem ordem nem página: o que as contagens aceitam. */
+export type TeamTaskFilter = Omit<TeamTaskQuery, 'orderBy' | 'limit' | 'offset'>;
 
 /** Contagens de `teamTaskCounts`: por estado, e as bloqueadas e as atrasadas de qualquer estado (CA07.1, CA07.4). */
 export interface TeamTaskCounts {

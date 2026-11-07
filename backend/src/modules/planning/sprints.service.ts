@@ -387,7 +387,7 @@ export class SprintsService {
     const live = await this.organization.projectNames(await this.work.projectsOfTeamTasks(teamId));
     const query = { teamId, projectIds: [...live.keys()].filter((id) => !scope || scope.has(id)), excludeTaskIds: inActive };
     const [total, rows] = await Promise.all([
-      query.projectIds.length === 0 ? 0 : this.work.countTeamTasks(query),
+      this.work.countTeamTasks(query),
       this.work.planningTasks({ ...query, limit: pageSize, offset: (page - 1) * pageSize }),
     ]);
     const items = await this.describe(rows);

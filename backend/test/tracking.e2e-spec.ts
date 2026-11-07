@@ -165,7 +165,7 @@ describe('I11 — acompanhamento (prazos, bloqueios, trabalho da equipa, compara
       await as('outsider').get(`/api/teams/${team}/work`).expect(403);
     });
 
-    it('CA07.1, CA07.4, D46, RN38 — paginada na base de dados: bloqueadas, depois atrasadas, depois as mais recentes, sem saltar entre páginas; projetos eliminados fora das contagens', async () => {
+    it('CA07.1, CA07.4, D46, RN38 — paginada na base de dados: bloqueadas, depois atrasadas, depois as mais recentes, com páginas seguidas sem repetir nem saltar (dados parados); projetos eliminados fora das contagens', async () => {
       const team = await fx.team('Equipa paginada', [{ userId: ids.leaderA, role: 'leader' }]);
       await t.db.query(`INSERT INTO organization.project_team (project_id, team_id) VALUES ($1, $2)`, [projectId, team]);
       const make = (state: string, epic = epicId) => fx.task({ epicId: epic, teamId: team, createdBy: ids.leaderA, state });
@@ -179,6 +179,8 @@ describe('I11 — acompanhamento (prazos, bloqueios, trabalho da equipa, compara
       await set(finished, `due_date = '2020-01-01'`); // concluída: não conta como atrasada
       const both = await make('in_testing');
       await set(both, `is_blocked = true, block_reason = 'Recente', due_date = '2020-01-01'`);
+      // created_at explícito: a ordem dentro de cada grupo não pode depender do desempate pelo id.
+      for (const [i, id] of [blockedOld, late, plain, finished, both].entries()) await set(id, `created_at = now() - interval '${5 - i} minutes'`);
       const dead = await fx.epic(await fx.objective(await fx.project('Eliminado da vista', { teams: [team], deleted: true })));
       await set(await make('in_planning', dead), `is_blocked = true, block_reason = 'Não conta'`);
 

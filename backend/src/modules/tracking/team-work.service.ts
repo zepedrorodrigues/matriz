@@ -60,13 +60,11 @@ export class TeamWorkService {
   ): Promise<TeamWork> {
     // Só os projetos não eliminados (RN38) e, para quem não é da equipa (o gestor de um dos seus projetos),
     // só os que vê, nas tarefas e nas contagens (CAT06, decisão 2a, I14). Contado e paginado na base de dados.
-    const scope = viewer ? await this.organization.projectScope(viewer, teamId) : null;
-    const projects = await this.organization.projectNames(await this.work.projectsOfTeamTasks(teamId));
+    const [scope, projects] = await Promise.all([
+      viewer ? this.organization.projectScope(viewer, teamId) : null,
+      this.work.projectsOfTeamTasks(teamId).then((ids) => this.organization.projectNames(ids)),
+    ]);
     const base = { teamId, projectIds: [...projects.keys()].filter((id) => !scope || scope.has(id)) };
-
-    const tally = await this.work.teamTaskCounts(base);
-    const counts: Record<WorkGroup, number> = { planned: 0, in_progress: 0, done: 0, blocked: tally.blocked, overdue: tally.overdue };
-    for (const [state, n] of Object.entries(tally.byState) as [TaskState, number][]) counts[STAGE[state]] += n;
     const filter = !group
       ? {}
       : group === 'blocked'
@@ -74,13 +72,12 @@ export class TeamWorkService {
         : group === 'overdue'
           ? { overdue: true as const }
           : { states: (Object.keys(STAGE) as TaskState[]).filter((s) => STAGE[s] === group) };
-    const pageItems = await this.work.planningTasks({
-      ...base,
-      ...filter,
-      orderBy: 'attention',
-      limit: pageSize,
-      offset: (page - 1) * pageSize,
-    });
+    const [tally, pageItems] = await Promise.all([
+      this.work.teamTaskCounts(base),
+      this.work.planningTasks({ ...base, ...filter, orderBy: 'attention', limit: pageSize, offset: (page - 1) * pageSize }),
+    ]);
+    const counts: Record<WorkGroup, number> = { planned: 0, in_progress: 0, done: 0, blocked: tally.blocked, overdue: tally.overdue };
+    for (const [state, n] of Object.entries(tally.byState) as [TaskState, number][]) counts[STAGE[state]] += n;
     const names = await this.users.namesByIds(pageItems.flatMap((t) => (t.assigneeId ? [t.assigneeId] : [])));
     return {
       page,

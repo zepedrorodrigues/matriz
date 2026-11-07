@@ -2,11 +2,10 @@ import { ConflictException, Inject, Injectable, NotFoundException, Unprocessable
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, EntityManager } from 'typeorm';
 import type { AuthenticatedUser } from '../../shared/auth/auth.decorators';
-import { todaySql } from '../../shared/config/time-zone';
 import { DomainEvents } from '../../shared/events/domain-events';
 import { SPRINT_LOCATOR, type SprintLocator } from '../../shared/ports/sprint-locator';
 import { USER_DIRECTORY, type UserDirectory } from '../../shared/ports/user-directory';
-import { DONE_STATES, DONE_STATES_SQL, type TaskState } from '../../shared/ports/work-item-locator';
+import { DONE_STATES, overdueSql, type TaskState } from '../../shared/ports/work-item-locator';
 import { OrganizationReader } from '../organization/organization-reader.service';
 import { checkTransition } from './task-lifecycle';
 import type { CreateTaskDto, Priority, UpdateTaskDto } from './work.dto';
@@ -93,7 +92,7 @@ interface SummaryRow {
  */
 const summaryColumns = () => `
   t.id, t.title, t.state, t.priority, t.team_id, t.assignee_id, t.estimate_hours, t.story_points, t.is_blocked,
-  coalesce(t.due_date < ${todaySql()} AND t.state NOT IN (${DONE_STATES_SQL}), false) AS is_overdue,
+  ${overdueSql()} AS is_overdue,
   s.subtask_count, s.subtask_hours, s.subtask_points`;
 const SUBTASK_TOTALS = `
   LEFT JOIN LATERAL (

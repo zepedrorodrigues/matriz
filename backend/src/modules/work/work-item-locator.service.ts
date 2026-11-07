@@ -1,13 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, EntityManager } from 'typeorm';
-import { todaySql } from '../../shared/config/time-zone';
 import {
   DONE_STATES_SQL,
+  overdueSql,
   type PlanningTaskInfo,
   type TaskLocation,
   type TaskState,
   type TeamTaskCounts,
+  type TeamTaskFilter,
   type TeamTaskQuery,
   type WorkItemLocator,
 } from '../../shared/ports/work-item-locator';
@@ -19,7 +20,7 @@ const TASK_FROM = `FROM work.task t
        JOIN work.objective o ON o.id = e.objective_id`;
 
 /** Condição comum a `planningTasks`, à contagem e aos projetos: não eliminadas, nem a principal (RN38). */
-function taskFilter(query: Omit<TeamTaskQuery, 'limit' | 'offset'> | { taskIds: string[] }): { where: string; params: unknown[] } {
+function taskFilter(query: TeamTaskFilter | { taskIds: string[] }): { where: string; params: unknown[] } {
   const params: unknown[] = [];
   const where = ['t.deleted_at IS NULL', '(p.id IS NULL OR p.deleted_at IS NULL)'];
   if ('taskIds' in query) {
@@ -45,9 +46,6 @@ function taskFilter(query: Omit<TeamTaskQuery, 'limit' | 'offset'> | { taskIds: 
   }
   return { where: where.join(' AND '), params };
 }
-
-/** RF28: prazo ultrapassado no fuso da aplicação e tarefa não concluída («Terminada» e «Entregue», RN26). */
-const overdueSql = () => `coalesce(t.due_date < ${todaySql()} AND t.state NOT IN (${DONE_STATES_SQL}), false)`;
 
 /** CA07.4: bloqueadas, depois atrasadas; dentro de cada grupo, as mais recentes. */
 const ORDER = {
@@ -118,7 +116,7 @@ export class WorkItemLocatorService implements WorkItemLocator {
        LEFT JOIN work.task p ON p.id = t.parent_task_id
        JOIN work.epic e ON e.id = coalesce(t.epic_id, p.epic_id)
        JOIN work.objective o ON o.id = e.objective_id
-       WHERE t.due_date < $1::date AND t.state NOT IN (${DONE_STATES_SQL})
+       WHERE ${overdueSql('$1::date')}
          AND t.deleted_at IS NULL AND (p.id IS NULL OR p.deleted_at IS NULL)`,
       [today],
     );
@@ -140,13 +138,15 @@ export class WorkItemLocatorService implements WorkItemLocator {
     return rows.map((r) => ({ projectId: r.project_id, count: r.n }));
   }
 
-  async countTeamTasks(query: Omit<TeamTaskQuery, 'limit' | 'offset'>): Promise<number> {
+  async countTeamTasks(query: TeamTaskFilter): Promise<number> {
+    if (query.projectIds?.length === 0) return 0;
     const { where, params } = taskFilter(query);
     const [{ n }] = await this.db.query(`SELECT count(*)::int AS n ${TASK_FROM} WHERE ${where}`, params);
     return n;
   }
 
-  async teamTaskCounts(query: Pick<TeamTaskQuery, 'teamId' | 'projectIds'>): Promise<TeamTaskCounts> {
+  async teamTaskCounts(query: TeamTaskFilter): Promise<TeamTaskCounts> {
+    if (query.projectIds?.length === 0) return { byState: {}, blocked: 0, overdue: 0 };
     const { where, params } = taskFilter(query);
     const rows: { state: TaskState; n: number; blocked: number; overdue: number }[] = await this.db.query(
       `SELECT t.state, count(*)::int AS n, count(*) FILTER (WHERE t.is_blocked)::int AS blocked,
@@ -198,17 +198,23 @@ export class WorkItemLocatorService implements WorkItemLocator {
       is_blocked: boolean;
       block_reason: string | null;
     }[] = await (manager ?? this.db).query(
-      `SELECT t.id, t.title, o.project_id, t.team_id, t.parent_task_id, t.state, t.priority, t.estimate_hours,
-              t.story_points, t.assignee_id, t.assignee_cross_team, t.created_at, s.subtask_count, s.subtask_hours, s.subtask_points,
-              to_char(t.due_date, 'YYYY-MM-DD') AS due_date, t.is_blocked, t.block_reason,
-              ${overdueSql()} AS is_overdue
-       ${TASK_FROM}
+      // A página escolhe-se primeiro; as somas das subtarefas só se calculam para as tarefas dela (D46).
+      `SELECT q.*, s.subtask_count, s.subtask_hours, s.subtask_points
+       FROM (
+         SELECT t.id, t.title, o.project_id, t.team_id, t.parent_task_id, t.state, t.priority, t.estimate_hours,
+                t.story_points, t.assignee_id, t.assignee_cross_team, t.created_at,
+                to_char(t.due_date, 'YYYY-MM-DD') AS due_date, t.is_blocked, t.block_reason,
+                ${overdueSql()} AS is_overdue,
+                row_number() OVER (ORDER BY ${ORDER['teamId' in query && query.orderBy ? query.orderBy : 'recent']()}) AS rank
+         ${TASK_FROM}
+         WHERE ${where}
+         ORDER BY rank ${page}
+       ) q
        LEFT JOIN LATERAL (
          SELECT count(*)::int AS subtask_count, sum(st.estimate_hours) AS subtask_hours, sum(st.story_points)::int AS subtask_points
-         FROM work.task st WHERE st.parent_task_id = t.id AND st.deleted_at IS NULL
+         FROM work.task st WHERE st.parent_task_id = q.id AND st.deleted_at IS NULL
        ) s ON true
-       WHERE ${where}
-       ORDER BY ${ORDER['teamId' in query && query.orderBy ? query.orderBy : 'recent']()} ${page}`,
+       ORDER BY q.rank`,
       params,
     );
     return rows.map((r) => {
