@@ -2,7 +2,9 @@
 
 Aplicação interna de gestão de projetos e tarefas para equipas de trabalho, ao estilo de Jira, Azure DevOps ou Trello.
 
-> **Estado atual:** Specification Pack v0.5 (Ficha PL 01) e Architecture Pack revisto (Ficha PL 02): arquitetura, modelo de dados, API e wireframe. Tecnologias escolhidas (`docs/constraints.md` §4.3); ainda não há código.
+> **Estado atual:** MVP implementado (Ficha PL 03), com testes unitários, de integração e E2E e revisão de código e de segurança (Ficha PL 04). Falta o incremento I13 (consulta do histórico). Detalhe em [Estado atual](#estado-atual).
+
+**Tecnologias** (`docs/constraints.md` §4.3, DT01–DT15): TypeScript em toda a aplicação — NestJS e TypeORM no backend, React e Vite no frontend —, PostgreSQL 17 ou superior com um schema por módulo, autenticação OpenID Connect (Keycloak local em desenvolvimento). Monólito modular com API REST/JSON descrita em [`openapi.yaml`](openapi.yaml).
 
 ## Problema
 
@@ -40,13 +42,27 @@ Detalhe em [`docs/requirements.md`](docs/requirements.md) §1.
 
 O MVP destina-se à utilização interna da empresa. Os critérios de aceitação estão em [`docs/user-stories.md`](docs/user-stories.md).
 
-## Organização da documentação
+## Organização do repositório
 
 ```
 matriz/
 ├── README.md              visão geral e estado do projeto
 ├── AGENTS.md              instruções para coding agents
 ├── openapi.yaml           contrato REST (OpenAPI 3.1) de operações do MVP (Ficha PL 02)
+├── package.json           npm workspaces (backend, frontend) e scripts comuns
+├── .env.example           variáveis de ambiente; copiar para .env (fora do Git)
+├── backend/               API NestJS
+│   ├── src/modules/       identity, organization, work, planning, tracking, history (DT03)
+│   ├── src/shared/        base de dados, autenticação, erros, eventos, interfaces entre módulos
+│   ├── migrations/        migrations TypeORM
+│   ├── seed/              dados de demonstração fictícios
+│   └── test/              testes de integração por CA (Jest + supertest)
+├── frontend/              aplicação React (Vite)
+│   ├── src/               páginas, componentes, cliente da API, autenticação
+│   └── test/              regras da interface (node:test)
+├── e2e/                   testes End-to-End (Playwright)
+├── keycloak/              realm matriz versionado (contas fictícias)
+├── scripts/               db-setup.sql (role e bases) e keycloak-dev.ps1
 └── docs/
     ├── requirements.md    visão, utilizadores, regras de negócio, RF, RNF, âmbito do MVP
     ├── user-stories.md    user stories, prioridades, critérios de aceitação, casos excecionais
@@ -55,6 +71,9 @@ matriz/
     ├── architecture.md    arquitetura: estilo, módulos, interação, implantação (Ficha PL 02)
     ├── database.md        modelo de dados e diagrama ER em Mermaid (Ficha PL 02)
     ├── implementation-plan.md  plano de implementação por incrementos (Ficha PL 03)
+    ├── verification.md    verificação da entrega: testes, browser, casos do Ex. 8 (Ficha PL 03)
+    ├── test-plan.md       plano de testes unitários, de integração e E2E (Ficha PL 04)
+    ├── quality-security-review.md  revisão de código e de segurança (Ficha PL 04)
     └── ui/
         ├── wireframe.svg  wireframe do planeamento da sprint (Ficha PL 02)
         └── wireframe.md   navegação e validação do wireframe face ao MVP
@@ -86,13 +105,14 @@ Os coding agents seguem, além disto, as instruções de [`AGENTS.md`](AGENTS.md
 
 Ambiente sem Docker (DT15). Nenhuma palavra-passe é guardada no repositório (SEC08): ficam no `.env` local, fora do Git.
 
-**Requisitos** (versões usadas): Node.js ≥ 22 (24.18.0), npm 11; PostgreSQL 17 (17.11, `winget`); JDK 21 (Temurin 21.0.12) e Keycloak 26.8.1 (zip), ambos fora do repositório.
+**Requisitos** (versões usadas): Node.js ≥ 22 (24.18.0), npm 11; PostgreSQL ≥ 17 (17.11, `winget`); JDK 21 (Temurin 21.0.12) e Keycloak 26.8.1 (zip), ambos fora do repositório.
 
 **Preparação, uma vez:**
 
 ```powershell
 npm install
 # Role matriz e bases matriz e matriz_test; pede a palavra-passe do postgres e define a do role matriz
+# (17 é a pasta da versão instalada: com o PostgreSQL 18, PostgreSQL\18\bin)
 & 'C:\Program Files\PostgreSQL\17\bin\psql.exe' -U postgres -h localhost -f scripts\db-setup.sql
 Copy-Item .env.example .env   # preencher DB_PASSWORD, as pastas do Keycloak/JDK e as palavras-passe do Keycloak
 npm run db:migrate            # schemas e tabelas (backend/migrations)
@@ -132,7 +152,9 @@ As contas fictícias do Keycloak (`admin`, `gestor`, `ana`, `rui`, `bruno`, `sem
 | `rui` | Rui Exemplo — membro da Equipa Alfa | Membro: tarefas atribuídas, bloqueios, comentários |
 | `bruno` | Bruno Beta — líder da Equipa Beta (Arquivo Digital) | Segundo utilizador com acessos distintos (Ex. 8, caso 08) |
 | `sem-conta` | — (criada pelo administrador) | Ligação da conta no primeiro acesso (CA01.13) |
-| `sem-acesso` | — (nunca tem conta) | Token válido sem conta → 403 (CAT02) | A `sem-acesso` nunca tem conta na Matriz: serve para testar um token válido sem conta (CAT02). A `sem-conta` também não vem no seed: serve para o administrador lhe criar a conta em Administração › Contas e verificar a ligação no primeiro acesso (CA01.13); depois disso, entra normalmente.
+| `sem-acesso` | — (nunca tem conta) | Token válido sem conta → 403 (CAT02) |
+
+A `sem-acesso` nunca tem conta na Matriz: serve para testar um token válido sem conta (CAT02). A `sem-conta` também não vem no seed: serve para o administrador lhe criar a conta em Administração › Contas e verificar a ligação no primeiro acesso (CA01.13); depois disso, entra normalmente.
 
 Se o Keycloak correr noutra porta (`./scripts/keycloak-dev.ps1 -Port 8180`), `OIDC_ISSUER` e `VITE_OIDC_AUTHORITY` no `.env` têm de usar essa porta.
 

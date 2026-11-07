@@ -156,7 +156,7 @@ flowchart LR
 - **Mesma origem:** o proxy encaminha `/api` para o backend e o resto para o frontend, o que evita configurar CORS.
 - **Duas instâncias do backend** (DT13), sem estado, atrás do balanceador, com verificações de saúde e reinício automático. Uma falha de uma instância ou de uma máquina não interrompe o serviço, e as correções urgentes publicam-se uma instância de cada vez.
 - **PostgreSQL com réplica e cópias de segurança** (DT13, RNF13: RPO 5 min, RTO 1 h), na infraestrutura interna ou numa região cloud da UE (DT06, P09). Numa cloud, PostgreSQL gerido com mudança automática para a réplica; em infraestrutura interna, mudança manual segundo um procedimento escrito.
-- **Desenvolvimento** (DT15): PostgreSQL 17 e Keycloak (JDK 21) instalados localmente, sem Docker; o servidor de desenvolvimento do frontend encaminha `/api` para o backend, mantendo a mesma origem.
+- **Desenvolvimento** (DT15): PostgreSQL 17 ou superior e Keycloak (JDK 21) instalados localmente, sem Docker; o servidor de desenvolvimento do frontend encaminha `/api` para o backend, mantendo a mesma origem.
 - A tarefa diária (prazos e fim das sprints) corre numa única instância de cada vez: antes de começar, obtém um trinco no PostgreSQL (*advisory lock*), sem dependências novas.
 - **Limitação conhecida:** o proxy/balanceador e a mudança manual para a réplica (em infraestrutura interna) são pontos a vigiar; se a disponibilidade medida se aproximar de 99 %, passa-se a um cluster com mudança automática (DT13).
 
