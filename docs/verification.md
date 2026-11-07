@@ -162,9 +162,9 @@ Ambiente: Docker 29.6.1 (Docker Desktop), `deploy/compose.yaml` com PostgreSQL 1
 | `backend-1` parado / `backend-2` parado | 20/20 pedidos 200 em cada caso (DT13) |
 | Fins de linha (`.gitattributes`) | Checkout limpo com `core.autocrlf=true`: `40-matriz-config.sh` em LF e a imagem construída dessa cópia escreve o `/config.js`. Reversão: o mesmo script em CRLF termina com «not found», código 127 |
 | `npm run test:unit` e tipos (`tsc --noEmit`) | 20 testes do backend e 29 do frontend a passar; tipos sem erros |
+| `npm test` (PostgreSQL 18 local, DT15) | 227 testes do backend e 29 do frontend a passar. Antes, o PostgreSQL 18 desta máquina ainda não tinha o role `matriz` (o `.env` vinha de outro sistema): criado com `scripts/db-setup.sql`; `npm run db:migrate` executou as 6 migrations na base `matriz` e o seed, executado duas vezes, acrescentou dados na primeira e 0 linhas na segunda |
 
 **Não verificado:**
 
 - **Início de sessão no browser através do proxy.** O emissor tem de ser o mesmo para o browser e para o backend no contentor (`host.docker.internal`). Nesta máquina, o ficheiro `hosts` aponta `host.docker.internal` para `192.168.1.230`, um endereço antigo (o atual é `192.168.1.176`), e o Keycloak só escuta em `127.0.0.1`. Dentro dos contentores o nome funciona, porque o Docker Desktop o encaminha para o computador.
-- **Testes de integração do backend (`npm test`).** Falham no `globalSetup` com «password authentication failed for user "matriz"»: o `DB_PASSWORD` do `.env` atual não corresponde ao role `matriz` do PostgreSQL desta máquina.
 - O primeiro teste da falha de `backend-2` deu 6/20, porque a instância `backend-1` tinha acabado de ser reiniciada e ainda não estava pronta; repetido à espera do estado `healthy`, deu 20/20.
