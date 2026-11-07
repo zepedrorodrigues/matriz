@@ -3,7 +3,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { ApiError, addComment, listComments } from '../../api/client';
 import { FormField } from '../../components/FormField';
 import { Notice } from '../../components/Notice';
-import { Pagination } from '../../components/Pagination';
+import { Pager } from '@/components/pager';
 import { lastPage, validateCommentText } from '../../domain/tasks';
 import { Button } from '@/components/ui/button';
 
@@ -93,7 +93,7 @@ export function CommentsPanel({ taskId, onOperationStart, resetKey }: CommentsPa
               </li>
             ))}
           </ol>
-          <Pagination page={data.page} pageSize={data.pageSize} total={data.total} onPage={setPage} />
+          <Pager page={data.page} pageSize={data.pageSize} total={data.total} onPage={setPage} />
         </>
       )}
 

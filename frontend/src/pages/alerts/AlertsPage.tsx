@@ -5,7 +5,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { Link } from 'react-router';
 import { listAlerts, markAlertRead, type Alert } from '../../api/client';
 import { Notice } from '../../components/Notice';
-import { Pagination } from '../../components/Pagination';
+import { Pager } from '@/components/pager';
 import { describeAlert } from '../../domain/alerts';
 
 const dateTime = new Intl.DateTimeFormat('pt-PT', { dateStyle: 'medium', timeStyle: 'short' });
@@ -55,7 +55,7 @@ export function AlertsPage() {
               <AlertItem key={a.id} alert={a} onRead={() => read.mutate(a.id)} busy={read.isPending && read.variables === a.id} />
             ))}
           </ul>
-          <Pagination page={page} pageSize={PAGE_SIZE} total={alerts.data.total} onPage={setPage} />
+          <Pager page={page} pageSize={PAGE_SIZE} total={alerts.data.total} onPage={setPage} />
         </>
       )}
     </section>

@@ -5,7 +5,7 @@ import { useSearchParams } from 'react-router';
 import { ApiError, createUser, listUsers } from '../../api/client';
 import { FormField } from '../../components/FormField';
 import { Notice } from '../../components/Notice';
-import { Pagination } from '../../components/Pagination';
+import { Pager } from '@/components/pager';
 import { accountStatus, validateAccount } from '../../domain/accounts';
 import { AdminNav } from './AdminNav';
 
@@ -145,7 +145,7 @@ export function AccountsPage() {
               </li>
             ))}
           </ul>
-          <Pagination
+          <Pager
             page={accounts.data.page}
             pageSize={accounts.data.pageSize}
             total={accounts.data.total}

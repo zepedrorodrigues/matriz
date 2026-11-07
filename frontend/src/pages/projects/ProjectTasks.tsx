@@ -6,7 +6,7 @@ import { createTask, listObjectives, listTasks, type CurrentUser, type Project }
 import { canCreateWork, teamsForNewTask } from '../../auth/current-user';
 import { Notice } from '../../components/Notice';
 import { usePageFeedback } from '../../components/PageFeedback';
-import { Pagination } from '../../components/Pagination';
+import { Pager } from '@/components/pager';
 import { SelectField } from '../../components/SelectField';
 import { PRIORITIES, PRIORITY_LABEL, STATE_LABEL, TASK_STATES, type Priority, type TaskState } from '../../domain/tasks';
 import { TaskBadges } from '../tasks/TaskBadges';
@@ -182,7 +182,7 @@ export function ProjectTasks({ project, me }: { project: Project; me: CurrentUse
                 </li>
               ))}
             </ul>
-            <Pagination page={tasks.data.page} pageSize={tasks.data.pageSize} total={tasks.data.total} onPage={goToPage} />
+            <Pager page={tasks.data.page} pageSize={tasks.data.pageSize} total={tasks.data.total} onPage={goToPage} />
           </>
         )}
       </section>

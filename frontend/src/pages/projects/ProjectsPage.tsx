@@ -5,7 +5,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { createProject, listProjects } from '../../api/client';
 import { canCreateProject, useCurrentUser } from '../../auth/current-user';
 import { Notice } from '../../components/Notice';
-import { Pagination } from '../../components/Pagination';
+import { Pager } from '@/components/pager';
 import { ProjectForm } from './ProjectForm';
 
 const PAGE_SIZE = 20;
@@ -131,7 +131,7 @@ export function ProjectsPage() {
               </li>
             ))}
           </ul>
-          <Pagination page={projects.data.page} pageSize={projects.data.pageSize} total={projects.data.total} onPage={goToPage} />
+          <Pager page={projects.data.page} pageSize={projects.data.pageSize} total={projects.data.total} onPage={goToPage} />
         </>
       )}
     </section>
