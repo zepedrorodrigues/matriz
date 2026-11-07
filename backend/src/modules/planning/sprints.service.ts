@@ -209,7 +209,7 @@ export class SprintsService {
         [sprintId, startDate, endDate],
       );
       const planned: { task_id: string }[] = await tx.query(`SELECT task_id FROM planning.sprint_task WHERE sprint_id = $1`, [sprintId]);
-      const infos = await this.work.planningTasks({ taskIds: planned.map((p) => p.task_id) });
+      const infos = await this.work.planningTasks({ taskIds: planned.map((p) => p.task_id) }, tx);
       for (const t of infos) {
         await tx.query(
           `UPDATE planning.sprint_task SET start_estimate_hours = $3, start_story_points = $4 WHERE sprint_id = $1 AND task_id = $2`,
@@ -380,17 +380,18 @@ export class SprintsService {
        WHERE s.team_id = $1 AND st.left_at IS NULL AND s.status IN ('planned', 'active')`,
       [teamId],
     );
-    const inActive = new Set(links.filter((l) => l.status === 'active').map((l) => l.task_id));
+    const inActive = links.filter((l) => l.status === 'active').map((l) => l.task_id);
     const plannedIn = new Map(links.filter((l) => l.status === 'planned').map((l) => [l.task_id, l.sprint_id]));
-    const all = (await this.describe(await this.scoped(await this.work.planningTasks({ teamId }), viewer, teamId))).filter(
-      (t) => !inActive.has(t.id),
-    );
-    return {
-      page,
-      pageSize,
-      total: all.length,
-      items: all.slice((page - 1) * pageSize, page * pageSize).map((t) => ({ ...t, plannedSprintId: plannedIn.get(t.id) ?? null })),
-    };
+    // Filtrado e paginado na base de dados: só os projetos não eliminados (RN38) que quem consulta vê (CAT06).
+    const scope = viewer ? await this.organization.projectScope(viewer, teamId) : null;
+    const live = await this.organization.projectNames(await this.work.projectsOfTeamTasks(teamId));
+    const query = { teamId, projectIds: [...live.keys()].filter((id) => !scope || scope.has(id)), excludeTaskIds: inActive };
+    const [total, rows] = await Promise.all([
+      query.projectIds.length === 0 ? 0 : this.work.countTeamTasks(query),
+      this.work.planningTasks({ ...query, limit: pageSize, offset: (page - 1) * pageSize }),
+    ]);
+    const items = await this.describe(rows);
+    return { page, pageSize, total, items: items.map((t) => ({ ...t, plannedSprintId: plannedIn.get(t.id) ?? null })) };
   }
 
   /**
@@ -410,7 +411,7 @@ export class SprintsService {
           `SELECT task_id FROM planning.sprint_task WHERE sprint_id = $1 AND left_at IS NULL`,
           [sprint.id],
         );
-        const infos = await this.work.planningTasks({ taskIds: open.map((o) => o.task_id) });
+        const infos = await this.work.planningTasks({ taskIds: open.map((o) => o.task_id) }, tx);
         const unfinished = infos.filter((t) => !DONE_STATES.includes(t.state)).map((t) => t.id);
         if (unfinished.length > 0) {
           await tx.query(

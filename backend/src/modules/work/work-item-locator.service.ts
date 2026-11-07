@@ -2,7 +2,42 @@ import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, EntityManager } from 'typeorm';
 import { todaySql } from '../../shared/config/time-zone';
-import { DONE_STATES_SQL, type PlanningTaskInfo, type TaskLocation, type TaskState, type WorkItemLocator } from '../../shared/ports/work-item-locator';
+import {
+  DONE_STATES_SQL,
+  type PlanningTaskInfo,
+  type TaskLocation,
+  type TaskState,
+  type TeamTaskQuery,
+  type WorkItemLocator,
+} from '../../shared/ports/work-item-locator';
+
+/** Tarefa com o projeto (pelo épico, ou pelo da tarefa principal numa subtarefa, RN23). */
+const TASK_FROM = `FROM work.task t
+       LEFT JOIN work.task p ON p.id = t.parent_task_id
+       JOIN work.epic e ON e.id = coalesce(t.epic_id, p.epic_id)
+       JOIN work.objective o ON o.id = e.objective_id`;
+
+/** Condição comum a `planningTasks`, à contagem e aos projetos: não eliminadas, nem a principal (RN38). */
+function taskFilter(query: Omit<TeamTaskQuery, 'limit' | 'offset'> | { taskIds: string[] }): { where: string; params: unknown[] } {
+  const params: unknown[] = [];
+  const where = ['t.deleted_at IS NULL', '(p.id IS NULL OR p.deleted_at IS NULL)'];
+  if ('taskIds' in query) {
+    params.push(query.taskIds);
+    where.push(`t.id = ANY($${params.length}::uuid[])`);
+  } else {
+    params.push(query.teamId);
+    where.push(`t.team_id = $${params.length}`);
+    if (query.projectIds) {
+      params.push(query.projectIds);
+      where.push(`o.project_id = ANY($${params.length}::uuid[])`);
+    }
+    if (query.excludeTaskIds?.length) {
+      params.push(query.excludeTaskIds);
+      where.push(`t.id <> ALL($${params.length}::uuid[])`);
+    }
+  }
+  return { where: where.join(' AND '), params };
+}
 
 /** Implementação de WorkItemLocator pelo módulo dono das tabelas do Trabalho (architecture.md §6). */
 @Injectable()
@@ -74,8 +109,8 @@ export class WorkItemLocatorService implements WorkItemLocator {
     return rows.map((r) => ({ id: r.id, teamId: r.team_id, projectId: r.project_id, assigneeId: r.assignee_id, dueDate: r.due_date }));
   }
 
-  async openTaskCountsOfTeam(teamId: string): Promise<{ projectId: string; count: number }[]> {
-    const rows: { project_id: string; n: number }[] = await this.db.query(
+  async openTaskCountsOfTeam(teamId: string, manager?: EntityManager): Promise<{ projectId: string; count: number }[]> {
+    const rows: { project_id: string; n: number }[] = await (manager ?? this.db).query(
       `SELECT o.project_id, count(*)::int AS n
        FROM work.task t
        LEFT JOIN work.task p ON p.id = t.parent_task_id
@@ -89,10 +124,28 @@ export class WorkItemLocatorService implements WorkItemLocator {
     return rows.map((r) => ({ projectId: r.project_id, count: r.n }));
   }
 
+  async countTeamTasks(query: Omit<TeamTaskQuery, 'limit' | 'offset'>): Promise<number> {
+    const { where, params } = taskFilter(query);
+    const [{ n }] = await this.db.query(`SELECT count(*)::int AS n ${TASK_FROM} WHERE ${where}`, params);
+    return n;
+  }
+
+  async projectsOfTeamTasks(teamId: string): Promise<string[]> {
+    const { where, params } = taskFilter({ teamId });
+    const rows: { project_id: string }[] = await this.db.query(`SELECT DISTINCT o.project_id ${TASK_FROM} WHERE ${where}`, params);
+    return rows.map((r) => r.project_id);
+  }
+
   /** Com `manager`, lê na transação em curso (p. ex. para recalcular a sobrecarga com as alterações por confirmar). */
-  async planningTasks(query: { teamId: string } | { taskIds: string[] }, manager?: EntityManager): Promise<PlanningTaskInfo[]> {
-    const byTeam = 'teamId' in query;
-    if (!byTeam && query.taskIds.length === 0) return [];
+  async planningTasks(query: TeamTaskQuery | { taskIds: string[] }, manager?: EntityManager): Promise<PlanningTaskInfo[]> {
+    if ('taskIds' in query && query.taskIds.length === 0) return [];
+    if ('teamId' in query && query.projectIds?.length === 0) return [];
+    const { where, params } = taskFilter(query);
+    let page = '';
+    if ('teamId' in query && query.limit !== undefined) {
+      params.push(query.limit, query.offset ?? 0);
+      page = `LIMIT $${params.length - 1} OFFSET $${params.length}`;
+    }
     const rows: {
       id: string;
       title: string;
@@ -118,18 +171,14 @@ export class WorkItemLocatorService implements WorkItemLocator {
               t.story_points, t.assignee_id, t.assignee_cross_team, t.created_at, s.subtask_count, s.subtask_hours, s.subtask_points,
               to_char(t.due_date, 'YYYY-MM-DD') AS due_date, t.is_blocked, t.block_reason,
               coalesce(t.due_date < ${todaySql()} AND t.state NOT IN (${DONE_STATES_SQL}), false) AS is_overdue
-       FROM work.task t
-       LEFT JOIN work.task p ON p.id = t.parent_task_id
-       JOIN work.epic e ON e.id = coalesce(t.epic_id, p.epic_id)
-       JOIN work.objective o ON o.id = e.objective_id
+       ${TASK_FROM}
        LEFT JOIN LATERAL (
          SELECT count(*)::int AS subtask_count, sum(st.estimate_hours) AS subtask_hours, sum(st.story_points)::int AS subtask_points
          FROM work.task st WHERE st.parent_task_id = t.id AND st.deleted_at IS NULL
        ) s ON true
-       WHERE ${byTeam ? 't.team_id = $1' : 't.id = ANY($1::uuid[])'}
-         AND t.deleted_at IS NULL AND (p.id IS NULL OR p.deleted_at IS NULL)
-       ORDER BY t.created_at DESC, t.id`,
-      [byTeam ? query.teamId : query.taskIds],
+       WHERE ${where}
+       ORDER BY t.created_at DESC, t.id ${page}`,
+      params,
     );
     return rows.map((r) => {
       const sum = r.subtask_count > 0;

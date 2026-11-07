@@ -90,17 +90,33 @@ export interface WorkItemLocator {
    * Tarefas por concluir da equipa (CA01.10, RN33), por projeto: não eliminadas (nem a tarefa principal),
    * fora de «Terminada» e «Entregue», subtarefas incluídas. Quem chama exclui os projetos eliminados.
    */
-  openTaskCountsOfTeam(teamId: string): Promise<{ projectId: string; count: number }[]>;
+  openTaskCountsOfTeam(teamId: string, manager?: EntityManager): Promise<{ projectId: string; count: number }[]>;
   /**
    * Tarefas e subtarefas não eliminadas (nem a tarefa principal, RN38) de uma equipa, ou as indicadas por
    * id, para o backlog e as sprints (I9). Quem chama exclui as de projetos eliminados.
    */
-  planningTasks(query: { teamId: string } | { taskIds: string[] }, manager?: EntityManager): Promise<PlanningTaskInfo[]>;
+  planningTasks(query: TeamTaskQuery | { taskIds: string[] }, manager?: EntityManager): Promise<PlanningTaskInfo[]>;
+  /** Quantas tarefas `planningTasks` devolveria para a equipa, sem a página (o total do backlog, D46). */
+  countTeamTasks(query: Omit<TeamTaskQuery, 'limit' | 'offset'>): Promise<number>;
+  /** Projetos das tarefas não eliminadas da equipa, para quem chama excluir os eliminados (RN38). */
+  projectsOfTeamTasks(teamId: string): Promise<string[]>;
   /**
    * Tarefas e subtarefas não eliminadas com o prazo já ultrapassado no dia indicado e não concluídas (RN29,
    * RN30; alertas de prazo, I11). Quem chama exclui as de projetos eliminados.
    */
   overdueTasks(today: string): Promise<{ id: string; teamId: string; projectId: string; assigneeId: string | null; dueDate: string }[]>;
+}
+
+/**
+ * Tarefas de uma equipa, filtradas e paginadas na base de dados (backlog, D46): só dos projetos
+ * indicados, sem as excluídas, mais recentes primeiro.
+ */
+export interface TeamTaskQuery {
+  teamId: string;
+  projectIds?: string[];
+  excludeTaskIds?: string[];
+  limit?: number;
+  offset?: number;
 }
 
 export const WORK_ITEM_LOCATOR = Symbol('WORK_ITEM_LOCATOR');

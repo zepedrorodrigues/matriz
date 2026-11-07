@@ -298,5 +298,27 @@ describe('I9 — backlog e sprints', () => {
       expect(backlog).not.toContain(gone);
       expect(backlog).toContain(elsewhere);
     });
+
+    it('CA04.2, D46, RN38 — o backlog pagina na base de dados: o total e as páginas não contam a sprint ativa nem os projetos eliminados', async () => {
+      const team = await fx.team('Paginada', [{ userId: ids.leaderA, role: 'leader' }]);
+      const live = await fx.epic(await fx.objective(await fx.project('Paginado', { teams: [team] })));
+      const dead = await fx.epic(await fx.objective(await fx.project('Paginado eliminado', { teams: [team], deleted: true })));
+      const mine = (epic: string) => fx.task({ epicId: epic, teamId: team, createdBy: ids.leaderA, estimateHours: 1 });
+      const expected = [await mine(live), await mine(live), await mine(live)];
+      await mine(dead);
+      const [{ id: active }] = await t.db.query(
+        `INSERT INTO planning.sprint (team_id, start_date, end_date, status, started_at) VALUES ($1, '2040-01-01', '2040-01-12', 'active', now()) RETURNING id`,
+        [team],
+      );
+      await t.db.query(`INSERT INTO planning.sprint_task (sprint_id, task_id) VALUES ($1, $2)`, [active, await mine(live)]);
+
+      const page = async (n: number) => (await as('leaderA').get(`/api/teams/${team}/backlog?page=${n}&pageSize=2`).expect(200)).body;
+      const [first, second, third] = [await page(1), await page(2), await page(3)];
+      for (const p of [first, second, third]) expect(p.total).toBe(3);
+      expect([first.items.length, second.items.length, third.items.length]).toEqual([2, 1, 0]);
+      const all = [...first.items, ...second.items].map((i: { id: string }) => i.id);
+      // Mais recentes primeiro, sem repetir nem saltar entre páginas.
+      expect(all).toEqual([...expected].reverse());
+    });
   });
 });
