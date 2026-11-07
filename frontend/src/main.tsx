@@ -1,4 +1,4 @@
-import { StrictMode, useState } from 'react';
+import { lazy, StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from 'react-oidc-context';
@@ -8,17 +8,19 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { ApiError } from './api/client';
 import { AdminOnlyPage, HomePage, Layout, NotFoundPage } from './App';
 import { AuthGate } from './auth/AuthGate';
-import { AccountsPage } from './pages/admin/AccountsPage';
-import { AlertsPage } from './pages/alerts/AlertsPage';
-import { TeamDetailPage } from './pages/admin/TeamDetailPage';
-import { TeamsPage } from './pages/admin/TeamsPage';
 import { oidcConfig } from './auth/oidc-config';
-import { ProjectDetailPage } from './pages/projects/ProjectDetailPage';
-import { ProjectsPage } from './pages/projects/ProjectsPage';
-import { TaskDetailPage } from './pages/tasks/TaskDetailPage';
-import { SprintPage } from './pages/planning/SprintPage';
-import { TeamPlanningPage } from './pages/planning/TeamPlanningPage';
 import './index.css';
+
+// Cada ecrã num ficheiro à parte, carregado quando é aberto (Layout: Suspense). Reduz o bundle inicial.
+const AccountsPage = lazy(() => import('./pages/admin/AccountsPage').then((m) => ({ default: m.AccountsPage })));
+const AlertsPage = lazy(() => import('./pages/alerts/AlertsPage').then((m) => ({ default: m.AlertsPage })));
+const TeamDetailPage = lazy(() => import('./pages/admin/TeamDetailPage').then((m) => ({ default: m.TeamDetailPage })));
+const TeamsPage = lazy(() => import('./pages/admin/TeamsPage').then((m) => ({ default: m.TeamsPage })));
+const ProjectDetailPage = lazy(() => import('./pages/projects/ProjectDetailPage').then((m) => ({ default: m.ProjectDetailPage })));
+const ProjectsPage = lazy(() => import('./pages/projects/ProjectsPage').then((m) => ({ default: m.ProjectsPage })));
+const TaskDetailPage = lazy(() => import('./pages/tasks/TaskDetailPage').then((m) => ({ default: m.TaskDetailPage })));
+const SprintPage = lazy(() => import('./pages/planning/SprintPage').then((m) => ({ default: m.SprintPage })));
+const TeamPlanningPage = lazy(() => import('./pages/planning/TeamPlanningPage').then((m) => ({ default: m.TeamPlanningPage })));
 
 const queryClient: QueryClient = new QueryClient({
   // Ex. 7: qualquer alteração confirmada pela API (criar, editar, eliminar, mudar o estado) pode mudar

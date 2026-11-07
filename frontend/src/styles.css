@@ -23,7 +23,7 @@ body {
   background: var(--lg-bg);
 }
 
-button {
+button:not([data-slot]) {
   font: inherit;
   padding: 0.45rem 0.9rem;
   border: 1px solid var(--lg-accent);
@@ -33,7 +33,7 @@ button {
   cursor: pointer;
 }
 
-button:focus-visible {
+button:not([data-slot]):focus-visible {
   outline: 3px solid #f2b705;
   outline-offset: 2px;
 }
@@ -208,7 +208,7 @@ button:focus-visible {
   flex-wrap: wrap;
 }
 
-button:disabled {
+button:not([data-slot]):disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -505,10 +505,11 @@ button:disabled {
   border-left: 4px solid var(--lg-accent);
 }
 
-/* O reset do Tailwind (preflight) tira o tamanho, o peso e as margens aos títulos e parágrafos.
+/* Só elementos sem `data-slot`: os componentes do shadcn/ui marcam-se com ele e trazem o seu próprio estilo.
+   O reset do Tailwind (preflight) tira o tamanho, o peso e as margens aos títulos e parágrafos.
    Os ecrãs antigos dependiam dos valores por omissão do browser: repõem-se aqui, só nesta camada. */
-h1 { font-size: 2em; font-weight: 700; margin: 0.67em 0; }
-h2 { font-size: 1.5em; font-weight: 700; margin: 0.83em 0; }
-h3 { font-size: 1.17em; font-weight: 700; margin: 1em 0; }
-h4 { font-weight: 700; margin: 1.33em 0; }
-p { margin: 1em 0; }
+h1:not([data-slot]) { font-size: 2em; font-weight: 700; margin: 0.67em 0; }
+h2:not([data-slot]) { font-size: 1.5em; font-weight: 700; margin: 0.83em 0; }
+h3:not([data-slot]) { font-size: 1.17em; font-weight: 700; margin: 1em 0; }
+h4:not([data-slot]) { font-weight: 700; margin: 1.33em 0; }
+p:not([data-slot]) { margin: 1em 0; }

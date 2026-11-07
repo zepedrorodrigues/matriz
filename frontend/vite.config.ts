@@ -11,6 +11,20 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   // `@/` aponta para src/ (componentes do shadcn/ui, DT17); o mesmo alias está no tsconfig.json.
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+  // As dependências mudam menos do que a aplicação: ficam em ficheiros próprios, que o browser guarda
+  // em cache entre publicações. A base (React e router) separa-se do resto (componentes, OIDC, consultas).
+  build: {
+    rolldownOptions: {
+      output: {
+        advancedChunks: {
+          groups: [
+            { name: 'react', test: /node_modules[\/](react|react-dom|react-router|scheduler)[\/]/ },
+            { name: 'vendor', test: /node_modules[\/]/ },
+          ],
+        },
+      },
+    },
+  },
   // Lê as variáveis VITE_* do .env da raiz (o mesmo do backend); só essas chegam ao browser.
   envDir: '..',
   server: {
