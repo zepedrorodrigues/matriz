@@ -172,7 +172,9 @@ export class TeamsService {
       const [team] = await tx.query(`SELECT active FROM organization.team WHERE id = $1 FOR UPDATE`, [teamId]);
       if (!team) throw new NotFoundException('A equipa não existe.');
       if (!team.active) throw new ConflictException('A equipa já está desativada.');
-      const open = await this.openTaskCount(teamId);
+      // Na transação: com a equipa bloqueada, uma criação ou transferência concorrente para ela (que a lê
+      // com FOR SHARE) termina antes, e a tarefa que trouxe já entra nesta contagem (RN33).
+      const open = await this.openTaskCount(teamId, tx);
       if (open > 0) {
         throw new ConflictException(
           `A equipa tem ${open === 1 ? '1 tarefa' : `${open} tarefas`} por concluir: só pode ser desativada depois de estarem em «Terminada» ou «Entregue» (RN33).`,
@@ -288,10 +290,10 @@ export class TeamsService {
   }
 
   /** CA01.10: tarefas por concluir da equipa, só em projetos não eliminados (RN38). */
-  private async openTaskCount(teamId: string): Promise<number> {
-    const counts = await this.work.openTaskCountsOfTeam(teamId);
+  private async openTaskCount(teamId: string, tx?: EntityManager): Promise<number> {
+    const counts = await this.work.openTaskCountsOfTeam(teamId, tx);
     if (counts.length === 0) return 0;
-    const live: { id: string }[] = await this.db.query(
+    const live: { id: string }[] = await (tx ?? this.db).query(
       `SELECT id FROM organization.project WHERE id = ANY($1::uuid[]) AND deleted_at IS NULL`,
       [counts.map((c) => c.projectId)],
     );

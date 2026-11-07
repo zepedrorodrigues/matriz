@@ -204,15 +204,18 @@ export class OrganizationReader {
     return row.leader === true;
   }
 
-  /** A equipa está ativa e associada ao projeto: só assim pode ser responsável por tarefas (RN23, RN33). */
-  async isActiveTeamOfProject(teamId: string, projectId: string): Promise<boolean> {
-    const [row] = await this.db.query(
-      `SELECT EXISTS (
-         SELECT 1 FROM organization.project_team pt JOIN organization.team t ON t.id = pt.team_id AND t.active
-         WHERE pt.project_id = $2 AND pt.team_id = $1) AS ok`,
+  /**
+   * A equipa está ativa e associada ao projeto: só assim pode ser responsável por tarefas (RN23, RN33).
+   * Com `manager`, a linha da equipa fica partilhada até ao fim da transação: uma desativação concorrente
+   * espera e já conta a tarefa que esta transação cria ou transfere (RN33).
+   */
+  async isActiveTeamOfProject(teamId: string, projectId: string, manager?: EntityManager): Promise<boolean> {
+    const rows: unknown[] = await (manager ?? this.db).query(
+      `SELECT 1 FROM organization.project_team pt JOIN organization.team t ON t.id = pt.team_id AND t.active
+       WHERE pt.project_id = $2 AND pt.team_id = $1 FOR SHARE OF t`,
       [teamId, projectId],
     );
-    return row.ok === true;
+    return rows.length > 0;
   }
 }
 

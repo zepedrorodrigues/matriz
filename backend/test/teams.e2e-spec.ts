@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
+import { OrganizationReader } from '../src/modules/organization/organization-reader.service';
 import { Fixtures, TestApp } from './support/test-app';
 
 /**
@@ -241,6 +242,46 @@ describe('I3 — equipas e pertenças', () => {
       const res = await as('admin').post(`/api/teams/${team}/deactivate`).expect(409);
       expect(res.body.detail).toContain('1 tarefa');
       expect((await as('admin').get(`/api/teams/${team}`).expect(200)).body).toMatchObject({ active: true, openTaskCount: 1 });
+      expect((await teamRow(team)).active).toBe(true);
+    });
+
+    it('CA01.10, RN33 — uma tarefa criada para a equipa enquanto ela é desativada conta: a desativação espera por ela e é recusada (409)', async () => {
+      const lead = await fx.user('Lider concorrente');
+      const team = await fx.team(uniqueName('Concorrida'), [{ userId: lead.id, role: 'leader' }]);
+      const project = await fx.project(uniqueName('Projeto concorrido'), { teams: [team] });
+      const epic = await fx.epic(await fx.objective(project));
+      // A criação da tarefa (TasksService.create), com a transação ainda aberta.
+      const creating = t.db.createQueryRunner();
+      try {
+        await creating.connect();
+        await creating.startTransaction();
+        expect(await t.app.get(OrganizationReader).isActiveTeamOfProject(team, project, creating.manager)).toBe(true);
+        await creating.query(
+          `INSERT INTO work.task (epic_id, title, team_id, original_team_id, created_by) VALUES ($1, 'Criada em paralelo', $2, $2, $3)`,
+          [epic, team, lead.id],
+        );
+        let settled = false;
+        const deactivation = as('admin')
+          .post(`/api/teams/${team}/deactivate`)
+          .then((res) => {
+            settled = true;
+            return res;
+          });
+        // A desativação fica à espera da criação; sem o trinco, terminaria logo, sem ver a tarefa.
+        for (let i = 0; !settled; i++) {
+          const [{ n }] = await t.db.query(
+            `SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock'`,
+          );
+          if (n > 0) break;
+          if (i === 250) throw new Error('A desativação nunca ficou à espera nem terminou.');
+          await new Promise((resolve) => setTimeout(resolve, 20));
+        }
+        await creating.commitTransaction();
+        expect((await deactivation).status).toBe(409);
+      } finally {
+        if (creating.isTransactionActive) await creating.rollbackTransaction();
+        await creating.release();
+      }
       expect((await teamRow(team)).active).toBe(true);
     });
 

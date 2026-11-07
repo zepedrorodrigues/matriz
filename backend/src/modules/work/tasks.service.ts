@@ -171,7 +171,7 @@ export class TasksService {
         );
         if (!epic) throw new UnprocessableEntityException('O épico não pertence a este projeto.');
         teamId = dto.teamId!;
-        if (!(await this.organization.isActiveTeamOfProject(teamId, projectId))) {
+        if (!(await this.organization.isActiveTeamOfProject(teamId, projectId, tx))) {
           throw new UnprocessableEntityException('A equipa não está associada a este projeto ou foi desativada.');
         }
       }
@@ -564,7 +564,7 @@ export class TasksService {
         throw new ConflictException('Uma tarefa em «Terminada» ou «Entregue» não pode ser transferida.');
       }
       if (task.team_id === targetTeamId) throw new ConflictException('A tarefa já pertence a esta equipa.');
-      if (!(await this.organization.isActiveTeamOfProject(targetTeamId, task.project_id))) {
+      if (!(await this.organization.isActiveTeamOfProject(targetTeamId, task.project_id, tx))) {
         throw new UnprocessableEntityException('A equipa de destino não está associada a este projeto ou foi desativada.');
       }
       const subtasks: { id: string; state: TaskState; team_id: string; original_team_id: string; assignee_id: string | null }[] =
