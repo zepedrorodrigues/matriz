@@ -7,6 +7,7 @@ import {
   type PlanningTaskInfo,
   type TaskLocation,
   type TaskState,
+  type TeamTaskCounts,
   type TeamTaskQuery,
   type WorkItemLocator,
 } from '../../shared/ports/work-item-locator';
@@ -35,9 +36,24 @@ function taskFilter(query: Omit<TeamTaskQuery, 'limit' | 'offset'> | { taskIds: 
       params.push(query.excludeTaskIds);
       where.push(`t.id <> ALL($${params.length}::uuid[])`);
     }
+    if (query.states) {
+      params.push(query.states);
+      where.push(`t.state = ANY($${params.length}::work.task_state[])`);
+    }
+    if (query.blocked) where.push('t.is_blocked');
+    if (query.overdue) where.push(overdueSql());
   }
   return { where: where.join(' AND '), params };
 }
+
+/** RF28: prazo ultrapassado no fuso da aplicação e tarefa não concluída («Terminada» e «Entregue», RN26). */
+const overdueSql = () => `coalesce(t.due_date < ${todaySql()} AND t.state NOT IN (${DONE_STATES_SQL}), false)`;
+
+/** CA07.4: bloqueadas, depois atrasadas; dentro de cada grupo, as mais recentes. */
+const ORDER = {
+  recent: () => 't.created_at DESC, t.id',
+  attention: () => `CASE WHEN t.is_blocked THEN 0 WHEN ${overdueSql()} THEN 1 ELSE 2 END, t.created_at DESC, t.id`,
+};
 
 /** Implementação de WorkItemLocator pelo módulo dono das tabelas do Trabalho (architecture.md §6). */
 @Injectable()
@@ -130,6 +146,21 @@ export class WorkItemLocatorService implements WorkItemLocator {
     return n;
   }
 
+  async teamTaskCounts(query: Pick<TeamTaskQuery, 'teamId' | 'projectIds'>): Promise<TeamTaskCounts> {
+    const { where, params } = taskFilter(query);
+    const rows: { state: TaskState; n: number; blocked: number; overdue: number }[] = await this.db.query(
+      `SELECT t.state, count(*)::int AS n, count(*) FILTER (WHERE t.is_blocked)::int AS blocked,
+              count(*) FILTER (WHERE ${overdueSql()})::int AS overdue
+       ${TASK_FROM} WHERE ${where} GROUP BY t.state`,
+      params,
+    );
+    return {
+      byState: Object.fromEntries(rows.map((r) => [r.state, r.n])),
+      blocked: rows.reduce((sum, r) => sum + r.blocked, 0),
+      overdue: rows.reduce((sum, r) => sum + r.overdue, 0),
+    };
+  }
+
   async projectsOfTeamTasks(teamId: string): Promise<string[]> {
     const { where, params } = taskFilter({ teamId });
     const rows: { project_id: string }[] = await this.db.query(`SELECT DISTINCT o.project_id ${TASK_FROM} WHERE ${where}`, params);
@@ -170,14 +201,14 @@ export class WorkItemLocatorService implements WorkItemLocator {
       `SELECT t.id, t.title, o.project_id, t.team_id, t.parent_task_id, t.state, t.priority, t.estimate_hours,
               t.story_points, t.assignee_id, t.assignee_cross_team, t.created_at, s.subtask_count, s.subtask_hours, s.subtask_points,
               to_char(t.due_date, 'YYYY-MM-DD') AS due_date, t.is_blocked, t.block_reason,
-              coalesce(t.due_date < ${todaySql()} AND t.state NOT IN (${DONE_STATES_SQL}), false) AS is_overdue
+              ${overdueSql()} AS is_overdue
        ${TASK_FROM}
        LEFT JOIN LATERAL (
          SELECT count(*)::int AS subtask_count, sum(st.estimate_hours) AS subtask_hours, sum(st.story_points)::int AS subtask_points
          FROM work.task st WHERE st.parent_task_id = t.id AND st.deleted_at IS NULL
        ) s ON true
        WHERE ${where}
-       ORDER BY t.created_at DESC, t.id ${page}`,
+       ORDER BY ${ORDER['teamId' in query && query.orderBy ? query.orderBy : 'recent']()} ${page}`,
       params,
     );
     return rows.map((r) => {

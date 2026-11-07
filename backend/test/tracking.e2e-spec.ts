@@ -164,6 +164,35 @@ describe('I11 — acompanhamento (prazos, bloqueios, trabalho da equipa, compara
       await as('admin').get(`/api/teams/${team}/work`).expect(200);
       await as('outsider').get(`/api/teams/${team}/work`).expect(403);
     });
+
+    it('CA07.1, CA07.4, D46, RN38 — paginada na base de dados: bloqueadas, depois atrasadas, depois as mais recentes, sem saltar entre páginas; projetos eliminados fora das contagens', async () => {
+      const team = await fx.team('Equipa paginada', [{ userId: ids.leaderA, role: 'leader' }]);
+      await t.db.query(`INSERT INTO organization.project_team (project_id, team_id) VALUES ($1, $2)`, [projectId, team]);
+      const make = (state: string, epic = epicId) => fx.task({ epicId: epic, teamId: team, createdBy: ids.leaderA, state });
+      const set = (id: string, sql: string) => t.db.query(`UPDATE work.task SET ${sql} WHERE id = $1`, [id]);
+      const blockedOld = await make('in_planning');
+      await set(blockedOld, `is_blocked = true, block_reason = 'Antiga'`);
+      const late = await make('in_development');
+      await set(late, `due_date = '2020-01-01'`);
+      const plain = await make('in_planning');
+      const finished = await make('done');
+      await set(finished, `due_date = '2020-01-01'`); // concluída: não conta como atrasada
+      const both = await make('in_testing');
+      await set(both, `is_blocked = true, block_reason = 'Recente', due_date = '2020-01-01'`);
+      const dead = await fx.epic(await fx.objective(await fx.project('Eliminado da vista', { teams: [team], deleted: true })));
+      await set(await make('in_planning', dead), `is_blocked = true, block_reason = 'Não conta'`);
+
+      const page = async (n: number, query = '') =>
+        (await as('leaderA').get(`/api/teams/${team}/work?page=${n}&pageSize=2${query}`).expect(200)).body;
+      const pages = [await page(1), await page(2), await page(3)];
+      expect(pages[0].counts).toEqual({ planned: 2, in_progress: 2, done: 1, blocked: 2, overdue: 2 });
+      for (const p of pages) expect(p.total).toBe(5);
+      expect(pages.flatMap((p) => p.items.map((i: { id: string }) => i.id))).toEqual([both, blockedOld, late, finished, plain]);
+      const planned = await page(1, '&group=planned');
+      expect(planned).toMatchObject({ total: 2, counts: { planned: 2, blocked: 2 } });
+      expect(planned.items.map((i: { id: string }) => i.id)).toEqual([blockedOld, plain]);
+      expect((await page(1, '&group=overdue')).items.map((i: { id: string }) => i.id)).toEqual([both, late]);
+    });
   });
 
   describe('Comparação da sprint (CA07.2)', () => {

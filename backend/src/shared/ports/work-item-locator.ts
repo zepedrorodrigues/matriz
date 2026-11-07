@@ -98,6 +98,8 @@ export interface WorkItemLocator {
   planningTasks(query: TeamTaskQuery | { taskIds: string[] }, manager?: EntityManager): Promise<PlanningTaskInfo[]>;
   /** Quantas tarefas `planningTasks` devolveria para a equipa, sem a página (o total do backlog, D46). */
   countTeamTasks(query: Omit<TeamTaskQuery, 'limit' | 'offset'>): Promise<number>;
+  /** Contagens das tarefas da equipa numa só consulta, para a vista de trabalho (CA07.1, D46). */
+  teamTaskCounts(query: Pick<TeamTaskQuery, 'teamId' | 'projectIds'>): Promise<TeamTaskCounts>;
   /** Projetos das tarefas não eliminadas da equipa, para quem chama excluir os eliminados (RN38). */
   projectsOfTeamTasks(teamId: string): Promise<string[]>;
   /**
@@ -115,8 +117,21 @@ export interface TeamTaskQuery {
   teamId: string;
   projectIds?: string[];
   excludeTaskIds?: string[];
+  /** Só nestes estados; `blocked`/`overdue`: só as bloqueadas (RN28) ou as atrasadas (RF28). */
+  states?: TaskState[];
+  blocked?: true;
+  overdue?: true;
+  /** `attention`: bloqueadas, depois atrasadas, e dentro de cada grupo as mais recentes (CA07.4). */
+  orderBy?: 'recent' | 'attention';
   limit?: number;
   offset?: number;
+}
+
+/** Contagens de `teamTaskCounts`: por estado, e as bloqueadas e as atrasadas de qualquer estado (CA07.1, CA07.4). */
+export interface TeamTaskCounts {
+  byState: Partial<Record<TaskState, number>>;
+  blocked: number;
+  overdue: number;
 }
 
 export const WORK_ITEM_LOCATOR = Symbol('WORK_ITEM_LOCATOR');

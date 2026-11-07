@@ -58,29 +58,34 @@ export class TeamWorkService {
     pageSize: number,
     viewer?: { id: string; isAdmin: boolean },
   ): Promise<TeamWork> {
-    const infos = await this.work.planningTasks({ teamId });
-    const projects = await this.organization.projectNames([...new Set(infos.map((t) => t.projectId))]);
-    // CAT06, decisão 2a (I14): quem não é da equipa (o gestor de um dos seus projetos) vê só as tarefas e as
-    // contagens dos projetos que vê.
+    // Só os projetos não eliminados (RN38) e, para quem não é da equipa (o gestor de um dos seus projetos),
+    // só os que vê, nas tarefas e nas contagens (CAT06, decisão 2a, I14). Contado e paginado na base de dados.
     const scope = viewer ? await this.organization.projectScope(viewer, teamId) : null;
-    const live = infos.filter((t) => projects.has(t.projectId) && (!scope || scope.has(t.projectId)));
-    const counts: Record<WorkGroup, number> = { planned: 0, in_progress: 0, done: 0, blocked: 0, overdue: 0 };
-    for (const t of live) {
-      counts[STAGE[t.state]]++;
-      if (t.isBlocked) counts.blocked++;
-      if (t.isOverdue) counts.overdue++;
-    }
-    const matches = (t: PlanningTaskInfo) =>
-      !group || (group === 'blocked' ? t.isBlocked : group === 'overdue' ? t.isOverdue : STAGE[t.state] === group);
-    // Bloqueadas primeiro, depois as atrasadas; dentro de cada grupo, as mais recentes primeiro.
-    const rank = (t: PlanningTaskInfo) => (t.isBlocked ? 0 : t.isOverdue ? 1 : 2);
-    const selected = live.filter(matches).sort((a, b) => rank(a) - rank(b) || b.createdAt.localeCompare(a.createdAt));
-    const pageItems = selected.slice((page - 1) * pageSize, page * pageSize);
+    const projects = await this.organization.projectNames(await this.work.projectsOfTeamTasks(teamId));
+    const base = { teamId, projectIds: [...projects.keys()].filter((id) => !scope || scope.has(id)) };
+
+    const tally = await this.work.teamTaskCounts(base);
+    const counts: Record<WorkGroup, number> = { planned: 0, in_progress: 0, done: 0, blocked: tally.blocked, overdue: tally.overdue };
+    for (const [state, n] of Object.entries(tally.byState) as [TaskState, number][]) counts[STAGE[state]] += n;
+    const filter = !group
+      ? {}
+      : group === 'blocked'
+        ? { blocked: true as const }
+        : group === 'overdue'
+          ? { overdue: true as const }
+          : { states: (Object.keys(STAGE) as TaskState[]).filter((s) => STAGE[s] === group) };
+    const pageItems = await this.work.planningTasks({
+      ...base,
+      ...filter,
+      orderBy: 'attention',
+      limit: pageSize,
+      offset: (page - 1) * pageSize,
+    });
     const names = await this.users.namesByIds(pageItems.flatMap((t) => (t.assigneeId ? [t.assigneeId] : [])));
     return {
       page,
       pageSize,
-      total: selected.length,
+      total: group ? counts[group] : counts.planned + counts.in_progress + counts.done,
       counts,
       items: pageItems.map((t) => ({
         id: t.id,
