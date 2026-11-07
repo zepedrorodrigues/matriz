@@ -188,3 +188,19 @@ Branch `feat/reformulacao-visual`. Chrome, sessões da Ana Exemplo (líder) e da
 **Incidente:** num teste do menu por teclado, a tarefa «Implementar a pesquisa de ferramentas» passou de «A desenvolver» para «Em planeamento» na base `matriz` local (tecla a menos). Foi reposta em três passos (RN26) e devolvida ao backlog; as mudanças de estado ficaram registadas.
 
 **Não verificado:** a vista do membro; a submissão de cada painel do detalhe (bloquear, critérios, participantes, transferir, comentar) no browser — a lógica não mudou, só a apresentação.
+
+## Correções da auditoria (2026-11-07)
+
+Branch `fix/concorrencia-alertas-equipas`, sobre a `feat/reformulacao-visual`. PostgreSQL local (base `matriz_test` para os testes; `matriz` só em leitura no browser), Keycloak na porta 8180, API e frontend locais.
+
+| Verificação | Resultado |
+|---|---|
+| Tipos (`tsc --noEmit`, backend e frontend) | Sem erros |
+| `npm test` | 230 testes do backend e 40 do frontend a passar (3 testes novos) |
+| Reversão da correção 1 (alerta de sobrecarga) | O teste novo falha: 2 alertas `team_overload` para a mesma sprint, esperado 1 |
+| Reversão da correção 2 (desativação da equipa) | O teste novo falha: a desativação responde 200, esperado 409 — a equipa fica desativada com uma tarefa aberta |
+| Correção 4 (backlog na base de dados) | Sem reversão que falhe: o resultado não muda, só onde se calcula. O teste novo fixa o total e as páginas de 2 sem a sprint ativa nem os projetos eliminados. O ganho de desempenho não foi medido |
+| Browser (Chrome pelo Playwright, só leitura), sessões da Ana Exemplo e da Alice Admin | Planeamento, quadro da sprint, Alertas, Projetos, detalhe do projeto, detalhe da tarefa e Contas: todos os pedidos `GET /api` com 200. O quadro pede `/backlog` e mostra 4 das 5 tarefas devolvidas (a quinta está planeada nesta sprint); a tarefa «Terminada» continua no backlog. Única mensagem de erro na consola: `favicon.ico` 404 no servidor do Vite, anterior a estas correções |
+| Cabeçalho `frame-ancestors` (correção 5) | `nginx -t` aceita a configuração; servida num nginx 1.29, `/`, uma rota da aplicação, `/config.js` e `/assets/*` respondem com `Content-Security-Policy: frame-ancestors 'none'` e mantêm o `Cache-Control` de antes |
+
+**Não verificado:** a paginação no browser com mais de uma página — os dados de demonstração têm menos de 20 elementos em cada lista, e o `Pager` não se mostra com uma só página (a regra é a mesma de antes; o `Pagination` removido só a reencaminhava); o cabeçalho através das imagens construídas pelo `deploy/compose.yaml`.
