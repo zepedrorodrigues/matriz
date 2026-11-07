@@ -140,8 +140,12 @@ export class AlertsService implements OnModuleInit, DailyTask {
     ];
     for (const s of subjects) {
       if (s.overloaded && !flags.has(s.id)) {
-        await m.query(`INSERT INTO tracking.overload_flag (sprint_id, subject_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [sprintId, s.id]);
-        await this.insert(m, s.to, { type: s.type, teamId: state.teamId, sprintId, userId: s.userId });
+        // Só alerta quem insere a marca: uma transação concorrente que a gravou primeiro já alertou (F21).
+        const inserted: unknown[] = await m.query(
+          `INSERT INTO tracking.overload_flag (sprint_id, subject_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING subject_id`,
+          [sprintId, s.id],
+        );
+        if (inserted.length > 0) await this.insert(m, s.to, { type: s.type, teamId: state.teamId, sprintId, userId: s.userId });
       } else if (!s.overloaded && flags.has(s.id)) {
         await m.query(`DELETE FROM tracking.overload_flag WHERE sprint_id = $1 AND subject_id = $2`, [sprintId, s.id]);
       }

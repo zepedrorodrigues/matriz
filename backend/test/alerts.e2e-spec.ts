@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { SprintJobService } from '../src/modules/planning/sprint-job.service';
+import { DomainEvents } from '../src/shared/events/domain-events';
 import { Fixtures, TestApp } from './support/test-app';
 
 /**
@@ -196,6 +197,44 @@ describe('I11 — alertas', () => {
       await as('leaderS').patch(`/api/tasks/${piece}`, { assigneeId: leader }).expect(200);
       // O líder passa a 110 h: alerta para ele (pessoa e líder ao mesmo tempo, um só alerta).
       expect(await of('leaderS', 'individual_overload', forSprint(sprintId, leader))).toHaveLength(1);
+    });
+
+    it('CA05.8, F21 — duas transações ao mesmo tempo que encontram a mesma sobrecarga alertam uma só vez', async () => {
+      const sprintId = await sprintOf('2031-09-01', '2031-09-12');
+      // Gravado diretamente, sem eventos: a equipa (170 h > 160 h) e o membro (90 h > 80 h) já estão em
+      // sobrecarga e ainda ninguém a assinalou.
+      for (const [who, hours] of [[member, 90], [leader, 80]] as const) {
+        await t.db.query(`INSERT INTO planning.sprint_task (sprint_id, task_id) VALUES ($1, $2)`, [sprintId, await work(who, hours)]);
+      }
+      const events = t.app.get(DomainEvents);
+      const event = { entityType: 'sprint' as const, entityId: sprintId, eventType: 'task_planned', oldValue: null, newValue: null, authorId: leader };
+      const [first, second] = [t.db.createQueryRunner(), t.db.createQueryRunner()];
+      try {
+        for (const r of [first, second]) {
+          await r.connect();
+          await r.startTransaction();
+        }
+        await events.publish(event, first.manager);
+        const [{ pid }] = await second.query(`SELECT pg_backend_pid() AS pid`);
+        // A segunda lê as marcas antes de a primeira confirmar e fica à espera dela ao gravar a sua.
+        const pending = events.publish(event, second.manager);
+        for (let i = 0; ; i++) {
+          const [row] = await t.db.query(`SELECT wait_event_type FROM pg_stat_activity WHERE pid = $1`, [pid]);
+          if (row?.wait_event_type === 'Lock') break;
+          if (i === 250) throw new Error('A segunda transação nunca ficou à espera da primeira.');
+          await new Promise((resolve) => setTimeout(resolve, 20));
+        }
+        await first.commitTransaction();
+        await pending;
+        await second.commitTransaction();
+      } finally {
+        for (const r of [first, second]) {
+          if (r.isTransactionActive) await r.rollbackTransaction();
+          await r.release();
+        }
+      }
+      expect(await of('memberS', 'team_overload', forSprint(sprintId))).toHaveLength(1);
+      expect(await of('memberS', 'individual_overload', forSprint(sprintId, member))).toHaveLength(1);
     });
   });
 
