@@ -8,6 +8,7 @@
     "typeorm": "typeorm-ts-node-commonjs -d src/shared/database/data-source.ts",
     "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert",
+    "migration:run:dist": "typeorm migration:run -d dist/src/shared/database/data-source.js",
     "seed": "ts-node seed/seed.ts",
     "test": "jest",
     "test:unit": "jest --config jest.unit.config.js"

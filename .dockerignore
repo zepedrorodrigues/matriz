@@ -1,0 +1,15 @@
+# Contexto de build das imagens (raiz do repositório). O .env nunca entra numa imagem (SEC08):
+# a configuração chega pelo ambiente do contentor.
+.env
+.env.*
+!.env.example
+.git
+**/node_modules
+**/dist
+**/coverage
+**/*.tsbuildinfo
+e2e
+docs
+keycloak
+scripts
+deploy

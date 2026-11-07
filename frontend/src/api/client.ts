@@ -1,4 +1,5 @@
 import { readAccessToken } from '../auth/access-token';
+import { oidcAuthority, oidcClientId } from '../auth/runtime-config';
 import type { Priority, TaskState } from '../domain/tasks';
 
 export type { Priority, TaskState };
@@ -45,7 +46,7 @@ export function onSessionInvalid(handler: () => void): void {
 async function apiRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' };
   // Lido no momento do pedido, e não passado por um efeito do React (ver auth/access-token.ts).
-  const token = readAccessToken(sessionStorage, import.meta.env.VITE_OIDC_AUTHORITY, import.meta.env.VITE_OIDC_CLIENT_ID);
+  const token = readAccessToken(sessionStorage, oidcAuthority, oidcClientId);
   if (token) headers.Authorization = `Bearer ${token}`;
   if (body !== undefined) headers['Content-Type'] = 'application/json';
 

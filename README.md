@@ -51,16 +51,17 @@ matriz/
 ├── openapi.yaml           contrato REST (OpenAPI 3.1) de operações do MVP (Ficha PL 02)
 ├── package.json           npm workspaces (backend, frontend) e scripts comuns
 ├── .env.example           variáveis de ambiente; copiar para .env (fora do Git)
-├── backend/               API NestJS
+├── backend/               API NestJS; Dockerfile da imagem
 │   ├── src/modules/       identity, organization, work, planning, tracking, history (DT03)
 │   ├── src/shared/        base de dados, autenticação, erros, eventos, interfaces entre módulos
 │   ├── migrations/        migrations TypeORM
 │   ├── seed/              dados de demonstração fictícios
 │   └── test/              testes de integração por CA (Jest + supertest)
-├── frontend/              aplicação React (Vite)
+├── frontend/              aplicação React (Vite); Dockerfile e docker/ (nginx)
 │   ├── src/               páginas, componentes, cliente da API, autenticação
 │   └── test/              regras da interface (node:test)
 ├── e2e/                   testes End-to-End (Playwright)
+├── deploy/                compose e proxy da verificação local da implantação
 ├── keycloak/              realm matriz versionado (contas fictícias)
 ├── scripts/               db-setup.sql (role e bases) e keycloak-dev.ps1
 └── docs/
@@ -172,6 +173,29 @@ O ecrã de início de sessão está em português (`defaultLocale: pt` no `keycl
 Erros da API: *problem details* (RFC 9457, `application/problem+json`); o 401 inclui `WWW-Authenticate: Bearer`.
 
 Pedidos diretos à API em desenvolvimento: o cliente `matriz-dev-cli` do realm aceita utilizador e palavra-passe (*direct grant*) para obter um token, só no Keycloak local.
+
+## Implantação
+
+Duas imagens de contentor (DT06, `docs/architecture.md` §8, DT16), construídas a partir da raiz do repositório com as versões do `package-lock.json` (`npm ci`):
+
+| Imagem | Build | Configuração no arranque |
+|---|---|---|
+| `matriz-backend` | `docker build -f backend/Dockerfile -t matriz-backend .` | `PORT`, `APP_TIME_ZONE`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `OIDC_ISSUER`, `OIDC_AUDIENCE` |
+| `matriz-frontend` | `docker build -f frontend/Dockerfile -t matriz-frontend .` | `OIDC_AUTHORITY`, `OIDC_CLIENT_ID` (escritos em `/config.js`; sem eles o contentor não arranca) |
+
+- O backend corre como utilizador sem privilégios, só com as dependências de produção, e tem `HEALTHCHECK` em `GET /api/health` (503 sem base de dados).
+- **Migrations:** passo próprio de cada publicação, antes de atualizar as instâncias, com a mesma imagem: `docker run --rm <variáveis DB_*> matriz-backend npm run migration:run:dist`. Não correm no arranque: as duas instâncias (DT13) correriam em simultâneo.
+- O seed de demonstração recusa correr com `NODE_ENV=production` (o da imagem).
+- O proxy de entrada (TLS, `/api` para o backend, o resto para o frontend) e a base de dados com réplica e cópias de segurança são do fornecedor escolhido (DT06, DT13).
+
+**Verificação local** (`deploy/`): proxy nginx, frontend, duas instâncias do backend e um PostgreSQL 17 próprio, isolado das bases `matriz` e `matriz_test`. Com o Keycloak local na porta 8180:
+
+```powershell
+docker compose --env-file .env -f deploy/compose.yaml up --build -d   # aplicação em http://localhost:5173
+docker compose --env-file .env -f deploy/compose.yaml down -v         # parar e apagar a base de verificação
+```
+
+O emissor OIDC tem de ter o mesmo endereço para o browser e para o backend no contentor; o compose usa `http://host.docker.internal:8180/realms/matriz` (alterável com `DEPLOY_OIDC_ISSUER`). O browser só lá chega se `host.docker.internal` resolver para o próprio computador no ficheiro `hosts` e o Keycloak aceitar ligações nesse endereço.
 
 ## Estado atual
 

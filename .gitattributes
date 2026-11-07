@@ -1,0 +1,6 @@
+# Ficheiros executados dentro dos contentores Linux: sempre LF, mesmo com core.autocrlf no Windows
+# (um script com CRLF falha no sh do contentor).
+*.sh          text eol=lf
+Dockerfile    text eol=lf
+frontend/docker/* text eol=lf
+deploy/*      text eol=lf

@@ -1,0 +1,83 @@
+# Verificação local da implantação (architecture.md §8): proxy, frontend, duas instâncias do backend
+# e um PostgreSQL próprio, novo e isolado das bases matriz e matriz_test. Não é a configuração de
+# produção — essa depende do fornecedor (DT06) e da réplica e cópias de segurança (DT13).
+#
+# A partir da raiz do repositório, com o Keycloak local a correr na porta 8180:
+#   docker compose --env-file .env -f deploy/compose.yaml up --build -d
+# A aplicação fica em http://localhost:5173 (a porta que o realm aceita para o redirecionamento).
+#
+# O emissor OIDC tem de ter o mesmo endereço para o browser e para o backend dentro do contentor:
+# host.docker.internal (o Docker Desktop põe-no no ficheiro hosts do Windows).
+
+name: matriz-local
+
+x-backend: &backend
+  image: matriz-backend
+  restart: unless-stopped
+  environment:
+    PORT: "3000"
+    APP_TIME_ZONE: Europe/Lisbon
+    DB_HOST: db
+    DB_PORT: "5432"
+    DB_USER: matriz
+    DB_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD no .env}
+    DB_NAME: matriz
+    OIDC_ISSUER: ${DEPLOY_OIDC_ISSUER:-http://host.docker.internal:8180/realms/matriz}
+    OIDC_AUDIENCE: ${OIDC_AUDIENCE:-matriz-api}
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: matriz
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD no .env}
+      POSTGRES_DB: matriz
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "matriz", "-d", "matriz"]
+      interval: 2s
+      retries: 30
+
+  # Passo de publicação: migrations com a imagem do backend, antes de qualquer instância arrancar.
+  migrate:
+    <<: *backend
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    restart: "no"
+    command: ["npm", "run", "migration:run:dist"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  backend-1: *backend
+  backend-2: *backend
+
+  frontend:
+    image: matriz-frontend
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+    restart: unless-stopped
+    environment:
+      OIDC_AUTHORITY: ${DEPLOY_OIDC_ISSUER:-http://host.docker.internal:8180/realms/matriz}
+      OIDC_CLIENT_ID: ${VITE_OIDC_CLIENT_ID:-matriz-web}
+
+  proxy:
+    image: nginx:1.29-alpine
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    volumes:
+      - ./proxy.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
+      - backend-1
+      - backend-2
+
+volumes:
+  db-data:

@@ -75,7 +75,7 @@ Controlo negativo: com o próprio Bruno no papel do «outro» utilizador, o test
 | Produção (`--omit=dev`) | 3 moderadas, todas através do `typeorm` 0.3 (`glob`, `minimatch`) | Os padrões *glob* vêm da configuração (caminhos das entidades e das migrations), não de pedidos: não exploráveis por um utilizador. A correção exige o `typeorm` 1.x (incompatível). **Pendente.** |
 | Desenvolvimento | 20 (5 baixas, 15 moderadas) — cadeia do Jest, `@nestjs/cli`, `ts-jest` | Só no ambiente de desenvolvimento |
 
-O `package-lock.json` não é versionado (decisão do humano), por isso o resultado do `npm audit` depende das versões resolvidas em cada instalação.
+O `package-lock.json` não era versionado nesta revisão (decisão do humano), por isso o resultado do `npm audit` dependia das versões resolvidas em cada instalação. Passou a ser versionado em 2026-11-07 (DT16).
 
 ## 5. Verificações executadas e por validar
 

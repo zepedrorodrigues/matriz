@@ -141,4 +141,30 @@ Decisão do humano (F23, 3a): cópia limpa do repositório e os passos do README
 4. `npm test` → 201 testes de backend (recriam a base `matriz_test` pelas migrations) e 29 de frontend a passar.
 5. API da cópia arrancada noutra porta (`PORT=3101 node backend/dist/src/main.js`) contra a base `matriz` → `GET /api/health` `{"status":"ok","database":"ok"}`.
 
-**Não executado na cópia:** `npm run db:migrate` e `npm run db:seed` numa base nova (ficaram executados na base `matriz` ao longo dos incrementos; o seed é idempotente). **Observação:** o `package-lock.json` não é versionado (decisão do humano), por isso a cópia resolve as versões das dependências no momento da instalação, dentro dos intervalos do `package.json`.
+**Não executado na cópia:** `npm run db:migrate` e `npm run db:seed` numa base nova (ficaram executados na base `matriz` ao longo dos incrementos; o seed é idempotente). **Observação:** o `package-lock.json` não era então versionado (decisão do humano), por isso a cópia resolveu as versões das dependências no momento da instalação, dentro dos intervalos do `package.json`. Passou a ser versionado em 2026-11-07 (DT16).
+
+## Implantação (2026-11-07, DT06, DT13, DT16)
+
+Ambiente: Docker 29.6.1 (Docker Desktop), `deploy/compose.yaml` com PostgreSQL 17 próprio (base nova), duas instâncias do backend, frontend e proxy nginx em `localhost:5173`; Keycloak 26.8.1 local na porta 8180.
+
+| Verificação | Resultado |
+|---|---|
+| Build das duas imagens com `npm ci` | Ambas construídas; backend sem `jest`, `@nestjs/cli`, `vite` nem `react` (ficam `typescript` e `ts-node`, dependências *peer*); `multer` 2.5.0 (o *override* aplica-se); processo como `node` (uid 1000) |
+| `migration:run:dist` numa base nova | 6 migrations executadas; segunda execução: «No migrations are pending» |
+| Seed (`node dist/seed/seed.js`) | Recusado com `NODE_ENV=production`; com `NODE_ENV=development`, na base de verificação: dados criados e, na segunda execução, 0 inseridos |
+| `GET /api/health` pelo proxy | 200 `{"status":"ok","database":"ok"}`; com a base parada, 503 `unavailable` |
+| Rota da aplicação (`/projetos/x`) | 200 com o `index.html` e `<script src="/config.js">` |
+| `/config.js` | Valores do ambiente do contentor, `Cache-Control: no-store` |
+| Frontend sem `OIDC_AUTHORITY` | Contentor termina com código 2 e a mensagem «Falta OIDC_AUTHORITY»; o bundle não contém nenhum emissor fixado |
+| `GET /api/me` sem token / com token adulterado | 401 / 401 |
+| Token do Keycloak (`matriz-dev-cli`) para `ana` | 200 com a conta da Ana Exemplo (descoberta OIDC feita de dentro do contentor) |
+| Token válido de `sem-acesso` (CAT02) | 403 «Não existe uma conta ativa na Matriz para este utilizador.» |
+| `backend-1` parado / `backend-2` parado | 20/20 pedidos 200 em cada caso (DT13) |
+| Fins de linha (`.gitattributes`) | Checkout limpo com `core.autocrlf=true`: `40-matriz-config.sh` em LF e a imagem construída dessa cópia escreve o `/config.js`. Reversão: o mesmo script em CRLF termina com «not found», código 127 |
+| `npm run test:unit` e tipos (`tsc --noEmit`) | 20 testes do backend e 29 do frontend a passar; tipos sem erros |
+
+**Não verificado:**
+
+- **Início de sessão no browser através do proxy.** O emissor tem de ser o mesmo para o browser e para o backend no contentor (`host.docker.internal`). Nesta máquina, o ficheiro `hosts` aponta `host.docker.internal` para `192.168.1.230`, um endereço antigo (o atual é `192.168.1.176`), e o Keycloak só escuta em `127.0.0.1`. Dentro dos contentores o nome funciona, porque o Docker Desktop o encaminha para o computador.
+- **Testes de integração do backend (`npm test`).** Falham no `globalSetup` com «password authentication failed for user "matriz"»: o `DB_PASSWORD` do `.env` atual não corresponde ao role `matriz` do PostgreSQL desta máquina.
+- O primeiro teste da falha de `backend-2` deu 6/20, porque a instância `backend-1` tinha acabado de ser reiniciada e ainda não estava pronta; repetido à espera do estado `healthy`, deu 20/20.
