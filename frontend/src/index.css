@@ -1,0 +1,126 @@
+/*
+ * Tema da interface (DT17, direção «B · Quadro»). Tailwind CSS 4 e componentes do shadcn/ui.
+ * Ordem das camadas: os estilos antigos (legacy) ficam abaixo dos componentes e das utilidades,
+ * para que uma classe do Tailwind ganhe sempre a um seletor de elemento antigo (p. ex. `button`).
+ */
+@layer theme, base, legacy, components, utilities;
+
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import './styles.css' layer(legacy);
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.5rem;
+
+  /* Superfícies e texto. Contraste do texto secundário: 5,9:1 sobre o fundo (RNF12). */
+  --background: #f7f8fb;
+  --foreground: #121826;
+  --card: #ffffff;
+  --card-foreground: #121826;
+  --popover: #ffffff;
+  --popover-foreground: #121826;
+  --muted: #eef0f6;
+  --muted-foreground: #5a6372;
+  --border: #e3e6ee;
+  --input: #c3c9d6;
+
+  /* Ação principal e seleção */
+  --primary: #3442c6;
+  --primary-foreground: #ffffff;
+  --secondary: #eef0f6;
+  --secondary-foreground: #121826;
+  --accent: #eceefc;
+  --accent-foreground: #26309a;
+  --ring: #3442c6;
+
+  /* Avisos e situações */
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+  --danger-soft: #fdecea;
+  --warning: #8a4b00;
+  --warning-soft: #fff4e5;
+  --success: #17672c;
+  --success-soft: #e6f4ea;
+
+  /* Estados da tarefa (RN17): cor de fundo e de texto de cada um, distintas também em luminosidade */
+  --state-planning: #e9edf3;
+  --state-planning-foreground: #3a4659;
+  --state-analysis: #efeafb;
+  --state-analysis-foreground: #4b2f96;
+  --state-ready: #e1f3f2;
+  --state-ready-foreground: #0b5e5e;
+  --state-doing: #e6f0fb;
+  --state-doing-foreground: #084c91;
+  --state-testing: #fff4e5;
+  --state-testing-foreground: #7a4100;
+  --state-done: #e6f4ea;
+  --state-done-foreground: #17672c;
+  --state-delivered: #dfe3ea;
+  --state-delivered-foreground: #2c3442;
+}
+
+@theme inline {
+  --font-sans: Inter, 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-danger-soft: var(--danger-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+
+  --color-state-planning: var(--state-planning);
+  --color-state-planning-foreground: var(--state-planning-foreground);
+  --color-state-analysis: var(--state-analysis);
+  --color-state-analysis-foreground: var(--state-analysis-foreground);
+  --color-state-ready: var(--state-ready);
+  --color-state-ready-foreground: var(--state-ready-foreground);
+  --color-state-doing: var(--state-doing);
+  --color-state-doing-foreground: var(--state-doing-foreground);
+  --color-state-testing: var(--state-testing);
+  --color-state-testing-foreground: var(--state-testing-foreground);
+  --color-state-done: var(--state-done);
+  --color-state-done-foreground: var(--state-done-foreground);
+  --color-state-delivered: var(--state-delivered);
+  --color-state-delivered-foreground: var(--state-delivered-foreground);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  /* Foco sempre visível com teclado (RNF12, WCAG 2.4.7) */
+  :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+  }
+}

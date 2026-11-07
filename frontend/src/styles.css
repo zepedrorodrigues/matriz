@@ -1,32 +1,34 @@
-/* Estilos partilhados (I1). A linguagem visual completa do wireframe chega com os ecrãs do Ex. 7 (D47). */
+/* Estilos dos ecrãs ainda não migrados (camada `legacy`, abaixo das utilidades do Tailwind — DT17).
+   Variáveis com o prefixo --lg- para não colidirem com as do tema (index.css). Sai quando todos os ecrãs migrarem.
+   Origem: estilos partilhados (I1). A linguagem visual completa do wireframe chega com os ecrãs do Ex. 7 (D47). */
 :root {
-  --bg: #f6f7f9;
-  --surface: #ffffff;
-  --text: #1c2430;
-  --muted: #5b6573;
-  --border: #d5dae1;
-  --accent: #1f5fbf;
-  --info-bg: #eaf1fb;
-  --warning-bg: #fff4e0;
-  --warning-text: #7a4b00;
-  --error-bg: #fdeceb;
-  --error-text: #9b1c1c;
+  --lg-bg: #f6f7f9;
+  --lg-surface: #ffffff;
+  --lg-text: #1c2430;
+  --lg-muted: #5b6573;
+  --lg-border: #d5dae1;
+  --lg-accent: #1f5fbf;
+  --lg-info-bg: #eaf1fb;
+  --lg-warning-bg: #fff4e0;
+  --lg-warning-text: #7a4b00;
+  --lg-error-bg: #fdeceb;
+  --lg-error-text: #9b1c1c;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  color: var(--text);
-  background: var(--bg);
+  color: var(--lg-text);
+  background: var(--lg-bg);
 }
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: var(--lg-bg);
 }
 
 button {
   font: inherit;
   padding: 0.45rem 0.9rem;
-  border: 1px solid var(--accent);
+  border: 1px solid var(--lg-accent);
   border-radius: 6px;
-  background: var(--accent);
+  background: var(--lg-accent);
   color: #fff;
   cursor: pointer;
 }
@@ -41,8 +43,8 @@ button:focus-visible {
   align-items: center;
   gap: 1rem;
   padding: 0.75rem 1.5rem;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  background: var(--lg-surface);
+  border-bottom: 1px solid var(--lg-border);
 }
 
 .app-header__brand {
@@ -51,7 +53,7 @@ button:focus-visible {
 }
 
 .app-header__user {
-  color: var(--muted);
+  color: var(--lg-muted);
 }
 
 .page,
@@ -64,17 +66,17 @@ button:focus-visible {
 .notice {
   padding: 0.75rem 1rem;
   border-radius: 6px;
-  background: var(--info-bg);
+  background: var(--lg-info-bg);
 }
 
 .notice--warning {
-  background: var(--warning-bg);
-  color: var(--warning-text);
+  background: var(--lg-warning-bg);
+  color: var(--lg-warning-text);
 }
 
 .notice--error {
-  background: var(--error-bg);
-  color: var(--error-text);
+  background: var(--lg-error-bg);
+  color: var(--lg-error-text);
 }
 
 .profile {
@@ -82,13 +84,13 @@ button:focus-visible {
   grid-template-columns: max-content 1fr;
   gap: 0.5rem 1.5rem;
   padding: 1rem 1.25rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--lg-surface);
+  border: 1px solid var(--lg-border);
   border-radius: 8px;
 }
 
 .profile dt {
-  color: var(--muted);
+  color: var(--lg-muted);
 }
 
 .profile dd {
@@ -103,9 +105,9 @@ button:focus-visible {
 
 /* I2 — componentes partilhados: navegação, formulários, listas, paginação e diálogo. */
 :root {
-  --success-bg: #e8f5ec;
-  --success-text: #1d6b35;
-  --danger: #b42318;
+  --lg-success-bg: #e8f5ec;
+  --lg-success-text: #1d6b35;
+  --lg-danger: #b42318;
 }
 
 .app-nav {
@@ -115,14 +117,14 @@ button:focus-visible {
 }
 
 .app-nav a {
-  color: var(--text);
+  color: var(--lg-text);
   text-decoration: none;
   padding: 0.25rem 0;
   border-bottom: 2px solid transparent;
 }
 
 .app-nav a.active {
-  border-bottom-color: var(--accent);
+  border-bottom-color: var(--lg-accent);
   font-weight: 600;
 }
 
@@ -141,8 +143,8 @@ button:focus-visible {
 .panel {
   padding: 1rem 1.25rem;
   margin: 1rem 0;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--lg-surface);
+  border: 1px solid var(--lg-border);
   border-radius: 8px;
 }
 
@@ -156,8 +158,8 @@ button:focus-visible {
 }
 
 .notice--success {
-  background: var(--success-bg);
-  color: var(--success-text);
+  background: var(--lg-success-bg);
+  color: var(--lg-success-text);
 }
 
 .form {
@@ -179,24 +181,24 @@ button:focus-visible {
 .search input {
   font: inherit;
   padding: 0.45rem 0.6rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--lg-border);
   border-radius: 6px;
-  background: var(--surface);
-  color: var(--text);
+  background: var(--lg-surface);
+  color: var(--lg-text);
 }
 
 .field input[aria-invalid='true'],
 .field textarea[aria-invalid='true'] {
-  border-color: var(--danger);
+  border-color: var(--lg-danger);
 }
 
 .field__hint {
-  color: var(--muted);
+  color: var(--lg-muted);
   font-size: 0.875rem;
 }
 
 .field__error {
-  color: var(--danger);
+  color: var(--lg-danger);
   font-size: 0.875rem;
 }
 
@@ -212,19 +214,19 @@ button:disabled {
 }
 
 .button--secondary {
-  background: var(--surface);
-  color: var(--accent);
+  background: var(--lg-surface);
+  color: var(--lg-accent);
 }
 
 .button--danger {
-  background: var(--danger);
-  border-color: var(--danger);
+  background: var(--lg-danger);
+  border-color: var(--lg-danger);
 }
 
 .button--link {
   background: none;
   border: none;
-  color: var(--accent);
+  color: var(--lg-accent);
   text-decoration: underline;
   padding: 0.45rem 0.25rem;
 }
@@ -242,7 +244,7 @@ button:disabled {
 }
 
 .muted {
-  color: var(--muted);
+  color: var(--lg-muted);
 }
 
 .card-list {
@@ -255,14 +257,14 @@ button:disabled {
 
 .card {
   padding: 0.9rem 1.1rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--lg-surface);
+  border: 1px solid var(--lg-border);
   border-radius: 8px;
 }
 
 .card__title {
   font-weight: 600;
-  color: var(--accent);
+  color: var(--lg-accent);
 }
 
 .card__text {
@@ -279,13 +281,13 @@ button:disabled {
 
 .state-counts__item {
   padding: 0.4rem 0.6rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--lg-border);
   border-radius: 6px;
 }
 
 .state-counts__item dt {
   font-size: 0.8rem;
-  color: var(--muted);
+  color: var(--lg-muted);
 }
 
 .state-counts__item dd {
@@ -295,7 +297,7 @@ button:disabled {
 }
 
 .state-counts__item--zero dd {
-  color: var(--muted);
+  color: var(--lg-muted);
   font-weight: 400;
 }
 
@@ -323,7 +325,7 @@ button:disabled {
 .dialog {
   width: min(32rem, 100%);
   padding: 1.25rem 1.5rem;
-  background: var(--surface);
+  background: var(--lg-surface);
   border-radius: 8px;
 }
 
@@ -341,14 +343,14 @@ button:disabled {
 .field select {
   font: inherit;
   padding: 0.45rem 0.6rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--lg-border);
   border-radius: 6px;
-  background: var(--surface);
-  color: var(--text);
+  background: var(--lg-surface);
+  color: var(--lg-text);
 }
 
 .field select[aria-invalid='true'] {
-  border-color: var(--danger);
+  border-color: var(--lg-danger);
 }
 
 .form__row,
@@ -385,25 +387,25 @@ button:disabled {
 .badge {
   display: inline-block;
   padding: 0.1rem 0.55rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--lg-border);
   border-radius: 999px;
-  background: var(--bg);
+  background: var(--lg-bg);
   font-size: 0.875rem;
 }
 
 .badge--priority-high {
-  border-color: var(--danger);
-  color: var(--danger);
+  border-color: var(--lg-danger);
+  color: var(--lg-danger);
 }
 
 .badge--priority-low {
-  color: var(--muted);
+  color: var(--lg-muted);
 }
 
 .badge--warning {
-  background: var(--warning-bg);
-  color: var(--warning-text);
-  border-color: var(--warning-text);
+  background: var(--lg-warning-bg);
+  color: var(--lg-warning-text);
+  border-color: var(--lg-warning-text);
 }
 
 .tree,
@@ -435,7 +437,7 @@ button:disabled {
   display: grid;
   gap: 0.2rem;
   padding: 0.6rem 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--lg-border);
   overflow-wrap: anywhere;
 }
 
@@ -463,7 +465,7 @@ button:disabled {
 .membership-row {
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
   align-items: end;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--lg-border);
   padding-bottom: 0.75rem;
 }
 
@@ -473,7 +475,7 @@ button:disabled {
 }
 
 .allocation-set {
-  border: 1px solid var(--border);
+  border: 1px solid var(--lg-border);
   border-radius: 6px;
   padding: 0.75rem 1rem;
   margin: 0;
@@ -500,5 +502,5 @@ button:disabled {
 
 /* Alertas por ler (I11). */
 .card--unread {
-  border-left: 4px solid var(--accent);
+  border-left: 4px solid var(--lg-accent);
 }

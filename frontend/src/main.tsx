@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client';
 import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from 'react-oidc-context';
 import { createBrowserRouter, RouterProvider } from 'react-router';
+import { Toaster } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { ApiError } from './api/client';
 import { AdminOnlyPage, HomePage, Layout, NotFoundPage } from './App';
 import { AuthGate } from './auth/AuthGate';
@@ -16,7 +18,7 @@ import { ProjectsPage } from './pages/projects/ProjectsPage';
 import { TaskDetailPage } from './pages/tasks/TaskDetailPage';
 import { SprintPage } from './pages/planning/SprintPage';
 import { TeamPlanningPage } from './pages/planning/TeamPlanningPage';
-import './styles.css';
+import './index.css';
 
 const queryClient: QueryClient = new QueryClient({
   // Ex. 7: qualquer alteração confirmada pela API (criar, editar, eliminar, mudar o estado) pode mudar
@@ -66,9 +68,12 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider {...oidcConfig}>
       <QueryClientProvider client={queryClient}>
-        <AuthGate>
-          <AppRouter />
-        </AuthGate>
+        <TooltipProvider delayDuration={300}>
+          <AuthGate>
+            <AppRouter />
+          </AuthGate>
+          <Toaster position="bottom-right" />
+        </TooltipProvider>
       </QueryClientProvider>
     </AuthProvider>
   </StrictMode>,
