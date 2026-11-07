@@ -246,6 +246,20 @@ export function getTeamWork(teamId: string, params: { group?: WorkGroup; page?: 
   search.set('pageSize', String(params.pageSize ?? 20));
   return apiGet<TeamWork>(`/teams/${id(teamId)}/work?${search.toString()}`);
 }
+/**
+ * Todas as tarefas da equipa com as marcas de acompanhamento (bloqueada, prazo ultrapassado), página a
+ * página até ao total (a API devolve até 100 por página). Usado pelo quadro da sprint para marcar os
+ * cartões, porque as tarefas da sprint e do backlog não trazem essas marcas.
+ */
+export async function getAllTeamWork(teamId: string): Promise<TeamWork['items']> {
+  const items: TeamWork['items'] = [];
+  for (let page = 1; page <= 50; page++) {
+    const result = await getTeamWork(teamId, { page, pageSize: 100 });
+    items.push(...result.items);
+    if (items.length >= result.total || result.items.length === 0) break;
+  }
+  return items;
+}
 export interface WorkTotals {
   startHours: number | null;
   currentHours: number;

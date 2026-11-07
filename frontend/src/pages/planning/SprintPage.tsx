@@ -1,115 +1,121 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useLocation, useParams } from 'react-router';
+import { ChevronRight, Columns3, List } from 'lucide-react';
+import { Link, useParams, useSearchParams } from 'react-router';
+import { toast } from 'sonner';
 import {
   ApiError,
+  changeTaskState,
+  getAllTeamWork,
   getSprint,
+  getSprintProgress,
   getTeamBacklog,
   planSprintTask,
   removeSprintTask,
   startSprint,
   updateSprintDates,
   type SprintDetail,
-} from '../../api/client';
-import { canStartSprint, leadsTeam, useCurrentUser } from '../../auth/current-user';
-import { ConfirmDialog } from '../../components/ConfirmDialog';
-import { Notice } from '../../components/Notice';
-import { PageFeedbackProvider, usePageFeedback } from '../../components/PageFeedback';
-import { SPRINT_STATUS_LABEL, formatDate, validateSprintDates, workingDays } from '../../domain/sprints';
-import { formatHours } from '../../domain/tasks';
-import { CapacityPanel } from './CapacityPanel';
-import { ProgressPanel } from './ProgressPanel';
-import { DateField } from '../../components/DateField';
-import { PlanningTaskRow } from './PlanningTaskRow';
+  type SprintTask,
+  type TaskState,
+  type WorkTotals,
+} from '@/api/client';
+import { canStartSprint, leadsTeam, stateTargetsFor, useCurrentUser } from '@/auth/current-user';
+import { DatePicker } from '@/components/date-picker';
+import { Flag, StateBadge } from '@/components/task-badges';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { BACKLOG, type BoardMove } from '@/domain/board';
+import { hoursText } from '@/domain/capacity';
+import { SPRINT_STATUS_LABEL, formatDate, validateSprintDates, workingDays } from '@/domain/sprints';
+import { STATE_LABEL, formatHours } from '@/domain/tasks';
+import { CapacityStrip } from './CapacityStrip';
+import { SprintBoard, type BoardCard } from './SprintBoard';
 
 const errorText = (error: unknown) => (error instanceof ApiError ? error.message : 'Não foi possível concluir a operação.');
 const LEFT_REASON = { sprint_ended: 'não concluída no fim da sprint', removed: 'retirada pelo líder', transferred: 'transferida para outra equipa' } as const;
+const tasksText = (n: number) => (n === 1 ? '1 tarefa' : `${n} tarefas`);
 
 /**
- * Ecrã Sprint (wireframe; US04: CA04.3–CA04.16; RN05, RN27, RN31, RN36, RN37): datas, dias úteis e estado;
- * «Editar datas» enquanto «Planeada»; «Iniciar sprint», confirmando ou ajustando as datas (líder ou
- * administrador); tarefas da sprint com «↩ Backlog»; backlog com «Planear →», inativo sem estimativa
- * temporal; capacidade e sobrecarga (I10, CapacityPanel). Cada ação aparece a quem a matriz o permite
- * (§3.1); a API decide sempre.
+ * Ecrã Sprint (US04: CA04.3–CA04.16; US05; US07; RN05, RN26, RN27, RN31, RN36, RN37), na direção «B · Quadro»
+ * (DT17): cabeçalho com as datas, o estado e as ações; capacidade; quadro com o backlog e uma coluna por
+ * estado, ou a vista Lista com o planeado e o concluído. Cada ação aparece a quem a matriz o permite
+ * (§3.1); a API decide sempre e o motivo de uma recusa é mostrado.
  */
 export function SprintPage() {
-  return (
-    <PageFeedbackProvider>
-      <Sprint />
-    </PageFeedbackProvider>
-  );
-}
-
-function Sprint() {
   const { sprintId = '' } = useParams();
-  const location = useLocation();
+  const [search, setSearch] = useSearchParams();
+  const view = search.get('vista') === 'lista' ? 'list' : 'board';
   const me = useCurrentUser();
   const queryClient = useQueryClient();
-  const [notice, setNotice] = useState<string | undefined>((location.state as { notice?: string } | null)?.notice);
-  const announce = usePageFeedback('sprint', () => setNotice(undefined));
-  const [editing, setEditing] = useState(false);
-  const [starting, setStarting] = useState(false);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [dateErrors, setDateErrors] = useState<Record<string, string>>({});
+  const [dialog, setDialog] = useState<'edit' | 'start' | null>(null);
 
   const sprint = useQuery({ queryKey: ['sprint', sprintId], queryFn: () => getSprint(sprintId), retry: false });
   const teamId = sprint.data?.teamId ?? '';
   const backlog = useQuery({ queryKey: ['backlog', teamId, 'all'], queryFn: () => getTeamBacklog(teamId, 1, 100), enabled: teamId !== '' });
+  const work = useQuery({ queryKey: ['team-work-all', teamId], queryFn: () => getAllTeamWork(teamId), enabled: teamId !== '' });
 
-  const applied = async (updated: SprintDetail, message: string) => {
-    queryClient.setQueryData(['sprint', sprintId], updated);
+  const refresh = async (updated?: SprintDetail) => {
+    if (updated) queryClient.setQueryData(['sprint', sprintId], updated);
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['backlog', updated.teamId] }),
-      queryClient.invalidateQueries({ queryKey: ['sprints', updated.teamId] }),
+      updated ? undefined : queryClient.invalidateQueries({ queryKey: ['sprint', sprintId] }),
+      queryClient.invalidateQueries({ queryKey: ['backlog', teamId] }),
+      queryClient.invalidateQueries({ queryKey: ['sprints', teamId] }),
       queryClient.invalidateQueries({ queryKey: ['capacity', sprintId] }),
       queryClient.invalidateQueries({ queryKey: ['sprint-progress', sprintId] }),
+      queryClient.invalidateQueries({ queryKey: ['team-work-all', teamId] }),
     ]);
-    setNotice(message);
   };
-  const begin = () => {
-    setNotice(undefined);
-    announce();
-    for (const m of [update, start, plan, remove]) m.reset();
-  };
+  const failed = (error: unknown) => toast.error(errorText(error));
 
-  const update = useMutation({
-    mutationFn: () => updateSprintDates(sprintId, { startDate, endDate }),
-    onMutate: begin,
-    onSuccess: async (s) => {
-      setEditing(false);
-      await applied(s, 'Datas alteradas.');
-    },
-  });
-  const start = useMutation({
-    mutationFn: () => startSprint(sprintId, { startDate, endDate }),
-    onMutate: begin,
-    onSuccess: async (s) => {
-      setStarting(false);
-      await applied(s, `Sprint iniciada com ${s.tasks.length === 1 ? '1 tarefa' : `${s.tasks.length} tarefas`}.`);
-    },
-  });
   const plan = useMutation({
     mutationFn: (taskId: string) => planSprintTask(sprintId, taskId),
-    onMutate: begin,
-    onSuccess: (s, taskId) => applied(s, `«${s.tasks.find((x) => x.id === taskId)?.title ?? 'Tarefa'}» ${s.status === 'active' ? 'acrescentada à sprint' : 'planeada na sprint'}.`),
+    onSuccess: async (s, taskId) => {
+      await refresh(s);
+      toast.success(`«${s.tasks.find((x) => x.id === taskId)?.title ?? 'Tarefa'}» ${s.status === 'active' ? 'acrescentada à sprint' : 'planeada na sprint'}.`);
+    },
+    onError: failed,
   });
   const remove = useMutation({
     mutationFn: (taskId: string) => removeSprintTask(sprintId, taskId),
-    onMutate: begin,
-    onSuccess: (s) => applied(s, s.status === 'active' ? 'Tarefa retirada: voltou ao backlog e continua a contar como planeada no início.' : 'Tarefa retirada da sprint.'),
+    onSuccess: async (s) => {
+      await refresh(s);
+      toast.success(s.status === 'active' ? 'Tarefa devolvida ao backlog; continua a contar como planeada no início.' : 'Tarefa devolvida ao backlog.');
+    },
+    onError: failed,
+  });
+  const move = useMutation({
+    mutationFn: (input: { taskId: string; to: TaskState }) => changeTaskState(input.taskId, input.to),
+    onSuccess: async (task) => {
+      queryClient.setQueryData(['task', task.id], task);
+      await refresh();
+      toast.success(`«${task.title}» passou a «${STATE_LABEL[task.state]}».`);
+    },
+    onError: failed,
   });
 
-  if (sprint.isPending) return <section className="page"><Notice>A carregar a sprint…</Notice></section>;
+  if (sprint.isPending) {
+    return (
+      <div className="flex flex-col gap-4 px-4 py-5 sm:px-6">
+        <Skeleton className="h-12 w-96 max-w-full" />
+        <Skeleton className="h-28 w-full rounded-xl" />
+        <Skeleton className="h-96 w-full rounded-xl" />
+      </div>
+    );
+  }
   if (sprint.isError) {
     const status = sprint.error instanceof ApiError ? sprint.error.status : 0;
     return (
-      <section className="page">
-        <Notice tone="error">
-          {status === 404 ? 'Esta sprint não existe.' : status === 403 ? 'Não tem acesso ao planeamento desta equipa.' : 'Não foi possível carregar a sprint.'}
-        </Notice>
-        <Link to="/planeamento">Voltar ao planeamento</Link>
-      </section>
+      <div className="mx-auto flex max-w-xl flex-col items-start gap-3 px-4 py-10">
+        <h1 className="m-0 text-xl font-bold">{status === 404 ? 'Esta sprint não existe' : status === 403 ? 'Sem acesso a esta sprint' : 'Não foi possível carregar a sprint'}</h1>
+        <p className="m-0 text-muted-foreground">{status === 403 ? 'Não tem acesso ao planeamento desta equipa.' : 'Verifique o endereço ou volte ao planeamento.'}</p>
+        <Button asChild variant="outline">
+          <Link to="/planeamento">Voltar ao planeamento</Link>
+        </Button>
+      </div>
     );
   }
 
@@ -119,172 +125,328 @@ function Sprint() {
   const mayStart = user ? canStartSprint(user, s.teamId) : false;
   const teamName = user?.teams.find((t) => t.teamId === s.teamId)?.teamName;
   const open = s.status !== 'closed';
-  const inSprint = new Set(s.tasks.map((t) => t.id));
-  const candidates = (backlog.data?.items ?? []).filter((t) => !inSprint.has(t.id));
+  const busy = plan.isPending || remove.isPending || move.isPending;
+  const flags = new Map((work.data ?? []).map((w) => [w.id, w]));
   const plannedHours = s.tasks.reduce((sum, t) => sum + (t.estimateHours ?? 0), 0);
   const plannedPoints = s.tasks.reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
-  const busy = update.isPending || start.isPending || plan.isPending || remove.isPending;
-  const error = [update.error, plan.error, remove.error].find(Boolean);
 
-  const openDates = (kind: 'edit' | 'start') => {
-    begin();
-    setStartDate(s.startDate);
-    setEndDate(s.endDate);
-    setDateErrors({});
-    if (kind === 'edit') setEditing(true);
-    else setStarting(true);
-  };
-  const submitDates = (e: FormEvent) => {
-    e.preventDefault();
+  const inSprint = new Set(s.tasks.map((t) => t.id));
+  const cards: BoardCard[] = [
+    ...s.tasks.map((t) => ({
+      ...cardBase(t, flags.get(t.id)),
+      column: t.state,
+      targets: user && open ? stateTargetsFor(user, { state: t.state, projectId: t.projectId, teamId: s.teamId, assignee: t.assignee }) : [],
+      addedAfterStart: t.addedAfterStart,
+    })),
+    ...(mayManage && open
+      ? (backlog.data?.items ?? [])
+          .filter((t) => !inSprint.has(t.id))
+          .map((t) => {
+            const elsewhere = t.plannedSprintId !== null && t.plannedSprintId !== s.id;
+            const notPlannableReason = !t.plannable
+              ? t.estimateHours === null
+                ? 'Precisa de estimativa temporal para ser planeada (RN27).'
+                : 'Já está concluída.'
+              : elsewhere
+                ? 'Já está planeada noutra sprint.'
+                : undefined;
+            return { ...cardBase(t, flags.get(t.id)), column: BACKLOG, targets: [], notPlannableReason } satisfies BoardCard;
+          })
+      : []),
+  ];
+
+  const onMove = (card: BoardCard, m: Exclude<BoardMove, { kind: 'none' } | { kind: 'refuse' }>) => {
     if (busy) return;
-    const found = validateSprintDates({ startDate, endDate });
-    setDateErrors(found);
-    if (Object.keys(found).length === 0) update.mutate();
+    if (m.kind === 'plan') plan.mutate(card.id);
+    else if (m.kind === 'remove') remove.mutate(card.id);
+    else move.mutate({ taskId: card.id, to: m.to });
   };
 
   return (
-    <section className="page">
-      <p className="breadcrumbs">
-        <Link to={`/planeamento?equipa=${s.teamId}`}>← Planeamento{teamName ? ` · ${teamName}` : ''}</Link>
-      </p>
-      {notice ? <Notice tone="success">{notice}</Notice> : null}
-      {error ? <Notice tone="error">{errorText(error)}</Notice> : null}
-
-      {editing ? (
-        <form className="panel form" onSubmit={submitDates} noValidate>
-          <h1>Editar datas</h1>
-          <div className="form__row">
-            <DateField label="Início" value={startDate} onChange={setStartDate} error={dateErrors.startDate} />
-            <DateField label="Fim" value={endDate} onChange={setEndDate} error={dateErrors.endDate} hint={`${workingDays(startDate, endDate)} dias úteis`} />
+    <div className="flex flex-col gap-4 px-4 py-5 sm:px-6">
+      <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
+        <div className="flex min-w-0 flex-col gap-1">
+          <nav aria-label="Localização" className="flex flex-wrap items-center gap-1 text-[13px] text-muted-foreground">
+            <Link to={`/planeamento?equipa=${s.teamId}`} className="hover:text-foreground hover:underline">
+              Sprints{teamName ? ` · ${teamName}` : ''}
+            </Link>
+            <ChevronRight className="size-3.5" aria-hidden="true" />
+            <span aria-current="page">Sprint</span>
+          </nav>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h1 className="m-0 text-[22px] font-bold">
+              Sprint de {formatDate(s.startDate)} a {formatDate(s.endDate)}
+            </h1>
+            <Badge variant="secondary" className="rounded-full">
+              {SPRINT_STATUS_LABEL[s.status]}
+            </Badge>
           </div>
-          <div className="actions">
-            <button type="button" className="button--secondary" onClick={() => setEditing(false)} disabled={update.isPending}>
-              Cancelar
-            </button>
-            <button type="submit" disabled={update.isPending}>
-              {update.isPending ? 'A guardar…' : 'Guardar datas'}
-            </button>
-          </div>
-        </form>
-      ) : (
-        <div className="page__header">
-          <h1>
-            Sprint de {formatDate(s.startDate)} a {formatDate(s.endDate)} <span className="badge">{SPRINT_STATUS_LABEL[s.status]}</span>
-          </h1>
-          <div className="actions">
-            {mayManage && s.status === 'planned' ? (
-              <button type="button" className="button--secondary" onClick={() => openDates('edit')}>
-                Editar datas
-              </button>
-            ) : null}
-            {mayStart && s.status === 'planned' ? (
-              <button type="button" onClick={() => openDates('start')}>
-                Iniciar sprint
-              </button>
-            ) : null}
-          </div>
+          <p className="m-0 text-sm text-muted-foreground">
+            {s.workingDays} dias úteis · {tasksText(s.tasks.length)} · {formatHours(plannedHours)} h · {plannedPoints} SP
+          </p>
         </div>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <ToggleGroup
+            type="single"
+            value={view}
+            onValueChange={(v) => {
+              if (!v) return;
+              const next = new URLSearchParams(search);
+              if (v === 'list') next.set('vista', 'lista');
+              else next.delete('vista');
+              setSearch(next, { replace: true });
+            }}
+            aria-label="Vista"
+            variant="outline"
+          >
+            <ToggleGroupItem value="board" aria-label="Quadro" className="h-10 gap-1.5 px-3">
+              <Columns3 aria-hidden="true" /> Quadro
+            </ToggleGroupItem>
+            <ToggleGroupItem value="list" aria-label="Lista" className="h-10 gap-1.5 px-3">
+              <List aria-hidden="true" /> Lista
+            </ToggleGroupItem>
+          </ToggleGroup>
+          {mayManage && s.status === 'planned' ? (
+            <Button variant="outline" className="h-10" onClick={() => setDialog('edit')}>
+              Editar datas
+            </Button>
+          ) : null}
+          {mayStart && s.status === 'planned' ? (
+            <Button className="h-10" onClick={() => setDialog('start')}>
+              Iniciar sprint
+            </Button>
+          ) : null}
+        </div>
+      </div>
+
+      <CapacityStrip sprintId={s.id} mayAdjust={mayManage && open} />
+
+      {view === 'board' ? (
+        <>
+          <SprintBoard
+            cards={cards}
+            showBacklog={mayManage && open}
+            mayPlan={mayManage && open}
+            readOnly={!open}
+            busy={busy}
+            onMove={onMove}
+            onRefuse={(reason) => toast.warning(reason)}
+          />
+          {mayManage && open ? (
+            <p className="m-0 text-xs text-muted-foreground">
+              Arraste do backlog para a sprint para planear e de volta para retirar; entre colunas para mudar o estado. O menu de cada cartão faz o mesmo.
+              {s.status === 'active' ? ' Numa sprint ativa, a tarefa retirada continua a contar como planeada no início.' : ''}
+            </p>
+          ) : null}
+        </>
+      ) : (
+        <SprintList sprint={s} flags={flags} />
       )}
-      <p className="muted">
-        {s.workingDays} dias úteis · {formatHours(plannedHours)} h planeadas · {plannedPoints} SP
-        {s.tasks.some((t) => t.storyPoints === null) ? ' (há tarefas sem story points, que contam como 0)' : ''}
-      </p>
 
-      <CapacityPanel sprintId={s.id} mayAdjust={mayManage && open} />
+      {dialog ? <DatesDialog sprint={s} kind={dialog} onClose={() => setDialog(null)} onDone={refresh} /> : null}
+    </div>
+  );
+}
 
-      <ProgressPanel sprintId={s.id} />
+type WorkFlags = { isBlocked: boolean; blockReason: string | null; isOverdue: boolean };
+function cardBase(
+  t: { id: string; title: string; projectName: string; parentTaskId: string | null; state: TaskState; priority: BoardCard['priority']; estimateHours: number | null; storyPoints: number | null; assignee: BoardCard['assignee'] },
+  f: WorkFlags | undefined,
+) {
+  return {
+    id: t.id,
+    title: t.title,
+    projectName: t.projectName,
+    isSubtask: t.parentTaskId !== null,
+    state: t.state,
+    priority: t.priority,
+    estimateHours: t.estimateHours,
+    storyPoints: t.storyPoints,
+    assignee: t.assignee,
+    isBlocked: f?.isBlocked,
+    blockReason: f?.blockReason,
+    isOverdue: f?.isOverdue,
+  };
+}
 
-      <section className="panel" aria-labelledby="sprint-tasks-title">
-        <h2 id="sprint-tasks-title">{s.status === 'planned' ? 'Tarefas planeadas' : 'Tarefas da sprint'}</h2>
-        {s.tasks.length === 0 ? (
-          <p className="muted">{s.status === 'planned' ? 'Ainda não há tarefas planeadas. Pode iniciar-se sem tarefas.' : 'Sem tarefas.'}</p>
+/** Vista Lista: as tarefas da sprint em tabela, as que saíram e o planeado e o concluído (CA07.2). */
+function SprintList({ sprint, flags }: { sprint: SprintDetail; flags: Map<string, WorkFlags> }) {
+  const progress = useQuery({ queryKey: ['sprint-progress', sprint.id], queryFn: () => getSprintProgress(sprint.id) });
+  const row = (t: SprintTask, extra?: string) => {
+    const f = flags.get(t.id);
+    return (
+      <TableRow key={t.id}>
+        <TableCell className="max-w-96">
+          <Link to={`/tarefas/${t.id}`} className="font-medium text-foreground hover:underline">
+            {t.title}
+          </Link>
+          <div className="text-xs text-muted-foreground">
+            {t.projectName}
+            {t.parentTaskId ? ' · Subtarefa' : ''}
+            {extra ? ` · ${extra}` : ''}
+          </div>
+        </TableCell>
+        <TableCell>
+          <StateBadge state={t.state} />
+        </TableCell>
+        <TableCell>{t.assignee?.name ?? <span className="text-muted-foreground">Sem responsável</span>}</TableCell>
+        <TableCell className="whitespace-nowrap">
+          {t.estimateHours === null ? '—' : hoursText(t.estimateHours)} · {t.storyPoints === null ? 'sem SP' : `${t.storyPoints} SP`}
+        </TableCell>
+        <TableCell>
+          <div className="flex flex-wrap gap-1">
+            {f?.isBlocked ? <Flag tone="danger">Bloqueada</Flag> : null}
+            {f?.isOverdue ? <Flag tone="warning">Prazo ultrapassado</Flag> : null}
+            {t.addedAfterStart ? <Flag tone="info">Acrescentada depois do início</Flag> : null}
+          </div>
+        </TableCell>
+      </TableRow>
+    );
+  };
+  const head = (
+    <TableHeader>
+      <TableRow>
+        <TableHead>Tarefa</TableHead>
+        <TableHead>Estado</TableHead>
+        <TableHead>Responsável</TableHead>
+        <TableHead>Estimativa</TableHead>
+        <TableHead>Marcas</TableHead>
+      </TableRow>
+    </TableHeader>
+  );
+
+  return (
+    <div className="flex flex-col gap-4">
+      <section aria-labelledby="list-title" className="rounded-xl border bg-card">
+        <h2 id="list-title" className="m-0 border-b px-4 py-3 text-sm font-semibold">
+          {sprint.status === 'planned' ? 'Tarefas planeadas' : 'Tarefas da sprint'} · {sprint.tasks.length}
+        </h2>
+        {sprint.tasks.length === 0 ? (
+          <p className="m-0 px-4 py-6 text-sm text-muted-foreground">
+            {sprint.status === 'planned' ? 'Ainda não há tarefas planeadas. Pode iniciar-se sem tarefas.' : 'Sem tarefas.'}
+          </p>
         ) : (
-          <ul className="criteria">
-            {s.tasks.map((t) => (
-              <PlanningTaskRow
-                key={t.id}
-                task={t}
-                extra={t.addedAfterStart ? <> <span className="badge">Acrescentada depois do início</span></> : null}
-                action={
-                  mayManage && open ? (
-                    <button type="button" className="button--link" disabled={busy} onClick={() => remove.mutate(t.id)}>
-                      ↩ Backlog
-                    </button>
-                  ) : null
-                }
-              />
-            ))}
-          </ul>
+          <Table>
+            {head}
+            <TableBody>{sprint.tasks.map((t) => row(t))}</TableBody>
+          </Table>
         )}
-        {s.leftTasks.length > 0 ? (
-          <>
-            <h3>Saíram da sprint</h3>
-            <ul className="criteria">
-              {s.leftTasks.map((t) => (
-                <PlanningTaskRow key={t.id} task={t} extra={<span className="muted"> · {t.leftReason ? LEFT_REASON[t.leftReason] : ''}</span>} />
-              ))}
-            </ul>
-          </>
-        ) : null}
       </section>
 
-      {mayManage && open ? (
-        <section className="panel" aria-labelledby="sprint-backlog-title">
-          <h2 id="sprint-backlog-title">Backlog da equipa</h2>
-          {backlog.isPending ? (
-            <Notice>A carregar o backlog…</Notice>
-          ) : candidates.length === 0 ? (
-            <p className="muted">Sem tarefas no backlog.</p>
-          ) : (
-            <ul className="criteria">
-              {candidates.map((t) => {
-                const elsewhere = t.plannedSprintId !== null && t.plannedSprintId !== s.id;
-                const reason = !t.plannable
-                  ? t.estimateHours === null
-                    ? 'Precisa de estimativa temporal para ser planeada (RN27).'
-                    : 'Já está concluída.'
-                  : elsewhere
-                    ? 'Já está planeada noutra sprint.'
-                    : undefined;
-                return (
-                  <PlanningTaskRow
-                    key={t.id}
-                    task={t}
-                    extra={reason ? <span className="muted"> · {reason}</span> : null}
-                    action={
-                      <button type="button" className="button--link" disabled={busy || reason !== undefined} onClick={() => plan.mutate(t.id)}>
-                        {s.status === 'active' ? 'Acrescentar →' : 'Planear →'}
-                      </button>
-                    }
-                  />
-                );
-              })}
-            </ul>
-          )}
+      {sprint.leftTasks.length > 0 ? (
+        <section aria-labelledby="left-title" className="rounded-xl border bg-card">
+          <h2 id="left-title" className="m-0 border-b px-4 py-3 text-sm font-semibold">
+            Saíram da sprint · {sprint.leftTasks.length}
+          </h2>
+          <Table>
+            {head}
+            <TableBody>{sprint.leftTasks.map((t) => row(t, t.leftReason ? LEFT_REASON[t.leftReason] : undefined))}</TableBody>
+          </Table>
         </section>
       ) : null}
 
-      {starting ? (
-        <ConfirmDialog
-          title="Iniciar sprint"
-          confirmLabel="Iniciar sprint"
-          busy={start.isPending}
-          error={start.error ? errorText(start.error) : validateSprintDates({ startDate, endDate }).endDate}
-          onConfirm={() => {
-            if (Object.keys(validateSprintDates({ startDate, endDate })).length === 0) start.mutate();
-          }}
-          onCancel={() => setStarting(false)}
-        >
-          <p>
-            Confirme ou ajuste as datas. As {s.tasks.length === 1 ? 'tarefa planeada passa' : `${s.tasks.length} tarefas planeadas passam`} a fazer parte da
-            sprint; depois do início, as datas não podem ser alteradas.
-          </p>
-          <div className="form__row">
-            <DateField label="Início" value={startDate} onChange={setStartDate} />
-            <DateField label="Fim" value={endDate} onChange={setEndDate} hint={`${workingDays(startDate, endDate)} dias úteis`} />
+      <section aria-labelledby="progress-title" className="rounded-xl border bg-card p-4">
+        <h2 id="progress-title" className="m-0 mb-1 text-sm font-semibold">
+          Planeado e concluído
+        </h2>
+        {progress.isPending ? (
+          <Skeleton className="h-16 w-full" />
+        ) : progress.isError ? (
+          <p className="m-0 text-sm text-destructive">Não foi possível carregar a comparação entre o planeado e o concluído.</p>
+        ) : (
+          <>
+            {progress.data.status === 'planned' ? (
+              <p className="m-0 mb-2 text-xs text-muted-foreground">A sprint ainda não começou: as estimativas do início ficam registadas quando for iniciada.</p>
+            ) : null}
+            <dl className="m-0 grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-3">
+              <Totals label="Planeado" w={progress.data.planned} />
+              <Totals label="Concluído" w={progress.data.done} />
+            </dl>
+          </>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function Totals({ label, w }: { label: string; w: WorkTotals }) {
+  const h = (v: number | null) => (v === null ? '—' : hoursText(v));
+  return (
+    <div className="rounded-lg bg-muted p-3">
+      <dt className="text-sm font-semibold">
+        {label} · {tasksText(w.tasks)}
+      </dt>
+      <dd className="m-0 mt-1 text-xs text-muted-foreground">
+        Horas: no início {h(w.startHours)} · atual {hoursText(w.currentHours)}
+        <br />
+        Story points: no início {w.startStoryPoints === null ? '—' : `${w.startStoryPoints} SP`} · atual {w.currentStoryPoints} SP
+      </dd>
+    </div>
+  );
+}
+
+/** «Editar datas» (enquanto «Planeada») e «Iniciar sprint», confirmando ou ajustando as datas (RN36, CA04.9–CA04.13). */
+function DatesDialog({
+  sprint,
+  kind,
+  onClose,
+  onDone,
+}: {
+  sprint: SprintDetail;
+  kind: 'edit' | 'start';
+  onClose: () => void;
+  onDone: (s: SprintDetail) => Promise<void>;
+}) {
+  const [startDate, setStartDate] = useState(sprint.startDate);
+  const [endDate, setEndDate] = useState(sprint.endDate);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const save = useMutation({
+    mutationFn: () => (kind === 'edit' ? updateSprintDates(sprint.id, { startDate, endDate }) : startSprint(sprint.id, { startDate, endDate })),
+    onSuccess: async (s) => {
+      await onDone(s);
+      toast.success(kind === 'edit' ? 'Datas alteradas.' : `Sprint iniciada com ${tasksText(s.tasks.length)}.`);
+      onClose();
+    },
+  });
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (save.isPending) return;
+    const found = validateSprintDates({ startDate, endDate });
+    setErrors(found);
+    if (Object.keys(found).length === 0) save.mutate();
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => (o || save.isPending ? undefined : onClose())}>
+      <DialogContent className="sm:max-w-lg">
+        <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+          <DialogHeader>
+            <DialogTitle>{kind === 'edit' ? 'Editar datas' : 'Iniciar sprint'}</DialogTitle>
+            <DialogDescription>
+              {kind === 'edit'
+                ? 'As datas só podem ser alteradas enquanto a sprint está «Planeada».'
+                : `Confirme ou ajuste as datas. ${sprint.tasks.length === 1 ? 'A tarefa planeada passa' : `As ${sprint.tasks.length} tarefas planeadas passam`} a fazer parte da sprint; depois do início, as datas não podem ser alteradas.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <DatePicker label="Início" value={startDate} onChange={setStartDate} error={errors.startDate} />
+            <DatePicker label="Fim" value={endDate} onChange={setEndDate} error={errors.endDate} hint={`${workingDays(startDate, endDate)} dias úteis`} />
           </div>
-        </ConfirmDialog>
-      ) : null}
-    </section>
+          {save.error ? (
+            <p role="alert" className="m-0 text-sm font-medium text-destructive">
+              {errorText(save.error)}
+            </p>
+          ) : null}
+          <DialogFooter>
+            <Button type="button" variant="outline" disabled={save.isPending} onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={save.isPending}>
+              {save.isPending ? 'A guardar…' : kind === 'edit' ? 'Guardar datas' : 'Iniciar sprint'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

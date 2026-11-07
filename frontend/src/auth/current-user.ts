@@ -24,7 +24,7 @@ export const teamsForNewTask = (me: CurrentUser, project: Project) =>
   project.teams.filter((t) => t.active && (canManageProject(me, project.id) || roleIn(me, t.id) !== undefined));
 
 /** Administrador, gestor do projeto ou líder da equipa responsável (RN38, RN39, RN26). */
-export const leadsTask = (me: CurrentUser, task: Task) =>
+export const leadsTask = (me: CurrentUser, task: Pick<Task, 'projectId' | 'teamId'>) =>
   canManageProject(me, task.projectId) || roleIn(me, task.teamId) === 'leader';
 
 /**
@@ -39,7 +39,7 @@ export const canCreateSubtask = (me: CurrentUser, task: Task) =>
   canManageProject(me, task.projectId) || roleIn(me, task.teamId) !== undefined;
 
 /** RN26: estados que este utilizador pode escolher para a tarefa. */
-export function stateTargetsFor(me: CurrentUser, task: Task): TaskState[] {
+export function stateTargetsFor(me: CurrentUser, task: Pick<Task, 'state' | 'projectId' | 'teamId' | 'assignee'>): TaskState[] {
   const targets = lifecycleTargets(task.state);
   if (leadsTask(me, task)) return targets;
   const mayMove = task.assignee?.id === me.id && MEMBER_STATES.includes(task.state);
