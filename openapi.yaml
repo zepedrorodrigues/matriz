@@ -54,6 +54,8 @@ tags:
     description: Sprints, backlog e capacidade (módulo Planeamento).
   - name: Trabalho
     description: Hierarquia, tarefas, atribuição, participantes, comentários e transferências (módulo Trabalho).
+  - name: Histórico
+    description: Consulta do histórico de cada elemento, só de leitura (módulo Histórico; RN32, D50).
 
 paths:
   /sprints/{sprintId}/capacity:
@@ -1720,6 +1722,162 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  # I13 — consulta do histórico (D50, requirements.md §3.1). Todas só de leitura: a API não tem nenhuma
+  # operação que altere ou apague eventos (SEC04, CAT04). Paginadas como os comentários (D46), por ordem
+  # cronológica de registo. Elementos eliminados (RN38): 200 ao administrador, 404 aos outros.
+  /projects/{projectId}/history:
+    get:
+      tags: [Histórico]
+      operationId: listProjectHistory
+      summary: Consultar o histórico de um projeto
+      description: |
+        Eventos do próprio projeto (criação, edição, equipas associadas, eliminação). Consulta quem vê o
+        projeto (CAT06). Um projeto eliminado só é consultado pelo administrador (RN38, D50).
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          $ref: '#/components/responses/HistoryPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /objectives/{objectiveId}/history:
+    get:
+      tags: [Histórico]
+      operationId: listObjectiveHistory
+      summary: Consultar o histórico de um objetivo
+      description: |
+        Consulta quem vê o projeto do objetivo (CAT06). O objetivo de um projeto eliminado só é consultado
+        pelo administrador (RN38, D50).
+      parameters:
+        - $ref: '#/components/parameters/ObjectiveId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          $ref: '#/components/responses/HistoryPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /epics/{epicId}/history:
+    get:
+      tags: [Histórico]
+      operationId: listEpicHistory
+      summary: Consultar o histórico de um épico
+      description: |
+        Consulta quem vê o projeto do épico (CAT06). O épico de um projeto eliminado só é consultado pelo
+        administrador (RN38, D50).
+      parameters:
+        - $ref: '#/components/parameters/EpicId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          $ref: '#/components/responses/HistoryPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tasks/{taskId}/history:
+    get:
+      tags: [Histórico]
+      operationId: listTaskHistory
+      summary: Consultar o histórico de uma tarefa
+      description: |
+        Eventos da tarefa, dos seus critérios de aceitação (`entityType: acceptance_criterion`) e das sprints
+        que registam a entrada ou a saída da tarefa (`entityType: sprint`), numa só lista cronológica (CAT03,
+        CA06.5, CA06.6, CA09.2). Consulta quem vê a tarefa, exceto o responsável de outra equipa (RN03 → 403).
+        Uma tarefa eliminada, ou de um projeto eliminado, só é consultada pelo administrador (RN38, D50).
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          $ref: '#/components/responses/HistoryPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sprints/{sprintId}/history:
+    get:
+      tags: [Histórico]
+      operationId: listSprintHistory
+      summary: Consultar o histórico de uma sprint
+      description: |
+        Consultam o administrador, o líder e os membros da equipa e o gestor de um projeto associado à equipa
+        (como o planeamento). Dados individuais de capacidade (`availableHours`; SEC07, CAT05): o
+        administrador e o líder veem todos, o membro só os seus, o gestor nenhum. As tarefas referidas
+        (`taskId`, `taskIds`, `returnedToBacklog`) só aparecem se forem de projetos que quem consulta vê
+        (CAT06); as outras, e os dados delas, são retirados. O evento continua na lista; o que se retirou fica
+        em `omitted`.
+      parameters:
+        - $ref: '#/components/parameters/SprintId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          $ref: '#/components/responses/HistoryPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /teams/{teamId}/history:
+    get:
+      tags: [Histórico]
+      operationId: listTeamHistory
+      summary: Consultar o histórico de uma equipa
+      description: |
+        Criação, edição, desativação e pertenças (`member_added`, `member_updated`, `member_removed`).
+        Consultam o administrador, o líder e os membros atuais da equipa e o gestor de um projeto associado à
+        equipa; uma equipa desativada continua consultável (CA01.11). Dados individuais de capacidade
+        (`allocationPct`; SEC07): o administrador e o líder veem todos, o membro só os seus, o gestor
+        nenhum. O evento continua na lista; o que se retirou fica em `omitted`.
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          $ref: '#/components/responses/HistoryPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -1759,6 +1917,14 @@ components:
       in: path
       required: true
       description: Identificador do objetivo.
+      schema:
+        type: string
+        format: uuid
+    EpicId:
+      name: epicId
+      in: path
+      required: true
+      description: Identificador do épico.
       schema:
         type: string
         format: uuid
@@ -3073,6 +3239,77 @@ components:
               items:
                 $ref: '#/components/schemas/Comment'
 
+    HistoryEvent:
+      type: object
+      description: |
+        Um evento do histórico (RN32): tipo, valor anterior, valor novo, autor e data/hora. Os valores guardam
+        identificadores; os nomes vêm em `references`. A apresentação de cada tipo é da interface; um tipo que
+        ela não conheça mostra-se como uma alteração genérica, nunca desaparece.
+      required: [id, entityType, entityId, eventType, oldValue, newValue, author, occurredAt, references, omitted]
+      properties:
+        id:
+          type: string
+          pattern: '^[0-9]+$'
+          description: Número de ordem do registo (inteiro de 64 bits, em texto). A lista vem por ordem crescente.
+        entityType:
+          type: string
+          enum: [project, objective, epic, task, acceptance_criterion, sprint, team]
+          description: Elemento a que o evento pertence. No histórico da tarefa também aparecem os dos seus critérios e das sprints.
+        entityId:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+          description: |
+            Tipo do evento, em texto livre (lista aberta). Exemplos: `created`, `updated`, `deleted`,
+            `state_changed`, `assignee_changed`, `team_transferred`, `criterion_changed`, `task_planned`,
+            `task_removed`, `closed`, `member_added`, `availability_adjusted`.
+          example: team_transferred
+        oldValue:
+          type: [object, 'null']
+          additionalProperties: true
+          description: Valor anterior, com a forma própria do tipo de evento; `null` quando não há (p. ex. na criação).
+        newValue:
+          type: [object, 'null']
+          additionalProperties: true
+          description: Valor novo, com a forma própria do tipo de evento; `null` quando não há (p. ex. na eliminação).
+        author:
+          allOf:
+            - $ref: '#/components/schemas/UserSummary'
+          description: Quem fez a alteração. As ações automáticas têm o autor reservado `00000000-0000-0000-0000-000000000000`, «Sistema».
+        occurredAt:
+          type: string
+          format: date-time
+        references:
+          type: object
+          additionalProperties:
+            type: string
+          description: |
+            Nome de cada pessoa, equipa e tarefa referida em `oldValue` e `newValue`, por identificador. Um
+            identificador sem nome conhecido não aparece aqui.
+          example:
+            3f0c1a52-6b1e-4f4e-9d0a-2c1b5e7d9a10: Ana Silva
+            7d2e4b90-1c3f-4a8e-b5d6-9e0f1a2b3c4d: Equipa Azul
+        omitted:
+          type: array
+          items:
+            type: string
+          description: |
+            Campos de `oldValue`/`newValue` retirados ou reduzidos para quem consulta: dados individuais de
+            capacidade (SEC07) ou tarefas de projetos que não vê (CAT06). Vazio quando nada foi retirado.
+          example: [allocationPct]
+
+    HistoryEventPage:
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/HistoryEvent'
+
     TaskStateCounts:
       type: object
       description: Número de tarefas em cada estado (RN17), sem subtarefas nem elementos eliminados.
@@ -3155,6 +3392,12 @@ components:
                 type: string
 
   responses:
+    HistoryPage:
+      description: Página de eventos do histórico, por ordem cronológica, com o total (D46).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HistoryEventPage'
     BadRequest:
       description: Pedido inválido (p. ex. identificador mal formado ou corpo em falta).
       content:
