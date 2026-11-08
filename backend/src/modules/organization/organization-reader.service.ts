@@ -124,6 +124,15 @@ export class OrganizationReader {
     return (row?.role as TeamRole | undefined) ?? null;
   }
 
+  /**
+   * Papel do utilizador na equipa, ativa ou desativada — só para o histórico: uma equipa desativada mantém as
+   * pertenças (RN33) e o seu histórico continua consultável por quem lhe pertence (CA01.11, D50, opção 1).
+   */
+  async historyTeamRole(userId: string, teamId: string): Promise<TeamRole | null> {
+    const [row] = await this.db.query(`SELECT role FROM organization.team_membership WHERE user_id = $1 AND team_id = $2`, [userId, teamId]);
+    return (row?.role as TeamRole | undefined) ?? null;
+  }
+
   /** Membros de uma equipa (líderes incluídos) com o papel e a alocação, para a capacidade (RN06, I10). */
   async teamMembers(teamId: string, manager?: EntityManager): Promise<{ userId: string; role: TeamRole; allocationPct: number }[]> {
     const rows: { user_id: string; role: TeamRole; allocation_pct: number }[] = await (manager ?? this.db).query(

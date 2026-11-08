@@ -126,13 +126,14 @@ export class HistoryReader {
   /**
    * D50 (§3.1) nos históricos da equipa e da sprint: o evento fica, sem o que quem consulta não pode ver.
    * SEC07 — capacidade individual: o administrador e o líder veem todas, o membro só a sua, o gestor nenhuma.
-   * CAT06 — tarefas referidas: só as dos projetos que vê, com a regra das vistas da equipa (`projectScope`).
+   * CAT06 — tarefas referidas: só as dos projetos que vê, com a regra das vistas da equipa (`projectScope`): sem
+   * restrição para o administrador e para quem pertence à equipa — aqui, mesmo desativada (CA01.11).
    */
   private async redact(rows: EventRow[], viewer: AuthenticatedUser, teamId: string): Promise<void> {
-    const role = viewer.isAdmin ? 'leader' : await this.organization.teamRole(viewer.id, teamId);
-    const scope = await this.organization.projectScope(viewer, teamId);
+    const role = viewer.isAdmin ? 'leader' : await this.organization.historyTeamRole(viewer.id, teamId);
     let visible: Set<string> | null = null;
-    if (scope) {
+    if (role === null) {
+      const scope = new Set((await this.organization.visibleProjects(viewer.id, false)).map((p) => p.id));
       const refs = [...new Set(rows.flatMap((r) => [...uuidsIn(r.old_value), ...uuidsIn(r.new_value)]))];
       const tasks = await this.work.planningTasks({ taskIds: refs });
       visible = new Set(tasks.filter((task) => scope.has(task.projectId)).map((task) => task.id));

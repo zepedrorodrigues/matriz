@@ -320,4 +320,140 @@ describe('I13 — histórico', () => {
       expect((await http('memberA').get(`/api/tasks/${taskId}/history?pageSize=1&page=2`).expect(200)).body).toMatchObject({ page: 2, pageSize: 1, total: 2 });
     });
   });
+
+  /** Passo 5 — critérios de aceitação que dependem da consulta (i13-historico-analise.md §1). */
+  describe('Critérios de aceitação', () => {
+    /** Um token por pessoa: a conta liga-se ao `sub` do primeiro acesso (RN35), e um `sub` novo seria recusado. */
+    const tokens = new Map<string, string>();
+    const as = async (who: { email: string }) => {
+      if (!tokens.has(who.email)) tokens.set(who.email, await t.token({ email: who.email }));
+      const token = tokens.get(who.email)!;
+      return (r: request.Test) => r.set('Authorization', `Bearer ${token}`);
+    };
+
+    it('CA01.11: depois de desativada, o histórico da equipa continua consultável pelo líder, pelos membros e pelo administrador', async () => {
+      const fx = new Fixtures(t.db);
+      const [admin, leader, member] = [await fx.user('admin', { isAdmin: true }), await fx.user('lider'), await fx.user('membro')];
+      const teamId = await fx.team('A desativar', [{ userId: leader.id, role: 'leader' }]);
+      const asAdmin = await as(admin);
+      await asAdmin(request(t.server).put(`/api/users/${member.id}/memberships`))
+        .send({ memberships: [{ teamId, role: 'member', allocationPct: 100 }] })
+        .expect(200);
+      await asAdmin(request(t.server).patch(`/api/teams/${teamId}`)).send({ name: `Renomeada ${randomUUID().slice(0, 8)}` }).expect(200);
+      await asAdmin(request(t.server).post(`/api/teams/${teamId}/deactivate`)).expect(200);
+      for (const who of [admin, leader, member]) {
+        const res = await (await as(who))(request(t.server).get(`/api/teams/${teamId}/history`));
+        expect({ who: who.name, status: res.status, events: res.body.items?.map((e: { eventType: string }) => e.eventType) }).toEqual({
+          who: who.name,
+          status: 200,
+          events: ['member_added', 'updated', 'deactivated'],
+        });
+        // SEC07: o membro continua a ver a sua alocação, como antes de a equipa ser desativada.
+        expect(res.body.items[0]).toMatchObject({ newValue: { userId: member.id, allocationPct: 100 }, omitted: [] });
+      }
+      // O planeamento da equipa desativada continua fechado aos membros (só o histórico mudou).
+      await (await as(member))(request(t.server).get(`/api/teams/${teamId}/sprints`)).expect(403);
+    });
+
+    type Event = {
+      eventType: string;
+      oldValue: Record<string, unknown> | null;
+      newValue: Record<string, unknown> | null;
+      author: { id: string; name: string };
+      occurredAt: string;
+      references: Record<string, string>;
+    };
+    const taskHistory = async (who: { email: string }, taskId: string): Promise<Event[]> =>
+      (await (await as(who))(request(t.server).get(`/api/tasks/${taskId}/history`)).expect(200)).body.items;
+
+    it('CA06.6, CA09.2, RN32: na tarefa transferida identificam-se o responsável anterior, a equipa original e cada passagem, por ordem', async () => {
+      const fx = new Fixtures(t.db);
+      const [manager, leaderA, memberA, leaderB] = [await fx.user('gestor'), await fx.user('liderA'), await fx.user('membroA'), await fx.user('liderB')];
+      const teamA = await fx.team('Origem', [
+        { userId: leaderA.id, role: 'leader' },
+        { userId: memberA.id, role: 'member' },
+      ]);
+      const teamB = await fx.team('Destino', [{ userId: leaderB.id, role: 'leader' }]);
+      const epicId = await fx.epic(await fx.objective(await fx.project('Transferências', { managers: [manager.id], teams: [teamA, teamB] })));
+      const task = await fx.task({ epicId, teamId: teamA, createdBy: leaderA.id, assigneeId: memberA.id, title: 'A transferir' });
+      const asManager = await as(manager);
+      await asManager(request(t.server).post(`/api/tasks/${task}/transfer`)).send({ targetTeamId: teamB }).expect(200);
+      await asManager(request(t.server).post(`/api/tasks/${task}/transfer`)).send({ targetTeamId: teamA }).expect(200);
+
+      const items = await taskHistory(leaderA, task);
+      const transfers = items.filter((e) => e.eventType === 'team_transferred');
+      expect(transfers.map((e) => [e.oldValue?.teamId, e.newValue?.teamId, e.newValue?.originalTeamId])).toEqual([
+        [teamA, teamB, teamA],
+        [teamB, teamA, teamA],
+      ]);
+      expect(transfers[0]).toMatchObject({
+        oldValue: { assigneeId: memberA.id },
+        author: { id: manager.id, name: manager.name },
+        references: { [teamA]: expect.stringContaining('Origem'), [teamB]: expect.stringContaining('Destino'), [memberA.id]: memberA.name },
+      });
+      // O responsável não pertence à equipa de destino: sai, e o histórico diz quem era (F22).
+      expect(items.find((e) => e.eventType === 'assignee_changed')).toMatchObject({
+        oldValue: { assigneeId: memberA.id },
+        newValue: { assigneeId: null, reason: 'transferred' },
+        references: { [memberA.id]: memberA.name },
+      });
+    });
+
+    it('CA06.5: depois da reabertura, o histórico anterior continua consultável, por ordem', async () => {
+      const fx = new Fixtures(t.db);
+      const leader = await fx.user('lider');
+      const teamId = await fx.team('Reabertura', [{ userId: leader.id, role: 'leader' }]);
+      const epicId = await fx.epic(await fx.objective(await fx.project('Reabertura', { teams: [teamId] })));
+      const task = await fx.task({ epicId, teamId, createdBy: leader.id, state: 'done' });
+      const asLeader = await as(leader);
+      await asLeader(request(t.server).post(`/api/tasks/${task}/state`)).send({ state: 'delivered' }).expect(200);
+      await asLeader(request(t.server).post(`/api/tasks/${task}/state`)).send({ state: 'in_development' }).expect(200);
+      expect((await taskHistory(leader, task)).map((e) => [e.eventType, e.oldValue?.state, e.newValue?.state])).toEqual([
+        ['state_changed', 'done', 'delivered'],
+        ['reopened', 'delivered', 'in_development'],
+      ]);
+    });
+
+    it('CAT03: cada alteração da tarefa fica no histórico consultado, com o autor e a data/hora', async () => {
+      const fx = new Fixtures(t.db);
+      const [leader, member] = [await fx.user('lider'), await fx.user('membro')];
+      const teamId = await fx.team('Alterações', [
+        { userId: leader.id, role: 'leader' },
+        { userId: member.id, role: 'member' },
+      ]);
+      const epicId = await fx.epic(await fx.objective(await fx.project('Alterações', { teams: [teamId] })));
+      const task = await fx.task({ epicId, teamId, createdBy: leader.id });
+      const asLeader = await as(leader);
+      const started = Date.now();
+      await asLeader(request(t.server).patch(`/api/tasks/${task}`)).send({ title: 'Título novo' }).expect(200);
+      await asLeader(request(t.server).patch(`/api/tasks/${task}`)).send({ estimateHours: 8 }).expect(200);
+      await asLeader(request(t.server).patch(`/api/tasks/${task}`)).send({ assigneeId: member.id }).expect(200);
+      await asLeader(request(t.server).post(`/api/tasks/${task}/state`)).send({ state: 'in_technical_analysis' }).expect(200);
+      await asLeader(request(t.server).post(`/api/tasks/${task}/acceptance-criteria`)).send({ description: 'Critério' }).expect(201);
+
+      const items = await taskHistory(member, task);
+      expect(items.map((e) => e.eventType)).toEqual(['updated', 'estimate_changed', 'assignee_changed', 'state_changed', 'created']);
+      for (const e of items) {
+        expect(e.author).toEqual({ id: leader.id, name: leader.name });
+        expect(Date.parse(e.occurredAt)).toBeGreaterThanOrEqual(started - 5000);
+      }
+      expect(items[2]).toMatchObject({ newValue: { assigneeId: member.id }, references: { [member.id]: member.name } });
+    });
+
+    it('CAT04: a API não tem nenhuma operação que altere ou apague o histórico; ele mantém-se', async () => {
+      const fx = new Fixtures(t.db);
+      const leader = await fx.user('lider');
+      const teamId = await fx.team('Imutável', [{ userId: leader.id, role: 'leader' }]);
+      const epicId = await fx.epic(await fx.objective(await fx.project('Imutável', { teams: [teamId] })));
+      const task = await fx.task({ epicId, teamId, createdBy: leader.id });
+      const asLeader = await as(leader);
+      await asLeader(request(t.server).patch(`/api/tasks/${task}`)).send({ title: 'Registado' }).expect(200);
+      const before = await taskHistory(leader, task);
+      const url = `/api/tasks/${task}/history`;
+      for (const req of [request(t.server).put(url), request(t.server).patch(url), request(t.server).delete(url), request(t.server).post(url)]) {
+        await asLeader(req).send({ eventType: 'falso' }).expect(404);
+      }
+      expect(await taskHistory(leader, task)).toEqual(before);
+    });
+  });
 });

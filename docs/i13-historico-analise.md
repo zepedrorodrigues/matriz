@@ -216,7 +216,7 @@ Registada como **D50** (`constraints.md` §2), **F25** (`review.md` §6) e na §
 
 ### 10.1 Pressupostos que ficam (a confirmar no plano de execução)
 
-- P-g. «Membros da equipa» são os membros **atuais**; quem saiu da equipa deixa de ver o histórico dela. Uma equipa desativada mantém as pertenças (RN33), por isso o histórico continua consultável pelos mesmos (CA01.11).
+- P-g. «Membros da equipa» são os membros **atuais**; quem saiu da equipa deixa de ver o histórico dela. Uma equipa desativada mantém as pertenças (RN33), por isso o histórico continua consultável pelos mesmos (CA01.11). **Corrigido na execução (passo 5, 2026-11-08):** confirmado só em parte no passo 0 — o `teamRole` do `OrganizationReader` conta só equipas ativas, e o líder e os membros de uma equipa desativada recebiam 403 no histórico dela (medido). **Decisão do humano (opção 1):** só no histórico, contam as pertenças da equipa mesmo desativada (`historyTeamRole`), para o acesso e para os filtros SEC07/CAT06; o planeamento da equipa desativada continua fechado.
 - P-h. O gestor vê o histórico de uma equipa associada a um projeto que gere, mesmo nos eventos de pertença (`member_*`), sem os valores de alocação.
 - P-i. As rotas seguem o estilo do contrato atual, uma por recurso (`GET /tasks/{id}/history`, `/projects/{id}/history`, `/objectives/{id}/history`, `/epics/{id}/history`, `/sprints/{id}/history`, `/teams/{id}/history`), todas servidas pelo módulo Histórico, paginadas como os comentários (D46) e por ordem cronológica (`id`). É uma proposta técnica: aprova-se com o plano.
 - P-j. O `TRUNCATE` é retirado mas a recriação da `matriz_test` pelos testes faz `DROP SCHEMA`, que o dono continua a poder fazer. Verifica-se no passo 1.

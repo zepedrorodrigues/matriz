@@ -35,9 +35,13 @@ export type AccessRequirement =
   | { kind: 'sprint'; action: SprintAction; param: string };
 
 /** Planeamento (§3.1): consultar — membros da equipa e administrador; gerir sprints e planear — só o líder. */
-export type TeamPlanningAction = 'viewPlanning' | 'managePlanning';
-/** `start`: iniciar a sprint — o líder da equipa ou o administrador (RN36). */
-export type SprintAction = 'view' | 'manage' | 'start';
+export type TeamPlanningAction = 'viewPlanning' | 'managePlanning' | 'viewHistory';
+/**
+ * `start`: iniciar a sprint — o líder da equipa ou o administrador (RN36).
+ * `viewHistory` (na equipa e na sprint): quem consulta o planeamento, e também os líderes e membros de uma
+ * equipa desativada (D50, CA01.11).
+ */
+export type SprintAction = 'view' | 'manage' | 'start' | 'viewHistory';
 
 export const ACCESS_REQUIREMENT = 'matriz:accessRequirement';
 

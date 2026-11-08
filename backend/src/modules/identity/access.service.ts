@@ -116,15 +116,27 @@ export class AccessService {
       case 'team': {
         const teamId = params[requirement.param];
         if (!isUuid(teamId) || !(await this.organization.teamStatus(teamId))) throw new NotFoundException('A equipa não existe.');
+        if (requirement.action === 'viewHistory') return this.enforceTeamHistory(user, teamId);
         return this.enforcePlanning(user, requirement.action === 'viewPlanning' ? 'view' : 'manage', teamId);
       }
       case 'sprint': {
         const sprintId = params[requirement.param];
         const teamId = isUuid(sprintId) ? await this.sprints.teamOfSprint(sprintId) : null;
         if (!teamId) throw new NotFoundException('A sprint não existe.');
+        if (requirement.action === 'viewHistory') return this.enforceTeamHistory(user, teamId);
         return this.enforcePlanning(user, requirement.action, teamId);
       }
     }
+  }
+
+  /**
+   * D50 3b: o histórico da equipa e das suas sprints — o administrador, o líder e os membros e o gestor de um
+   * projeto associado, como no planeamento; mas os de uma equipa desativada continuam a consultá-lo (CA01.11).
+   */
+  private async enforceTeamHistory(user: AuthenticatedUser, teamId: string): Promise<void> {
+    if (user.isAdmin || (await this.organization.historyTeamRole(user.id, teamId))) return;
+    if (await this.organization.managesProjectOfTeam(user.id, teamId)) return;
+    throw new ForbiddenException('Só os membros da equipa, os gestores dos seus projetos e o administrador consultam o seu histórico.');
   }
 
   private async enforceProject(

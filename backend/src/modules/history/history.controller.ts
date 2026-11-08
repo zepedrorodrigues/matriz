@@ -58,13 +58,13 @@ export class HistoryController {
   }
 
   @Get('sprints/:sprintId/history')
-  @SprintAccess('view')
+  @SprintAccess('viewHistory')
   sprint(@Param('sprintId') id: string, @Query() q: HistoryQuery, @CurrentUser() user: AuthenticatedUser): Promise<HistoryPage> {
     return this.history.list('sprint', id, q.page ?? 1, q.pageSize ?? 20, user);
   }
 
   @Get('teams/:teamId/history')
-  @TeamPlanningAccess('viewPlanning')
+  @TeamPlanningAccess('viewHistory')
   team(@Param('teamId') id: string, @Query() q: HistoryQuery, @CurrentUser() user: AuthenticatedUser): Promise<HistoryPage> {
     return this.history.list('team', id, q.page ?? 1, q.pageSize ?? 20, user);
   }
