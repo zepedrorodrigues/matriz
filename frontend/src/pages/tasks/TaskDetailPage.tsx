@@ -26,6 +26,7 @@ import { PRIORITY_LABEL, STATE_LABEL, formatHours, type TaskState } from '@/doma
 import { AssignmentPanel } from './AssignmentPanel';
 import { BlockPanel } from './BlockPanel';
 import { CommentsPanel } from './CommentsPanel';
+import { DeletedHistory, HistoryTimeline } from '@/components/history-timeline';
 import { CriteriaPanel } from './CriteriaPanel';
 import { TaskForm, type TaskFormValues } from './TaskForm';
 import { TransferPanel } from './TransferPanel';
@@ -207,6 +208,7 @@ export function TaskDetail({ taskId, inDialog = false, onDeleted }: { taskId: st
               ? 'Não tem acesso a esta tarefa.'
               : 'Não foi possível carregar a tarefa. Tente novamente mais tarde.'}
         </h1>
+        {status === 404 && me.data?.isAdmin ? <DeletedHistory element="tasks" elementId={taskId} label="esta tarefa" /> : null}
         <Button asChild variant="outline">
           <Link to="/projetos">Voltar aos projetos</Link>
         </Button>
@@ -349,6 +351,7 @@ export function TaskDetail({ taskId, inDialog = false, onDeleted }: { taskId: st
 
           <CriteriaPanel task={t} me={user} resetKey={resetKeys.criteria} onOperationStart={() => startOperation('criteria')} />
           <CommentsPanel taskId={t.id} resetKey={resetKeys.comments} onOperationStart={() => startOperation('comments')} />
+          <HistoryTimeline element="tasks" elementId={t.id} />
         </div>
 
         <aside aria-label="Detalhes e ações" className="flex min-w-0 flex-[1_1_320px] flex-col gap-4">

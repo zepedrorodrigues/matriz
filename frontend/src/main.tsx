@@ -25,11 +25,13 @@ const TeamPlanningPage = lazy(() => import('./pages/planning/TeamPlanningPage').
 
 const queryClient: QueryClient = new QueryClient({
   // Ex. 7: qualquer alteração confirmada pela API (criar, editar, eliminar, mudar o estado) pode mudar
-  // as contagens do painel inicial e os alertas (I11), que são marcados como desatualizados e pedidos de novo.
+  // as contagens do painel inicial, os alertas (I11) e o histórico (I13), que são marcados como desatualizados
+  // e pedidos de novo.
   mutationCache: new MutationCache({
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       void queryClient.invalidateQueries({ queryKey: ['alerts'] });
+      void queryClient.invalidateQueries({ queryKey: ['history'] });
     },
   }),
   // Um erro 4xx (401, 403, 404…) não melhora ao repetir; os restantes tentam uma vez mais.

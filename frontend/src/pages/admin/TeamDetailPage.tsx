@@ -5,6 +5,7 @@ import { Link, useLocation, useParams } from 'react-router';
 import { ApiError, deactivateTeam, getTeam, listUsers, renameTeam, type TeamDetail } from '../../api/client';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { FormField } from '../../components/FormField';
+import { HistoryTimeline } from '../../components/history-timeline';
 import { Notice } from '../../components/Notice';
 import { SelectField } from '../../components/SelectField';
 import { AdminNav } from './AdminNav';
@@ -219,6 +220,9 @@ export function TeamDetailPage() {
           />
         ) : null}
       </section>
+
+      {/* CA01.11: o ecrã onde a equipa desativada continua visível é este; o histórico mantém-se consultável. */}
+      <HistoryTimeline element="teams" elementId={t.id} title="Histórico da equipa" />
 
       {confirming ? (
         <ConfirmDialog

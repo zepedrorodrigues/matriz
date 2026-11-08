@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { ApiError, createSprint, getProject, getTeamBacklog, listTeamSprints, listTeams, type Sprint } from '@/api/client';
 import { leadsTeam, useCurrentUser } from '@/auth/current-user';
 import { DatePicker } from '@/components/date-picker';
+import { HistoryTimeline } from '@/components/history-timeline';
 import { Pager } from '@/components/pager';
 import { StateBadge } from '@/components/task-badges';
 import { Badge } from '@/components/ui/badge';
@@ -47,7 +48,7 @@ export function TeamPlanningPage() {
     ? (allTeams.data ?? []).filter((t) => t.active).map((t) => ({ teamId: t.id, teamName: t.name }))
     : [...own, ...fromProjects.filter((t, i, all) => !own.some((o) => o.teamId === t.teamId) && all.findIndex((x) => x.teamId === t.teamId) === i)];
   const teamId = params.get('equipa') ?? teams[0]?.teamId ?? '';
-  const tab = params.get('vista') === 'backlog' ? 'backlog' : 'work';
+  const tab = params.get('vista') === 'backlog' ? 'backlog' : params.get('vista') === 'historico' ? 'history' : 'work';
   const [creating, setCreating] = useState(false);
 
   const sprints = useQuery({ queryKey: ['sprints', teamId], queryFn: () => listTeamSprints(teamId), enabled: teamId !== '' });
@@ -92,7 +93,11 @@ export function TeamPlanningPage() {
         <p className="m-0 rounded-xl border bg-card p-6 text-muted-foreground">Não pertence a nenhuma equipa: o planeamento é feito por equipa.</p>
       ) : (
         <div className="flex flex-wrap items-start gap-4">
-          <Tabs value={tab} onValueChange={(v) => setParam('vista', v === 'backlog' ? 'backlog' : null)} className="min-w-0 flex-[999_1_560px]">
+          <Tabs
+            value={tab}
+            onValueChange={(v) => setParam('vista', v === 'backlog' ? 'backlog' : v === 'history' ? 'historico' : null)}
+            className="min-w-0 flex-[999_1_560px]"
+          >
             <TabsList>
               <TabsTrigger value="work" className="px-4">
                 Trabalho da equipa
@@ -100,12 +105,18 @@ export function TeamPlanningPage() {
               <TabsTrigger value="backlog" className="px-4">
                 Backlog
               </TabsTrigger>
+              <TabsTrigger value="history" className="px-4">
+                Histórico
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="work" className="mt-2 overflow-hidden rounded-xl border bg-card">
               {teamId ? <TeamWorkPanel key={teamId} teamId={teamId} /> : null}
             </TabsContent>
             <TabsContent value="backlog" className="mt-2 overflow-hidden rounded-xl border bg-card">
               <Backlog teamId={teamId} sprints={sprints.data ?? []} page={Math.max(1, Number(params.get('pagina')) || 1)} onPage={(p) => setParam('pagina', String(p))} />
+            </TabsContent>
+            <TabsContent value="history" className="mt-2">
+              {teamId ? <HistoryTimeline key={teamId} element="teams" elementId={teamId} title="Histórico da equipa" /> : null}
             </TabsContent>
           </Tabs>
 
