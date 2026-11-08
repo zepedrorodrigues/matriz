@@ -433,7 +433,7 @@ erDiagram
 | Início da sprint ≤ fim; sem sobreposição; no máximo uma sprint ativa por equipa (RN31) | Base de dados: `CHECK`, restrição de exclusão sobre o intervalo de datas e índice único parcial |
 | Datas da sprint alteráveis só enquanto `planned` (RN36) | Aplicação |
 | `block_reason` obrigatório quando bloqueada (RN28) | Base de dados (`CHECK`) e aplicação |
-| Histórico sem alterações nem remoções (SEC04) | Base de dados: permissões (só `INSERT` e `SELECT`) |
+| Histórico sem alterações nem remoções (SEC04) | Base de dados: permissões (só `INSERT` e `SELECT`). **Ainda não aplicado** (F25): o role `matriz` é dono da tabela; o I13 retira-lhe `UPDATE`, `DELETE` e `TRUNCATE` numa migration (D50) |
 | Uma tarefa em no máximo uma sprint em aberto (RN04, RN05; o estado da sprint está noutra tabela); soma das alocações = 100 (RN06); pelo menos um líder por equipa ativa (RN34); equipa da subtarefa igual à da principal (RN22); equipa associada ao projeto (RN23); transições (RN26); critérios e estimativa para planear (RN27); alterações de critérios e estimativas (RN10, RN24); justificação (RN03); tarefas concluídas não transferíveis (RN20) | Aplicação (camada de domínio), porque envolvem várias linhas ou módulos |
 | Existência de entidades referenciadas entre módulos | Aplicação, através da interface do módulo dono (§1) |
 

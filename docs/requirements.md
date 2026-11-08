@@ -86,6 +86,7 @@ Decidida na revisão crítica (Ex. 6, D14).
 - **Visibilidade:** cada utilizador vê os projetos em que participa uma das suas equipas e os projetos de que é gestor; o administrador vê todos. Os dados individuais de capacidade seguem SEC07.
 - **Responsável de outra equipa** (RN03; decisões do humano, F23 e F24): quem é atribuído por exceção — de outra equipa, pelo gestor ou pelo administrador, com justificação — pode, nessa tarefa, vê-la, atualizar o estado, registar o cumprimento dos critérios, assinalar bloqueios e comentar; não edita o título, a descrição nem as estimativas, não consulta os membros da equipa e não vê o resto do projeto. Quem deixa de pertencer à equipa não fica com este acesso às tarefas que lhe continuem atribuídas.
 - **Planeamento de uma equipa consultado por quem não é da equipa** (o gestor de um dos seus projetos, F20): o backlog, as sprints e o trabalho da equipa mostram só as tarefas dos projetos que essa pessoa vê (CAT06; F23).
+- **Histórico** (decisão do humano, D50): segue a visibilidade do elemento. O histórico da tarefa inclui os eventos dos seus critérios e as suas entradas e saídas de sprints. Nos históricos da equipa e da sprint, os dados individuais de capacidade (alocação, disponibilidade) seguem SEC07 — o administrador e o líder veem todos, o membro só os seus, o gestor nenhum — e as tarefas referidas aparecem só se forem de projetos que a pessoa vê (CAT06). O responsável de outra equipa (RN03) não consulta o histórico. O histórico dos elementos eliminados só é consultado pelo administrador.
 
 | Operação | Administrador | Gestor (dos seus projetos) | Líder (da sua equipa) | Membro (da sua equipa) |
 |---|:-:|:-:|:-:|:-:|
@@ -109,6 +110,9 @@ Decidida na revisão crítica (Ex. 6, D14).
 | Comentar tarefas e consultar comentários (RN41) | ✔ | ✔ | ✔ | ✔ |
 | Consultar a capacidade e a sobrecarga de um indivíduo | | | ✔ | só os próprios dados |
 | Consultar a capacidade da equipa | ✔ | ✔ | ✔ | ✔ |
+| Consultar o histórico de um projeto, objetivo, épico ou tarefa (RN32, D50) | ✔ | ✔ | ✔ | ✔ (não o responsável de outra equipa) |
+| Consultar o histórico de uma equipa ou sprint (RN32, D50) | ✔ | ✔ (equipas dos seus projetos, sem dados individuais) | ✔ | ✔ (dados individuais só os próprios) |
+| Consultar o histórico de projetos e tarefas eliminados (RN38, D50) | ✔ | | | |
 
 ## 4. Regras de negócio
 
