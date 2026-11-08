@@ -86,10 +86,11 @@ export class OrganizationReader {
   }
 
   /** O projeto existe e não foi eliminado (RN38: um projeto eliminado responde como inexistente). */
-  async projectExists(projectId: string): Promise<boolean> {
+  /** `withDeleted`: conta também os eliminados — só para o histórico, consultado pelo administrador (RN38, D50). */
+  async projectExists(projectId: string, withDeleted = false): Promise<boolean> {
     const [row] = await this.db.query(
-      `SELECT EXISTS (SELECT 1 FROM organization.project WHERE id = $1 AND deleted_at IS NULL) AS found`,
-      [projectId],
+      `SELECT EXISTS (SELECT 1 FROM organization.project WHERE id = $1 AND ($2 OR deleted_at IS NULL)) AS found`,
+      [projectId, withDeleted],
     );
     return row.found === true;
   }

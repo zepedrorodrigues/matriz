@@ -94,6 +94,26 @@ export class WorkItemLocatorService implements WorkItemLocator {
     return row?.project_id ?? null;
   }
 
+  async projectOfEpic(epicId: string): Promise<string | null> {
+    const [row] = await this.db.query(
+      `SELECT o.project_id FROM work.epic e JOIN work.objective o ON o.id = e.objective_id WHERE e.id = $1`,
+      [epicId],
+    );
+    return row?.project_id ?? null;
+  }
+
+  async projectOfTask(taskId: string): Promise<string | null> {
+    const [row] = await this.db.query(
+      `SELECT o.project_id FROM work.task t
+       LEFT JOIN work.task p ON p.id = t.parent_task_id
+       JOIN work.epic e ON e.id = coalesce(t.epic_id, p.epic_id)
+       JOIN work.objective o ON o.id = e.objective_id
+       WHERE t.id = $1`,
+      [taskId],
+    );
+    return row?.project_id ?? null;
+  }
+
   /** Uma tarefa de topo tem épico; uma subtarefa não (RN12, RN22), por isso a junção pelo épico exclui-as. */
   async taskCountsByProject(projectIds: string[]): Promise<Map<string, Partial<Record<TaskState, number>>>> {
     const counts = new Map<string, Partial<Record<TaskState, number>>>();

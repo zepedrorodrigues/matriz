@@ -1,6 +1,7 @@
 import { Injectable, Module, OnModuleInit } from '@nestjs/common';
 import { DomainEvents } from '../../shared/events/domain-events';
 import { OrganizationModule } from '../organization/organization.module';
+import { HistoryController } from './history.controller';
 import { HistoryReader } from './history.reader';
 
 /**
@@ -34,5 +35,5 @@ export class HistoryRecorder implements OnModuleInit {
  * Módulo Histórico (architecture.md §5): subscreve os eventos de domínio dos outros módulos e lê o
  * histórico (HistoryReader, I13), com os nomes pelas interfaces de leitura dos módulos donos.
  */
-@Module({ imports: [OrganizationModule], providers: [HistoryRecorder, HistoryReader] })
+@Module({ imports: [OrganizationModule], controllers: [HistoryController], providers: [HistoryRecorder, HistoryReader] })
 export class HistoryModule {}

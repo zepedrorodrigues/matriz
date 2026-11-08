@@ -89,16 +89,30 @@ export class AccessService {
           throw new ForbiddenException('Só o administrador e os líderes de equipa podem criar projetos.');
         }
         return;
-      case 'project':
-        return this.enforceProject(user, requirement.action, await this.existingProject(params[requirement.param]), body);
-      case 'objective': {
-        const objectiveId = params[requirement.param];
-        const projectId = isUuid(objectiveId) ? await this.work.projectOfObjective(objectiveId) : null;
-        if (!projectId) throw new NotFoundException('O objetivo não existe.');
-        return this.enforceProject(user, 'createWork', await this.existingProject(projectId), body);
+      case 'project': {
+        const projectId = params[requirement.param];
+        if (requirement.action === 'viewHistory' && (await this.adminSeesHistory(user, isUuid(projectId) ? projectId : null))) return;
+        return this.enforceProject(user, requirement.action, await this.existingProject(projectId), body);
       }
-      case 'task':
-        return this.enforceTask(user, requirement.action, await this.existingTask(params[requirement.param]), body, query);
+      case 'objective':
+      case 'epic': {
+        const id = params[requirement.param];
+        const projectId = !isUuid(id)
+          ? null
+          : requirement.kind === 'epic'
+            ? await this.work.projectOfEpic(id)
+            : await this.work.projectOfObjective(id);
+        if (!projectId) throw new NotFoundException(requirement.kind === 'epic' ? 'O épico não existe.' : 'O objetivo não existe.');
+        if (requirement.action === 'viewHistory' && (await this.adminSeesHistory(user, projectId))) return;
+        return this.enforceProject(user, requirement.action, await this.existingProject(projectId), body);
+      }
+      case 'task': {
+        const taskId = params[requirement.param];
+        if (requirement.action === 'viewHistory' && (await this.adminSeesHistory(user, isUuid(taskId) ? await this.work.projectOfTask(taskId) : null))) {
+          return;
+        }
+        return this.enforceTask(user, requirement.action, await this.existingTask(taskId), body, query);
+      }
       case 'team': {
         const teamId = params[requirement.param];
         if (!isUuid(teamId) || !(await this.organization.teamStatus(teamId))) throw new NotFoundException('A equipa não existe.');
@@ -121,6 +135,7 @@ export class AccessService {
   ): Promise<void> {
     switch (action) {
       case 'view':
+      case 'viewHistory':
         if (!(await this.canViewProject(user, projectId))) throw new ForbiddenException('Não tem acesso a este projeto.');
         return;
       case 'edit':
@@ -214,6 +229,10 @@ export class AccessService {
 
     switch (action) {
       case 'view':
+        return;
+      case 'viewHistory':
+        // D50, Z1: o responsável de outra equipa (RN03) vê a tarefa, mas não o histórico — expõe a equipa (F10).
+        if (role === 'assignee') throw new ForbiddenException('O responsável de outra equipa não consulta o histórico da tarefa (RN03, D50).');
         return;
       case 'edit':
         // D49: editam o título e a descrição o administrador, o gestor do projeto e os membros da equipa responsável.
@@ -385,6 +404,14 @@ export class AccessService {
     // atribuição for essa exceção (quem sai da equipa deixa de ter acesso, S1).
     if (task.assigneeId === user.id && task.assigneeCrossTeam) return 'assignee';
     return (await this.organization.isProjectVisibleToMember(user.id, task.projectId)) ? 'viewer' : 'none';
+  }
+
+  /**
+   * D50: o administrador consulta o histórico de qualquer projeto, objetivo, épico ou tarefa que exista, mesmo
+   * eliminado (RN38), por ligação direta. Para os outros, um elemento eliminado continua a dar 404.
+   */
+  private async adminSeesHistory(user: AuthenticatedUser, projectId: string | null): Promise<boolean> {
+    return user.isAdmin && projectId !== null && (await this.organization.projectExists(projectId, true));
   }
 
   private async existingProject(projectId: string | undefined): Promise<string> {

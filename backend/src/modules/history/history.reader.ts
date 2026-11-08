@@ -1,7 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import type { AuthenticatedUser } from '../../shared/auth/auth.decorators';
 import { SYSTEM_AUTHOR_ID } from '../../shared/events/domain-events';
+import { SPRINT_LOCATOR, type SprintLocator } from '../../shared/ports/sprint-locator';
 import { USER_DIRECTORY, type UserDirectory } from '../../shared/ports/user-directory';
 import { WORK_ITEM_LOCATOR, type WorkItemLocator } from '../../shared/ports/work-item-locator';
 import { OrganizationReader } from '../organization/organization-reader.service';
@@ -39,7 +41,14 @@ interface EventRow {
   new_value: Record<string, unknown> | null;
   author_id: string;
   occurred_at: Date;
+  omitted?: string[];
 }
+
+/** SEC07, CAT05: dados individuais de capacidade nos eventos da equipa e da sprint. */
+const CAPACITY_FIELDS = ['allocationPct', 'availableHours'];
+/** CAT06: uma tarefa que não se vê sai do evento com os dados dela (decisão do humano, passo 2). */
+const TASK_FIELDS = ['taskId', 'estimateHours', 'storyPoints'];
+const TASK_LISTS = ['taskIds', 'returnedToBacklog'];
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -64,10 +73,12 @@ export class HistoryReader {
     @InjectDataSource() private readonly db: DataSource,
     @Inject(USER_DIRECTORY) private readonly users: UserDirectory,
     @Inject(WORK_ITEM_LOCATOR) private readonly work: WorkItemLocator,
+    @Inject(SPRINT_LOCATOR) private readonly sprints: SprintLocator,
     private readonly organization: OrganizationReader,
   ) {}
 
-  async list(element: HistoryElement, id: string, page: number, pageSize: number): Promise<HistoryPage> {
+  /** Quem pode consultar já foi verificado pelo guarda (D50, §3.1); aqui retira-se o que `viewer` não vê. */
+  async list(element: HistoryElement, id: string, page: number, pageSize: number, viewer: AuthenticatedUser): Promise<HistoryPage> {
     const where = element === 'task' ? TASK_SOURCES : `entity_type = $2::history.entity_type AND entity_id = $1`;
     const params = element === 'task' ? [id] : [id, element];
     const [{ total }] = await this.db.query(`SELECT count(*)::int AS total FROM history.history_event WHERE ${where}`, params);
@@ -78,6 +89,10 @@ export class HistoryReader {
       [...params, pageSize, (page - 1) * pageSize],
     );
     if (element === 'task') for (const row of rows) onlyThisTask(row, id);
+    if (element === 'team' || element === 'sprint') {
+      const teamId = element === 'team' ? id : await this.sprints.teamOfSprint(id);
+      if (teamId) await this.redact(rows, viewer, teamId);
+    }
     return { page, pageSize, total, items: await this.toEvents(rows) };
   }
 
@@ -103,9 +118,55 @@ export class HistoryReader {
         author: { id: r.author_id, name: r.author_id === SYSTEM_AUTHOR_ID ? 'Sistema' : (names.get(r.author_id) ?? '') },
         occurredAt: r.occurred_at.toISOString(),
         references: Object.fromEntries([...ids].filter((i) => names.has(i)).map((i) => [i, names.get(i)!])),
-        omitted: [],
+        omitted: r.omitted ?? [],
       };
     });
+  }
+
+  /**
+   * D50 (§3.1) nos históricos da equipa e da sprint: o evento fica, sem o que quem consulta não pode ver.
+   * SEC07 — capacidade individual: o administrador e o líder veem todas, o membro só a sua, o gestor nenhuma.
+   * CAT06 — tarefas referidas: só as dos projetos que vê, com a regra das vistas da equipa (`projectScope`).
+   */
+  private async redact(rows: EventRow[], viewer: AuthenticatedUser, teamId: string): Promise<void> {
+    const role = viewer.isAdmin ? 'leader' : await this.organization.teamRole(viewer.id, teamId);
+    const scope = await this.organization.projectScope(viewer, teamId);
+    let visible: Set<string> | null = null;
+    if (scope) {
+      const refs = [...new Set(rows.flatMap((r) => [...uuidsIn(r.old_value), ...uuidsIn(r.new_value)]))];
+      const tasks = await this.work.planningTasks({ taskIds: refs });
+      visible = new Set(tasks.filter((task) => scope.has(task.projectId)).map((task) => task.id));
+    }
+    for (const row of rows) {
+      const omitted = new Set<string>();
+      const strip = (value: Record<string, unknown> | null): Record<string, unknown> | null => {
+        if (!value) return value;
+        const out = { ...value };
+        const remove = (field: string) => {
+          if (field in out) {
+            delete out[field];
+            omitted.add(field);
+          }
+        };
+        if (role !== 'leader' && !(role === 'member' && out.userId === viewer.id)) CAPACITY_FIELDS.forEach(remove);
+        if (visible) {
+          if (typeof out.taskId === 'string' && !visible.has(out.taskId)) TASK_FIELDS.forEach(remove);
+          for (const field of TASK_LISTS) {
+            const list = out[field];
+            if (!Array.isArray(list)) continue;
+            const kept = list.filter((taskId) => visible.has(taskId as string));
+            if (kept.length < list.length) {
+              out[field] = kept;
+              omitted.add(field);
+            }
+          }
+        }
+        return out;
+      };
+      row.old_value = strip(row.old_value);
+      row.new_value = strip(row.new_value);
+      row.omitted = [...omitted];
+    }
   }
 }
 
