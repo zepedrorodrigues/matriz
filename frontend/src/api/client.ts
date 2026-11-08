@@ -556,6 +556,31 @@ export const listComments = (taskId: string, page: number, pageSize = 20) =>
 export const addComment = (taskId: string, body: string) =>
   apiRequest<Comment>('POST', `/tasks/${id(taskId)}/comments`, { body });
 
+/** openapi.yaml: HistoryEvent — tipo, valores com a forma do evento, autor, data/hora, nomes e campos retirados. */
+export interface HistoryEvent {
+  id: string;
+  entityType: string;
+  entityId: string;
+  eventType: string;
+  oldValue: Record<string, unknown> | null;
+  newValue: Record<string, unknown> | null;
+  author: UserSummary;
+  occurredAt: string;
+  references: Record<string, string>;
+  omitted: string[];
+}
+export interface HistoryPage {
+  page: number;
+  pageSize: number;
+  total: number;
+  items: HistoryEvent[];
+}
+export type HistoryElement = 'projects' | 'objectives' | 'epics' | 'tasks' | 'sprints' | 'teams';
+
+/** openapi.yaml: list{Project,Objective,Epic,Task,Sprint,Team}History (D50), por ordem cronológica. */
+export const listHistory = (element: HistoryElement, elementId: string, page: number, pageSize = 20) =>
+  apiGet<HistoryPage>(`/${element}/${id(elementId)}/history?page=${page}&pageSize=${pageSize}`);
+
 /** openapi.yaml: createAcceptanceCriterion, updateAcceptanceCriterion (RN13, RN24). */
 export const createCriterion = (taskId: string, input: { description: string }) =>
   apiRequest<AcceptanceCriterion>('POST', `/tasks/${id(taskId)}/acceptance-criteria`, input);

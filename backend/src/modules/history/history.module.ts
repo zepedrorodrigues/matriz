@@ -1,10 +1,13 @@
 import { Injectable, Module, OnModuleInit } from '@nestjs/common';
 import { DomainEvents } from '../../shared/events/domain-events';
+import { OrganizationModule } from '../organization/organization.module';
+import { HistoryController } from './history.controller';
+import { HistoryReader } from './history.reader';
 
 /**
  * Regista cada alteração relevante em history.history_event (RN32, SEC03), na transação de quem a
- * publicou. Só acrescenta: não há operações de edição nem remoção (SEC04). A consulta do histórico
- * e as permissões só de inserção e leitura chegam no I13.
+ * publicou. Só acrescenta: não há operações de edição nem remoção (SEC04). Na base de dados, a migration
+ * HistoryAppendOnly retira UPDATE, DELETE e TRUNCATE (sem efeito para um superutilizador: database.md §5).
  */
 @Injectable()
 export class HistoryRecorder implements OnModuleInit {
@@ -28,6 +31,9 @@ export class HistoryRecorder implements OnModuleInit {
   }
 }
 
-/** Módulo Histórico (architecture.md §5): subscreve os eventos de domínio dos outros módulos. */
-@Module({ providers: [HistoryRecorder] })
+/**
+ * Módulo Histórico (architecture.md §5): subscreve os eventos de domínio dos outros módulos e lê o
+ * histórico (HistoryReader, I13), com os nomes pelas interfaces de leitura dos módulos donos.
+ */
+@Module({ imports: [OrganizationModule], controllers: [HistoryController], providers: [HistoryRecorder, HistoryReader] })
 export class HistoryModule {}

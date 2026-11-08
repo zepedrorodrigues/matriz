@@ -2,7 +2,7 @@
 
 Aplicação interna de gestão de projetos e tarefas para equipas de trabalho, ao estilo de Jira, Azure DevOps ou Trello.
 
-> **Estado atual:** MVP implementado (Ficha PL 03), com testes unitários, de integração e E2E e revisão de código e de segurança (Ficha PL 04). Falta o incremento I13 (consulta do histórico). Detalhe em [Estado atual](#estado-atual).
+> **Estado atual:** MVP implementado (Ficha PL 03), com testes unitários, de integração e E2E e revisão de código e de segurança (Ficha PL 04), e com a consulta do histórico (I13). Detalhe em [Estado atual](#estado-atual).
 
 **Tecnologias** (`docs/constraints.md` §4.3, DT01–DT15): TypeScript em toda a aplicação — NestJS e TypeORM no backend, React e Vite no frontend —, PostgreSQL 17 ou superior com um schema por módulo, autenticação OpenID Connect (Keycloak local em desenvolvimento). Monólito modular com API REST/JSON descrita em [`openapi.yaml`](openapi.yaml).
 
@@ -206,7 +206,7 @@ O emissor OIDC tem de ter o mesmo endereço para o browser e para o backend no c
 - [x] Ex. 5 — `AGENTS.md`
 - [x] Ex. 6 — Revisão crítica (human-in-the-loop) — Specification Pack v0.3, ver [`docs/review.md`](docs/review.md)
 - [x] Aula 2 (Ficha PL 02) — Architecture Pack: arquitetura, modelo de dados, API e wireframe, com revisão cruzada (human-in-the-loop), ver [`docs/review.md`](docs/review.md) §3
-- [x] Aula 3 (Ficha PL 03) — Implementação do MVP: plano em [`docs/implementation-plan.md`](docs/implementation-plan.md), verificação em [`docs/verification.md`](docs/verification.md). Fica por fazer o I13 (consulta do histórico), fora do âmbito da ficha.
+- [x] Aula 3 (Ficha PL 03) — Implementação do MVP: plano em [`docs/implementation-plan.md`](docs/implementation-plan.md), verificação em [`docs/verification.md`](docs/verification.md). O I13 (consulta do histórico), que ficou fora do âmbito da ficha, foi feito depois: histórico de cada elemento na API e no ecrã, com as permissões e os filtros de D50 ([`docs/i13-historico-analise.md`](docs/i13-historico-analise.md)).
 - [x] Aula 4 (Ficha PL 04) — Testes unitários, de integração e E2E, Code Review e Security Review: [`docs/test-plan.md`](docs/test-plan.md), [`docs/quality-security-review.md`](docs/quality-security-review.md)
 
 **Em números:** 42 regras de negócio · 36 requisitos funcionais · 13 requisitos não funcionais · 10 user stories · 116 critérios de aceitação (110 nas US e 6 transversais), todos verificáveis · sem decisões funcionais pendentes.

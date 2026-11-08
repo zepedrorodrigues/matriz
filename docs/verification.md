@@ -125,7 +125,7 @@ Na revisão do Ex. 9.1 (§5), o mesmo padrão: a IA encontrou e confirmou os pro
 
 ## 7. Limitações e o que não foi executado
 
-- **Consulta do histórico (I13: CAT03, CAT04, CA06.6, e a consulta do CA09.2).** Os eventos são todos registados (RN32), mas a API e o ecrã do histórico ficam para depois da ficha (decisão do humano, F23).
+- **Consulta do histórico (I13: CAT03, CAT04, CA06.6, e a consulta do CA09.2).** Ficou para depois da ficha (decisão do humano, F23). Foi feita a 2026-11-08: ver «Consulta do histórico» no fim deste documento.
 - **Ligações à base dentro das transações.** Fora do caminho dos alertas (corrigido), alguns serviços ainda fazem leituras de outro módulo com uma segunda ligação enquanto a transação está aberta. Com muitos pedidos de escrita em simultâneo (cerca do tamanho do pool, 10), os pedidos podem ficar à espera até expirar o tempo. Fica para uma revisão própria.
 - **Sem testes automáticos de componentes React.** Para não acrescentar dependências, a interface é verificada com testes das regras (`node:test`) e manualmente no browser; as mensagens e os estados de carregamento, vazio e erro foram verificados manualmente em cada incremento.
 - **Falha não reproduzida.** Numa execução da suite completa durante o I14 falhou todo o ficheiro `projects.e2e-spec.ts`; não se reproduziu em cinco execuções seguidas (quatro no repositório e uma na cópia limpa) e a mensagem de erro não ficou guardada. A hipótese mais provável é outra dependência da ordem dos ficheiros na base partilhada, mas não está confirmada.
@@ -207,3 +207,20 @@ Branch `fix/concorrencia-alertas-equipas`, sobre a `feat/reformulacao-visual`. P
 | Cabeçalho `frame-ancestors` (correção 5) | `nginx -t` aceita a configuração; servida num nginx 1.29, `/`, uma rota da aplicação, `/config.js` e `/assets/*` respondem com `Content-Security-Policy: frame-ancestors 'none'` e mantêm o `Cache-Control` de antes |
 
 **Não verificado:** a paginação no browser com mais de uma página — os dados de demonstração têm menos de 20 elementos em cada lista, e o `Pager` não se mostra com uma só página (a regra é a mesma de antes; o `Pagination` removido só a reencaminhava); o cabeçalho através das imagens construídas pelo `deploy/compose.yaml`.
+
+## Consulta do histórico (2026-11-08, I13)
+
+Branch `feat/consulta-historico`. Plano e decisões em [`i13-historico-analise.md`](i13-historico-analise.md) §10; passo a passo em [`implementation-plan.md`](implementation-plan.md) §6. PostgreSQL local (`matriz_test` para os testes; `migration:run` na `matriz`, autorizada), Keycloak na porta 8180, API e frontend locais.
+
+| Verificação | Resultado |
+|---|---|
+| Tipos (`tsc --noEmit`, backend e frontend) | Sem erros |
+| `npm test` | 252 testes do backend (21 em `history.e2e-spec.ts`) e 47 do frontend (7 em `history.test.ts`) a passar |
+| SEC04 na base de dados (`HistoryAppendOnly`) | `UPDATE`, `DELETE` e `TRUNCATE` sobre `history.history_event` recusados com `permission denied`; `INSERT` e `SELECT` continuam. Sem a migration, os três testes CAT04 falham. Num contentor `postgres` com `POSTGRES_USER: matriz` (como no `deploy/compose.yaml`) o `matriz` é superutilizador e o `REVOKE` não tem efeito (database.md §5) |
+| Leitura (passo 3) | 7 reversões (sem critérios, sem fim de sprint, sem reduzir a lista devolvida ao backlog, ordem inversa, `taskId` e `returnedToBacklog` renomeados): cada uma faz falhar 1 a 4 testes |
+| Permissões e filtros (passo 4) | 8 reversões (sem o 403 ao responsável de outra equipa, sem SEC07, membro sem as suas horas, sem CAT06, CAT06 só no `taskId`, administrador sem eliminados, eliminados para todos, projeto sem `viewHistory`): cada uma faz falhar o teste da regra |
+| Critérios de aceitação (passo 5) | 7 reversões, cada uma apanhada pelo critério certo; a «reabertura que apaga o histórico» é recusada pelo `REVOKE` (500). A transferência foi reforçada com uma segunda passagem (B → C, original A), porque com uma só a equipa anterior e a original eram iguais |
+| Interface (passo 6) | 5 reversões em `domain/history.ts`, cada uma apanhada; um tipo de evento desconhecido mostra «Alteração registada (tipo).» |
+| Browser (Chrome pelo Playwright, só pedidos GET) | Gestor: tarefa com 14 eventos, projeto e épico vazios. Ana (líder): sprint e separador «Histórico» do planeamento. Rui (membro): sprint; a tarefa eliminada dá só «não existe», sem pedir o histórico. Alice Admin: equipa na administração e tarefa eliminada com o aviso «Eliminado» e os 2 eventos. Todos os pedidos `/history` com 200. A captura mostrou «foi eliminado(a)» no aviso, corrigido para a concordância certa |
+
+**Não verificado:** SEC07 e CAT06 no browser (a `matriz` não tem eventos de capacidade nem de tarefas de outros projetos; estão cobertos pelos testes da API); um projeto eliminado no browser (não há nenhum na `matriz`); o desempenho dos índices com volume real; `npm run test:e2e` (não autorizado). A vista «Eliminado» pede duas vezes a primeira página do histórico.

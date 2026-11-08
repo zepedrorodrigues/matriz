@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { ApiError, deleteProject, getProject, updateProject } from '../../api/client';
 import { canManageProject, useCurrentUser } from '../../auth/current-user';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { DeletedHistory, HistoryTimeline } from '../../components/history-timeline';
 import { Notice } from '../../components/Notice';
 import { PageFeedbackProvider, usePageFeedback } from '../../components/PageFeedback';
 import { ProjectForm } from './ProjectForm';
@@ -80,6 +81,7 @@ function ProjectDetail() {
               ? 'Não tem acesso a este projeto.'
               : 'Não foi possível carregar o projeto. Tente novamente mais tarde.'}
         </Notice>
+        {status === 404 && me.data?.isAdmin && projectId ? <DeletedHistory element="projects" elementId={projectId} label="este projeto foi eliminado" /> : null}
         <Link to="/projetos">Voltar aos projetos</Link>
       </section>
     );
@@ -146,6 +148,8 @@ function ProjectDetail() {
       {!editing ? <ProjectTeams project={p} mayManage={mayManage} /> : null}
 
       {!editing && me.data ? <ProjectTasks project={p} me={me.data} /> : null}
+
+      {!editing ? <HistoryTimeline element="projects" elementId={p.id} title="Histórico do projeto" /> : null}
 
       {confirming ? (
         <ConfirmDialog

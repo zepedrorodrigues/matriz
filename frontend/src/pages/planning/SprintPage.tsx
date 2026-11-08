@@ -21,6 +21,7 @@ import {
 } from '@/api/client';
 import { canStartSprint, leadsTeam, stateTargetsFor, useCurrentUser } from '@/auth/current-user';
 import { DatePicker } from '@/components/date-picker';
+import { HistoryTimeline } from '@/components/history-timeline';
 import { Flag, StateBadge } from '@/components/task-badges';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -246,6 +247,8 @@ export function SprintPage() {
       ) : (
         <SprintList sprint={s} flags={flags} taskHref={taskHref} />
       )}
+
+      <HistoryTimeline element="sprints" elementId={s.id} title="Histórico da sprint" />
 
       {dialog ? <DatesDialog sprint={s} kind={dialog} onClose={() => setDialog(null)} onDone={refresh} /> : null}
       <Outlet />

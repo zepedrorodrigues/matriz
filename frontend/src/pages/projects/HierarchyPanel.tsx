@@ -5,6 +5,24 @@ import { ApiError, createEpic, createObjective, type ElementInput, type Objectiv
 import { FormField } from '../../components/FormField';
 import { Notice } from '../../components/Notice';
 import { usePageFeedback } from '../../components/PageFeedback';
+import { HistoryTimeline } from '../../components/history-timeline';
+
+/** Histórico de um objetivo ou épico (D50 3a), pedido só quando se abre. */
+function ElementHistory({ element, elementId, label }: { element: 'objectives' | 'epics'; elementId: string; label: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button variant="link" size="sm" className="h-auto p-0 text-xs" aria-expanded={open} onClick={() => setOpen(!open)}>
+        {open ? 'Ocultar histórico' : 'Histórico'}
+      </Button>
+      {open ? (
+        <div className="my-2">
+          <HistoryTimeline element={element} elementId={elementId} title={`Histórico de «${label}»`} />
+        </div>
+      ) : null}
+    </>
+  );
+}
 
 /** Formulário de um objetivo ou de um épico: título obrigatório, sem ser só espaços (ElementInput). */
 function ElementForm({
@@ -112,11 +130,13 @@ export function HierarchyPanel({ projectId, objectives, mayCreate }: { projectId
         <ul className="m-0 flex list-none flex-col gap-1 p-0 [&_ul]:m-0 [&_ul]:mt-1 [&_ul]:flex [&_ul]:list-none [&_ul]:flex-col [&_ul]:gap-1 [&_ul]:border-l [&_ul]:pl-4">
           {objectives.map((o) => (
             <li key={o.id}>
-              <strong>{o.title}</strong>
+              <strong>{o.title}</strong> <ElementHistory element="objectives" elementId={o.id} label={o.title} />
               {o.epics.length > 0 ? (
                 <ul>
                   {o.epics.map((e) => (
-                    <li key={e.id}>{e.title}</li>
+                    <li key={e.id}>
+                      {e.title} <ElementHistory element="epics" elementId={e.id} label={e.title} />
+                    </li>
                   ))}
                 </ul>
               ) : (

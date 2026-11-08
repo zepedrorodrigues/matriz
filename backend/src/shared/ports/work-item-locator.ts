@@ -85,6 +85,13 @@ export interface WorkItemLocator {
   lockTasks(taskIds: string[], manager: EntityManager): Promise<void>;
   /** Projeto de um objetivo; null se não existir. */
   projectOfObjective(objectiveId: string): Promise<string | null>;
+  /** Projeto de um épico; null se não existir. */
+  projectOfEpic(epicId: string): Promise<string | null>;
+  /**
+   * Projeto de uma tarefa ou subtarefa, eliminada ou não; null se não existir. Só para o histórico dos
+   * elementos eliminados, consultado pelo administrador (RN38, D50).
+   */
+  projectOfTask(taskId: string): Promise<string | null>;
   /**
    * Número de tarefas por estado em cada projeto indicado — só tarefas de topo (sem subtarefas) e não
    * eliminadas (RN38; regra do contrato confirmada no Ex. 1). Os projetos sem tarefas ficam de fora.

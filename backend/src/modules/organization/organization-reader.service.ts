@@ -86,10 +86,11 @@ export class OrganizationReader {
   }
 
   /** O projeto existe e não foi eliminado (RN38: um projeto eliminado responde como inexistente). */
-  async projectExists(projectId: string): Promise<boolean> {
+  /** `withDeleted`: conta também os eliminados — só para o histórico, consultado pelo administrador (RN38, D50). */
+  async projectExists(projectId: string, withDeleted = false): Promise<boolean> {
     const [row] = await this.db.query(
-      `SELECT EXISTS (SELECT 1 FROM organization.project WHERE id = $1 AND deleted_at IS NULL) AS found`,
-      [projectId],
+      `SELECT EXISTS (SELECT 1 FROM organization.project WHERE id = $1 AND ($2 OR deleted_at IS NULL)) AS found`,
+      [projectId, withDeleted],
     );
     return row.found === true;
   }
@@ -120,6 +121,15 @@ export class OrganizationReader {
        WHERE m.user_id = $1 AND m.team_id = $2`,
       [userId, teamId],
     );
+    return (row?.role as TeamRole | undefined) ?? null;
+  }
+
+  /**
+   * Papel do utilizador na equipa, ativa ou desativada — só para o histórico: uma equipa desativada mantém as
+   * pertenças (RN33) e o seu histórico continua consultável por quem lhe pertence (CA01.11, D50, opção 1).
+   */
+  async historyTeamRole(userId: string, teamId: string): Promise<TeamRole | null> {
+    const [row] = await this.db.query(`SELECT role FROM organization.team_membership WHERE user_id = $1 AND team_id = $2`, [userId, teamId]);
     return (row?.role as TeamRole | undefined) ?? null;
   }
 
