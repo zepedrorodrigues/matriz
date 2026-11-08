@@ -81,7 +81,7 @@ function ProjectDetail() {
               ? 'Não tem acesso a este projeto.'
               : 'Não foi possível carregar o projeto. Tente novamente mais tarde.'}
         </Notice>
-        {status === 404 && me.data?.isAdmin && projectId ? <DeletedHistory element="projects" elementId={projectId} label="este projeto" /> : null}
+        {status === 404 && me.data?.isAdmin && projectId ? <DeletedHistory element="projects" elementId={projectId} label="este projeto foi eliminado" /> : null}
         <Link to="/projetos">Voltar aos projetos</Link>
       </section>
     );

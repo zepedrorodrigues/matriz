@@ -208,7 +208,7 @@ export function TaskDetail({ taskId, inDialog = false, onDeleted }: { taskId: st
               ? 'Não tem acesso a esta tarefa.'
               : 'Não foi possível carregar a tarefa. Tente novamente mais tarde.'}
         </h1>
-        {status === 404 && me.data?.isAdmin ? <DeletedHistory element="tasks" elementId={taskId} label="esta tarefa" /> : null}
+        {status === 404 && me.data?.isAdmin ? <DeletedHistory element="tasks" elementId={taskId} label="esta tarefa foi eliminada" /> : null}
         <Button asChild variant="outline">
           <Link to="/projetos">Voltar aos projetos</Link>
         </Button>

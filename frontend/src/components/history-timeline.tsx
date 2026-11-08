@@ -29,7 +29,7 @@ export function DeletedHistory({ element, elementId, label }: { element: 'projec
   if (!probe.isSuccess) return null;
   return (
     <div className="flex w-full flex-col gap-3">
-      <Notice tone="warning">Eliminado: {label} foi eliminado(a). Como administrador, consulta só o seu histórico (RN38).</Notice>
+      <Notice tone="warning">Eliminado: {label}. Como administrador, consulta só o seu histórico (RN38).</Notice>
       <HistoryTimeline element={element} elementId={elementId} />
     </div>
   );
