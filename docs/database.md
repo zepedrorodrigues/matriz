@@ -237,7 +237,19 @@ No MVP, os alertas não são apagados nem arquivados, para não perder informaç
 | author_id | uuid | ref. lógica → user | Nas ações do sistema sem pessoa associada (p. ex. o fim automático de uma sprint, RN36), o identificador reservado `00000000-0000-0000-0000-000000000000` («Sistema»), que não corresponde a nenhuma conta (F19). |
 | occurred_at | timestamptz | | |
 
-Sem `UPDATE` nem `DELETE` para a aplicação (SEC04); as retificações são novos eventos `correction` (SEC09).
+Sem `UPDATE` nem `DELETE` para a aplicação (SEC04); as retificações são novos eventos `correction` (SEC09). As permissões e a sua limitação estão no §5.
+
+O valor `team_membership` do enum nunca é publicado: as alterações de pertença são eventos da `team` (`member_added`, `member_updated`, `member_removed`). Fica no enum porque retirar um valor de um enum do PostgreSQL obriga a recriar o tipo.
+
+**Índices da consulta (I13, D50).** O histórico da tarefa junta os eventos da própria tarefa, os dos seus critérios e os das sprints em que entrou ou de que saiu (CAT03):
+
+| Índice | Definição | Serve |
+|---|---|---|
+| `history_event_entity_idx` (já existia) | `(entity_type, entity_id, id)` | Histórico de cada elemento, por ordem de `id` |
+| `history_event_task_ref_idx` | `((new_value->>'taskId'), id)` onde `entity_type IN ('acceptance_criterion', 'sprint')` | Eventos de critérios e de sprints que nomeiam a tarefa |
+| `history_event_returned_idx` | GIN sobre `(new_value->'returnedToBacklog')` onde é o fim de uma sprint | Tarefas devolvidas ao backlog no fim da sprint |
+
+Que o planeador usa os dois índices novos foi confirmado com `EXPLAIN`, numa transação desfeita no fim e com os índices concorrentes retirados. Com o volume real não foi medido (§6, ponto 5).
 
 ## 3. Relacionamentos e cardinalidades
 
@@ -433,7 +445,7 @@ erDiagram
 | Início da sprint ≤ fim; sem sobreposição; no máximo uma sprint ativa por equipa (RN31) | Base de dados: `CHECK`, restrição de exclusão sobre o intervalo de datas e índice único parcial |
 | Datas da sprint alteráveis só enquanto `planned` (RN36) | Aplicação |
 | `block_reason` obrigatório quando bloqueada (RN28) | Base de dados (`CHECK`) e aplicação |
-| Histórico sem alterações nem remoções (SEC04) | Base de dados: permissões (só `INSERT` e `SELECT`). **Ainda não aplicado** (F25): o role `matriz` é dono da tabela; o I13 retira-lhe `UPDATE`, `DELETE` e `TRUNCATE` numa migration (D50) |
+| Histórico sem alterações nem remoções (SEC04) | Base de dados: permissões (só `INSERT` e `SELECT`). A migration `HistoryAppendOnly` (I13, D50, F25) retira `UPDATE`, `DELETE` e `TRUNCATE` ao role que corre as migrations (o `matriz`, dono da tabela); a aplicação usa o mesmo role. **Limitação medida:** o `REVOKE` não trava um superutilizador. Na implantação com Docker (`deploy/compose.yaml`), `POSTGRES_USER: matriz` torna o `matriz` superutilizador e as permissões não têm efeito; aí o SEC04 fica só na aplicação, que não tem operações de edição nem remoção. Fechar isto exige um role da aplicação sem privilégios, separado do dono (fora do I13) |
 | Uma tarefa em no máximo uma sprint em aberto (RN04, RN05; o estado da sprint está noutra tabela); soma das alocações = 100 (RN06); pelo menos um líder por equipa ativa (RN34); equipa da subtarefa igual à da principal (RN22); equipa associada ao projeto (RN23); transições (RN26); critérios e estimativa para planear (RN27); alterações de critérios e estimativas (RN10, RN24); justificação (RN03); tarefas concluídas não transferíveis (RN20) | Aplicação (camada de domínio), porque envolvem várias linhas ou módulos |
 | Existência de entidades referenciadas entre módulos | Aplicação, através da interface do módulo dono (§1) |
 

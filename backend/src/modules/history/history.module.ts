@@ -6,8 +6,8 @@ import { HistoryReader } from './history.reader';
 
 /**
  * Regista cada alteração relevante em history.history_event (RN32, SEC03), na transação de quem a
- * publicou. Só acrescenta: não há operações de edição nem remoção (SEC04). A consulta do histórico
- * e as permissões só de inserção e leitura chegam no I13.
+ * publicou. Só acrescenta: não há operações de edição nem remoção (SEC04). Na base de dados, a migration
+ * HistoryAppendOnly retira UPDATE, DELETE e TRUNCATE (sem efeito para um superutilizador: database.md §5).
  */
 @Injectable()
 export class HistoryRecorder implements OnModuleInit {
