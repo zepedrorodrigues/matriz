@@ -166,7 +166,7 @@ Ambiente: Docker 29.6.1 (Docker Desktop), `deploy/compose.yaml` com PostgreSQL 1
 
 **Não verificado:**
 
-- **Início de sessão no browser através do proxy.** O emissor tem de ser o mesmo para o browser e para o backend no contentor (`host.docker.internal`). Nesta máquina, o ficheiro `hosts` aponta `host.docker.internal` para `192.168.1.230`, um endereço antigo (o atual é `192.168.1.176`), e o Keycloak só escuta em `127.0.0.1`. Dentro dos contentores o nome funciona, porque o Docker Desktop o encaminha para o computador.
+- **Início de sessão no browser através do proxy.** *Verificado a 2026-11-11 (ver «Pendentes da verificação»).* O emissor tem de ser o mesmo para o browser e para o backend no contentor (`host.docker.internal`). Nesta máquina, o ficheiro `hosts` aponta `host.docker.internal` para `192.168.1.230`, um endereço antigo (o atual é `192.168.1.176`), e o Keycloak só escuta em `127.0.0.1`. Dentro dos contentores o nome funciona, porque o Docker Desktop o encaminha para o computador.
 - O primeiro teste da falha de `backend-2` deu 6/20, porque a instância `backend-1` tinha acabado de ser reiniciada e ainda não estava pronta; repetido à espera do estado `healthy`, deu 20/20.
 
 ## Reformulação visual (2026-11-07, DT17)
@@ -227,7 +227,7 @@ Branch `feat/consulta-historico`. Plano e decisões em [`i13-historico-analise.m
 
 ## Pendentes da verificação (2026-11-11)
 
-`main` em `5f2d7a9`. Chrome pelo Playwright (teste temporário, só pedidos GET, apagado no fim), sessão do Rui Exemplo (membro da Equipa Alfa); Keycloak na porta 8180, API e frontend locais, base `matriz`.
+`main` em `5f2d7a9`. Chrome pelo Playwright (testes temporários, apagados no fim): a vista do membro e os 390 px só com pedidos GET, na sessão do Rui Exemplo (membro da Equipa Alfa); os painéis e a transferência com escritas autorizadas pelo humano; Keycloak na porta 8180, API e frontend locais, base `matriz`.
 
 | Verificação | Resultado |
 |---|---|
@@ -238,5 +238,8 @@ Branch `feat/consulta-historico`. Plano e decisões em [`i13-historico-analise.m
 | Ligações do pool (§7, «ligações à base dentro das transações») | 4 leituras com uma segunda ligação do pool dentro da transação: papel na equipa em `setAvailability` e em `add` dos participantes, estado da equipa na criação da sprint, nomes dos membros no cálculo da capacidade (pelo alerta de sobrecarga). Passaram a usar a ligação da transação. Teste novo `pool-connections.e2e-spec.ts` (conta as ligações pedidas enquanto há uma transação aberta): antes da correção falham os 3 casos (2, 1 e 1 ligações a mais, esperado 0), depois passam. Medição única com o mesmo detector em toda a suite (255 testes): não restam leituras destas dentro da transação do próprio pedido |
 | Tipos e `npm test` | Sem erros; 255 testes do backend e 47 do frontend a passar |
 | Achado, corrigido | O botão de fechar dos diálogos e dos painéis laterais anunciava «Close» aos leitores de ecrã (`components/ui/dialog.tsx`, `sheet.tsx`); passou a «Fechar» |
+| Início de sessão através do proxy (pendente da Implantação) | `deploy/compose.yaml` com imagens construídas a partir deste código, base própria nova com o seed (`NODE_ENV=development`), Keycloak local na porta 8180. O `/config.js` serve `oidcAuthority: "http://host.docker.internal:8180/realms/matriz"`. A Ana entrou pelo Keycloak em `host.docker.internal:8180` e voltou a `localhost:5173`; `/api/me`, `/api/dashboard`, `/api/alerts` e `/api/projects` com 200 pelo proxy: o emissor é o mesmo para o browser e para o backend no contentor. O compose foi parado e o volume removido no fim |
 
-**Não verificado:** o fim automático de uma sprint real no browser (exigia mexer nas datas de uma sprint na `matriz`; coberto pelos testes da API); o início de sessão através do proxy (o ficheiro `hosts` continua a apontar `host.docker.internal` para um endereço antigo).
+A causa registada na Implantação mudou: o `hosts` aponta `host.docker.internal` para `192.168.1.230`, que voltou a ser o IP desta máquina; o que impede o browser de chegar ao Keycloak é ele escutar só em `127.0.0.1`. Para não o expor na rede local, o Chrome do teste resolveu `host.docker.internal` para o loopback (`--host-resolver-rules`). Num browser sem essa regra, o início de sessão pelo proxy continua a exigir o Keycloak a escutar no IP da rede.
+
+**Não verificado:** o fim automático de uma sprint real no browser (exigia mexer nas datas de uma sprint na `matriz`; coberto pelos testes da API).
