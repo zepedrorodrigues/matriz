@@ -82,7 +82,7 @@ export class ParticipantsService {
         }
         throw error;
       }
-      const crossTeam = !(await this.organization.teamRole(userId, teamId));
+      const crossTeam = !(await this.organization.teamRole(userId, teamId, tx));
       await this.events.publish(
         {
           entityType: 'task',

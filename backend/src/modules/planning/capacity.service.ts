@@ -111,7 +111,7 @@ export class CapacityService {
     // RN22, CA05.9: uma tarefa com subtarefas conta 0; contam as subtarefas, cada uma na sua sprint.
     const counted = infos.filter((t) => live.has(t.projectId) && !t.hasSubtasks);
     const adjusted = new Map(adjustments.map((a) => [a.user_id, Number(a.available_hours)]));
-    const names = await this.users.namesByIds(members.map((m) => m.userId));
+    const names = await this.users.namesByIds(members.map((x) => x.userId), m);
 
     const rows: MemberCapacity[] = members
       .map((m) => {
@@ -154,7 +154,7 @@ export class CapacityService {
   async setAvailability(user: AuthenticatedUser, sprintId: string, userId: string, hours: number): Promise<SprintCapacity> {
     await this.db.transaction(async (tx) => {
       const teamId = await this.openSprintTeam(tx, sprintId);
-      if (!(await this.organization.teamRole(userId, teamId))) {
+      if (!(await this.organization.teamRole(userId, teamId, tx))) {
         throw new UnprocessableEntityException('Só se ajustam as horas de membros da equipa da sprint.');
       }
       const [old] = await tx.query(

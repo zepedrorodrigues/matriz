@@ -9,9 +9,9 @@ import { User } from './user.entity';
 export class UserDirectoryService implements UserDirectory {
   constructor(@InjectRepository(User) private readonly users: Repository<User>) {}
 
-  async namesByIds(ids: string[]): Promise<Map<string, string>> {
+  async namesByIds(ids: string[], manager?: EntityManager): Promise<Map<string, string>> {
     if (ids.length === 0) return new Map();
-    const rows = await this.users.find({ where: { id: In(ids) }, select: { id: true, name: true } });
+    const rows = await (manager ? manager.getRepository(User) : this.users).find({ where: { id: In(ids) }, select: { id: true, name: true } });
     return new Map(rows.map((u) => [u.id, u.name]));
   }
 

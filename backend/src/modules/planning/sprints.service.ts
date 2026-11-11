@@ -155,7 +155,7 @@ export class SprintsService {
   async create(user: AuthenticatedUser, teamId: string, startDate: string, endDate: string): Promise<SprintDetail> {
     const id = await this.db.transaction(async (tx) => {
       await this.lockTeam(tx, teamId);
-      if (!(await this.organization.teamStatus(teamId))?.active) {
+      if (!(await this.organization.teamStatus(teamId, tx))?.active) {
         throw new UnprocessableEntityException('A equipa está desativada e não recebe sprints (RN33).');
       }
       await this.requireNoOverlap(tx, teamId, startDate, endDate);
