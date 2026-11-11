@@ -7,7 +7,7 @@ import type { EntityManager } from 'typeorm';
  */
 export interface UserDirectory {
   /** Nome de cada utilizador encontrado, por id. */
-  namesByIds(ids: string[]): Promise<Map<string, string>>;
+  namesByIds(ids: string[], manager?: EntityManager): Promise<Map<string, string>>;
   /**
    * Utilizadores ativos, ordenados pelo nome: os indicados ou, sem `ids`, todos (utilizadores
    * elegíveis, RN03, RN40). Um utilizador desativado nunca é elegível.

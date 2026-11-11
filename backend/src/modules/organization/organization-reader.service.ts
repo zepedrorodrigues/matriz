@@ -176,8 +176,8 @@ export class OrganizationReader {
   }
 
   /** Estado de uma equipa: null se não existir (planeamento, I9). */
-  async teamStatus(teamId: string): Promise<{ active: boolean } | null> {
-    const [row] = await this.db.query(`SELECT active FROM organization.team WHERE id = $1`, [teamId]);
+  async teamStatus(teamId: string, manager?: EntityManager): Promise<{ active: boolean } | null> {
+    const [row] = await (manager ?? this.db).query(`SELECT active FROM organization.team WHERE id = $1`, [teamId]);
     return row ? { active: row.active } : null;
   }
 
