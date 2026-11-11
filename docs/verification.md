@@ -224,3 +224,15 @@ Branch `feat/consulta-historico`. Plano e decisões em [`i13-historico-analise.m
 | Browser (Chrome pelo Playwright, só pedidos GET) | Gestor: tarefa com 14 eventos, projeto e épico vazios. Ana (líder): sprint e separador «Histórico» do planeamento. Rui (membro): sprint; a tarefa eliminada dá só «não existe», sem pedir o histórico. Alice Admin: equipa na administração e tarefa eliminada com o aviso «Eliminado» e os 2 eventos. Todos os pedidos `/history` com 200. A captura mostrou «foi eliminado(a)» no aviso, corrigido para a concordância certa |
 
 **Não verificado:** SEC07 e CAT06 no browser (a `matriz` não tem eventos de capacidade nem de tarefas de outros projetos; estão cobertos pelos testes da API); um projeto eliminado no browser (não há nenhum na `matriz`); o desempenho dos índices com volume real; `npm run test:e2e` (não autorizado). A vista «Eliminado» pede duas vezes a primeira página do histórico.
+
+## Pendentes da verificação (2026-11-11)
+
+`main` em `5f2d7a9`. Chrome pelo Playwright (teste temporário, só pedidos GET, apagado no fim), sessão do Rui Exemplo (membro da Equipa Alfa); Keycloak na porta 8180, API e frontend locais, base `matriz`.
+
+| Verificação | Resultado |
+|---|---|
+| Vista do membro (pendente da reformulação visual) | Início, Projetos, Planeamento, Alertas e quadro da sprint «07/11/2026 a 20/11/2026»: todos os `GET /api` com 2xx, nenhum pedido de escrita. Quadro sem a coluna do backlog (não é líder). Diálogo da tarefa 302: «Editar», «Mudar estado», «Nova subtarefa», «Publicar comentário», «Assinalar bloqueio»; sem «Transferir» nem «Eliminar» (§3.1) |
+| Largura de 390 px (pendente do I11) | As mesmas cinco páginas e o diálogo: `scrollWidth − innerWidth` = 0 em todas; o quadro desloca-se dentro da sua área |
+| Achado | O botão de fechar dos diálogos e dos painéis laterais anuncia «Close» aos leitores de ecrã (`components/ui/dialog.tsx:76`, `sheet.tsx:77`), em inglês |
+
+**Não verificado:** a submissão de cada painel do detalhe (escreve na base `matriz`, à espera de autorização); o fim automático de uma sprint real no browser; o início de sessão através do proxy (o ficheiro `hosts` continua a apontar `host.docker.internal` para um endereço antigo).
