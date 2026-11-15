@@ -2,6 +2,28 @@
 
 Alterações da Matriz por versão. O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e as versões seguem o [Semantic Versioning](https://semver.org/lang/pt-BR/). Os identificadores (US, CA, RN, DT…) remetem para a especificação em `docs/`.
 
+## [1.0.0-rc.2] — 2026-11-15
+
+Segunda versão candidata: observabilidade e publicação das imagens (desafios opcionais B e C da Ficha PL 05, DT20). Notas da versão: [`docs/release-notes-1.0.0-rc.2.md`](docs/release-notes-1.0.0-rc.2.md).
+
+### Adicionado
+
+- **Registos estruturados:** o backend escreve uma linha JSON por registo em produção (`LOG_FORMAT=json` ou `text` para escolher), sem dependências novas.
+- **Registo dos pedidos:** uma linha por pedido com identificador, método, caminho, código de resposta e duração. Não regista a query, o corpo, o token nem dados de utilizadores (SEC07). O identificador vai na resposta, em `X-Request-Id`, e o proxy do compose passa o seu ao backend.
+- **`GET /api/health/live`** e **`GET /api/health/ready`**, no contrato `openapi.yaml` (60 operações). O `ready` responde 503 se a base de dados ou o fornecedor de identidade não responderem, e diz qual.
+- **Publicação das imagens:** o workflow `release.yml` envia `matriz-backend` e `matriz-frontend` para o GitHub Container Registry quando uma versão é publicada, depois de as analisar com o Trivy.
+- O `compose.yaml` pode usar imagens publicadas (`MATRIZ_BACKEND_IMAGE`, `MATRIZ_FRONTEND_IMAGE`).
+- 22 testes novos no backend (277 no total).
+
+### Alterado
+
+- O proxy do compose passa a verificar `GET /api/health/ready`, que atravessa o backend, a base de dados e o fornecedor de identidade.
+- No proxy, um 503 das verificações de saúde deixa de contar como falha da instância.
+
+### Corrigido
+
+- Defeito encontrado durante este trabalho, antes de chegar ao `main`: com o fornecedor de identidade parado, o 503 do `ready` fazia o nginx retirar as duas instâncias de serviço e toda a API respondia 502.
+
 ## [1.0.0-rc.1] — 2026-11-15
 
 Primeira versão identificada: versão candidata do MVP. Reúne o trabalho das Fichas PL 01 a 05, desde 2026-10-22. Notas da versão: [`docs/release-notes-1.0.0-rc.1.md`](docs/release-notes-1.0.0-rc.1.md).
@@ -46,4 +68,5 @@ Primeira versão identificada: versão candidata do MVP. Reúne o trabalho das F
 - 3 vulnerabilidades moderadas nas dependências de produção, através do `typeorm` 0.3; a correção exige o `typeorm` 1.x.
 - O `compose.yaml` não é a configuração de produção: Keycloak em modo de desenvolvimento, sem TLS, contas fictícias.
 
+[1.0.0-rc.2]: https://github.com/zepedrorodrigues/matriz/releases/tag/v1.0.0-rc.2
 [1.0.0-rc.1]: https://github.com/zepedrorodrigues/matriz/releases/tag/v1.0.0-rc.1

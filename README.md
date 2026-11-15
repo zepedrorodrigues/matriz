@@ -2,7 +2,7 @@
 
 Aplicação interna de gestão de projetos e tarefas para equipas de trabalho, ao estilo de Jira, Azure DevOps ou Trello.
 
-> **Estado atual:** versão candidata **1.0.0-rc.1** — MVP implementado (Ficha PL 03), com testes unitários, de integração e E2E e revisão de código e de segurança (Ficha PL 04), a consulta do histórico (I13) e a entrega em contentores com integração contínua (Ficha PL 05). Detalhe em [Estado atual](#estado-atual); alterações em [`CHANGELOG.md`](CHANGELOG.md).
+> **Estado atual:** versão candidata **1.0.0-rc.2** — MVP implementado (Ficha PL 03), com testes unitários, de integração e E2E e revisão de código e de segurança (Ficha PL 04), a consulta do histórico (I13) e a entrega em contentores com integração contínua (Ficha PL 05). Detalhe em [Estado atual](#estado-atual); alterações em [`CHANGELOG.md`](CHANGELOG.md).
 
 **Tecnologias** (`docs/constraints.md` §4.3, DT01–DT15): TypeScript em toda a aplicação — NestJS e TypeORM no backend, React e Vite no frontend —, PostgreSQL 17 ou superior com um schema por módulo, autenticação OpenID Connect (Keycloak local em desenvolvimento). Monólito modular com API REST/JSON descrita em [`openapi.yaml`](openapi.yaml).
 
@@ -50,7 +50,8 @@ matriz/
 ├── CHANGELOG.md           alterações por versão (Semantic Versioning)
 ├── compose.yaml           aplicação completa em contentores (Docker Compose, DT19)
 ├── AGENTS.md              instruções para coding agents
-├── .github/workflows/     ci.yml: análise estática e testes em cada pull request (DT18)
+├── .github/workflows/     ci.yml: análise estática, testes e imagens em cada pull request (DT18, DT19);
+│                          release.yml: publica as imagens quando sai uma versão (DT20)
 ├── eslint.config.mjs      regras da análise estática (npm run lint)
 ├── openapi.yaml           contrato REST (OpenAPI 3.1) de operações do MVP (Ficha PL 02)
 ├── package.json           npm workspaces (backend, frontend) e scripts comuns
@@ -80,7 +81,7 @@ matriz/
     ├── test-plan.md       plano de testes unitários, de integração e E2E (Ficha PL 04)
     ├── quality-security-review.md  revisão de código e de segurança (Ficha PL 04)
     ├── delivery-report.md validação final e relatório da entrega (Ficha PL 05)
-    ├── release-notes-1.0.0-rc.1.md  notas da versão candidata
+    ├── release-notes-1.0.0-rc.1.md  notas das versões candidatas (e release-notes-1.0.0-rc.2.md)
     └── ui/
         ├── wireframe.svg  wireframe do planeamento da sprint (Ficha PL 02)
         └── wireframe.md   navegação e validação do wireframe face ao MVP
@@ -128,7 +129,7 @@ A aplicação fica em <http://localhost:5173>. Entra-se com as contas fictícias
 | `seed` | Passo único: dados de demonstração fictícios; idempotente, nunca apaga | termina com código 0 |
 | `backend-1`, `backend-2` | Duas instâncias da API (DT13) | `GET /api/health` |
 | `frontend` | Ficheiros estáticos servidos pelo nginx | `GET /config.js` |
-| `proxy` | nginx de entrada: `/api` para as duas instâncias, o resto para o frontend; porta 5173 | `GET /api/health` através do proxy |
+| `proxy` | nginx de entrada: `/api` para as duas instâncias, o resto para o frontend; porta 5173 | `GET /api/health/ready` através do proxy |
 
 ```powershell
 docker compose ps -a                    # estado dos contentores
@@ -140,6 +141,7 @@ npm run test:e2e                        # testes End-to-End contra esta aplicaç
 
 - **Emissor OIDC.** O browser e o backend no contentor têm de chegar ao Keycloak pelo mesmo endereço. O compose usa `http://keycloak.localhost:8080`: os browsers resolvem `*.localhost` para o próprio computador, e na rede do compose o nome é um alias do serviço `keycloak`. Não é preciso mexer no ficheiro `hosts`.
 - **Dados persistentes.** A base e o Keycloak vivem em volumes e mantêm-se depois de `docker compose down` e de recriar os contentores. Os dois volumes vivem juntos: as contas da Matriz ficam ligadas à identidade do Keycloak (RN35), por isso apagam-se os dois (`down -v`) ou nenhum.
+- **Imagens publicadas.** Para usar as imagens de uma versão em vez de as construir: `MATRIZ_BACKEND_IMAGE` e `MATRIZ_FRONTEND_IMAGE` no `.env` (p. ex. `ghcr.io/zepedrorodrigues/matriz-backend:1.0.0-rc.2`) e `docker compose up -d --wait --no-build`.
 - **Não é a configuração de produção.** O Keycloak corre em modo de desenvolvimento, não há TLS e as contas são fictícias. A produção depende do fornecedor (DT06) e da réplica e cópias de segurança (DT13) — ver [Implantação](#implantação).
 
 ## Desenvolvimento
@@ -217,6 +219,31 @@ Erros da API: *problem details* (RFC 9457, `application/problem+json`); o 401 in
 
 Pedidos diretos à API em desenvolvimento: o cliente `matriz-dev-cli` do realm aceita utilizador e palavra-passe (*direct grant*) para obter um token, só no Keycloak local.
 
+## Observabilidade
+
+Decisão DT20; corresponde à linha «Observabilidade» de `docs/architecture.md` §7.
+
+**Registos.** O backend escreve uma linha JSON por registo quando `NODE_ENV=production` (as imagens) e texto legível no desenvolvimento; `LOG_FORMAT=json` ou `text` força um dos formatos. Cada pedido fica numa linha com o contexto `Pedido`:
+
+```json
+{"level":"log","pid":1,"timestamp":1794744758052,"message":{"requestId":"a26e95158fda07cb1bebbd1c0d62f77f","method":"GET","path":"/api/projects","status":401,"durationMs":1},"context":"Pedido"}
+```
+
+- Só estes cinco campos: nunca a query (as pesquisas podem ter nomes, SEC07), o corpo, o token ou dados de utilizadores.
+- O `requestId` vai também na resposta (`X-Request-Id`); o proxy do compose gera-o e passa-o ao backend, por isso é o mesmo nos dois lados.
+- Os erros do servidor (5xx) têm o nível `error`. As verificações de saúde bem-sucedidas não se registam.
+- Ver os registos no compose: `docker compose logs backend-1 backend-2`.
+
+**Verificações de disponibilidade** (sem token; no contrato `openapi.yaml`):
+
+| Pedido | Responde 200 quando | Para quê |
+|---|---|---|
+| `GET /api/health` | o processo responde e chega à base de dados | `HEALTHCHECK` da imagem e do compose |
+| `GET /api/health/live` | o processo responde (não consulta mais nada) | decidir se a instância tem de ser reiniciada |
+| `GET /api/health/ready` | a base de dados **e** o fornecedor de identidade respondem | decidir se a instância deve receber pedidos; a resposta diz qual falhou |
+
+O estado do fornecedor de identidade é guardado 30 segundos. Com ele em baixo, o `ready` responde 503 mas a API continua a responder: quem já tem as chaves em cache continua a validar tokens.
+
 ## Implantação
 
 Duas imagens de contentor (DT06, `docs/architecture.md` §8, DT16), construídas a partir da raiz do repositório com as versões do `package-lock.json` (`npm ci`):
@@ -230,6 +257,7 @@ Duas imagens de contentor (DT06, `docs/architecture.md` §8, DT16), construídas
 - **Migrations:** passo próprio de cada publicação, antes de atualizar as instâncias, com a mesma imagem: `docker run --rm <variáveis DB_*> matriz-backend node ../node_modules/typeorm/cli.js migration:run -d dist/src/shared/database/data-source.js`. Não correm no arranque: as duas instâncias (DT13) correriam em simultâneo.
 - O seed de demonstração recusa correr com `NODE_ENV=production` (o da imagem).
 - O proxy de entrada (TLS, `/api` para o backend, o resto para o frontend) e a base de dados com réplica e cópias de segurança são do fornecedor escolhido (DT06, DT13).
+- **Imagens publicadas (DT20):** ao publicar uma versão no GitHub, o workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) constrói as duas imagens a partir da etiqueta, analisa-as com o Trivy e envia-as para `ghcr.io/zepedrorodrigues/matriz-backend` e `ghcr.io/zepedrorodrigues/matriz-frontend`, com a versão como etiqueta (`latest` só nas versões finais). Usa só o `GITHUB_TOKEN` da execução, com escrita nos pacotes apenas nesse workflow.
 
 **Verificação local:** o `compose.yaml` da raiz constrói estas imagens e arranca-as com o proxy, a base e o Keycloak — ver [Execução com Docker Compose](#execução-com-docker-compose).
 
@@ -244,7 +272,7 @@ Duas imagens de contentor (DT06, `docs/architecture.md` §8, DT16), construídas
 - [x] Aula 2 (Ficha PL 02) — Architecture Pack: arquitetura, modelo de dados, API e wireframe, com revisão cruzada (human-in-the-loop), ver [`docs/review.md`](docs/review.md) §3
 - [x] Aula 3 (Ficha PL 03) — Implementação do MVP: plano em [`docs/implementation-plan.md`](docs/implementation-plan.md), verificação em [`docs/verification.md`](docs/verification.md). O I13 (consulta do histórico), que ficou fora do âmbito da ficha, foi feito depois: histórico de cada elemento na API e no ecrã, com as permissões e os filtros de D50 ([`docs/i13-historico-analise.md`](docs/i13-historico-analise.md)).
 - [x] Aula 4 (Ficha PL 04) — Testes unitários, de integração e E2E, Code Review e Security Review: [`docs/test-plan.md`](docs/test-plan.md), [`docs/quality-security-review.md`](docs/quality-security-review.md). Extensão opcional (2026-11-15): os testes e a análise estática correm num workflow de CI (DT18).
-- [x] Aula 5 (Ficha PL 05) — Entrega: Docker Compose com a aplicação completa, imagens construídas e analisadas no CI, changelog e versão candidata 1.0.0-rc.1 (DT19): [`docs/delivery-report.md`](docs/delivery-report.md), [`docs/release-notes-1.0.0-rc.1.md`](docs/release-notes-1.0.0-rc.1.md)
+- [x] Aula 5 (Ficha PL 05) — Entrega: Docker Compose com a aplicação completa, imagens construídas e analisadas no CI, changelog e versão candidata 1.0.0-rc.1 (DT19): [`docs/delivery-report.md`](docs/delivery-report.md), [`docs/release-notes-1.0.0-rc.1.md`](docs/release-notes-1.0.0-rc.1.md). Desafios opcionais B e C (1.0.0-rc.2, DT20): registos estruturados, verificações `live` e `ready` e publicação das imagens no GitHub Container Registry — [`docs/release-notes-1.0.0-rc.2.md`](docs/release-notes-1.0.0-rc.2.md)
 
 **Em números:** 42 regras de negócio · 36 requisitos funcionais · 13 requisitos não funcionais · 10 user stories · 116 critérios de aceitação (110 nas US e 6 transversais), todos verificáveis · sem decisões funcionais pendentes.
 
