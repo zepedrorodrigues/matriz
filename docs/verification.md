@@ -297,4 +297,21 @@ Branch `feat/observabilidade-e-publicacao-de-imagens`, pull request #7, versão 
 
 **Defeito encontrado e corrigido antes do merge.** Na primeira versão, com o Keycloak parado, o `ready` e também o `/api/health` responderam **502** pelo proxy: o nginx contava o 503 do `ready` como falha da instância (`proxy_next_upstream … http_503`, `max_fails=1`), retirava as duas de serviço («no live upstreams», 5 ocorrências no registo do proxy) e a própria verificação de saúde do proxy, de 5 em 5 segundos, mantinha-as fora. Corrigido com uma `location /api/health` sem o 503 nas falhas; repetido o cenário: 0 ocorrências de «no live upstreams».
 
-**Não verificado nesta branch:** a publicação das imagens (`release.yml`) — só corre quando a versão `v1.0.0-rc.2` for publicada, depois do merge; o resultado regista-se a seguir. O `ready` não foi experimentado com um fornecedor de identidade lento (o limite de 2 s está coberto só pelo caso de falha do pedido, nos testes unitários).
+**Não verificado nesta branch:** a publicação das imagens (`release.yml`), que só corre quando uma versão é publicada — verificada depois do merge, na secção seguinte. O `ready` não foi experimentado com um fornecedor de identidade lento (o limite de 2 s está coberto só pelo caso de falha do pedido, nos testes unitários).
+
+## Publicação das imagens (2026-11-15, DT20)
+
+Depois do merge do pull request #7: etiqueta `v1.0.0-rc.2` no commit `0a8e70b` do `main` e publicação da versão no GitHub como pré-lançamento.
+
+| Verificação | Resultado |
+|---|---|
+| CI no commit etiquetado | Execução `43741271761`, os dois jobs a passar |
+| Workflow `release.yml`, desencadeado pela publicação | Execução `43742137288` a passar: versão a partir da etiqueta, construção, análise com o Trivy, início de sessão, publicação e fim de sessão |
+| Imagens no registo | `matriz-backend:1.0.0-rc.2` com o resumo `sha256:cb2aadef7bc47b724a923a6d4d00687a9c769183a69dd21edeac8bf09de4763b`; `matriz-frontend:1.0.0-rc.2` com o resumo `sha256:500ad86a53d703f840822704db39eea8f5939f0940f9a8e7c8534bf4683a7aa1` |
+| Pedido do manifesto sem credenciais | 200 para a etiqueta `1.0.0-rc.2` das duas imagens; 404 para `latest` (não se publica numa versão candidata) |
+| `docker pull` das duas imagens, sem sessão iniciada no registo | Descarregadas; rótulos `org.opencontainers.image.version` = `1.0.0-rc.2` e `revision` = `0a8e70b8d1d4690ac9ee1fdbe86d2a537db4a97c` nas duas |
+| Compose com `MATRIZ_sha256:cb2aadef7bc47b724a923a6d4d00687a9c769183a69dd21edeac8bf09de4763bEND_IMAGE` e `MATRIZ_sha256:500ad86a53d703f840822704db39eea8f5939f0940f9a8e7c8534bf4683a7aa1END_IMAGE` a apontar para o registo, `docker compose up -d --wait --no-build` | Os dois backends, o frontend, a migração e o seed a correr com as imagens publicadas; todos os serviços *healthy*; `ready` 200 `{"status":"ok","database":"ok","identityProvider":"ok"}`, `live` 200, `/api/projects` 401, `/` 200 |
+
+**Observado.** Logo a seguir à troca das imagens, a API respondeu **502** pelo proxy durante cerca de 5 segundos (7 ocorrências de «no live upstreams», das 17:40:05 às 17:40:10): o compose recriou os dois backends ao mesmo tempo e o proxy ficou sem instâncias até passar o `fail_timeout` de 10 s. Recuperou sem intervenção. O compose não substitui as instâncias uma de cada vez; não é a configuração de produção (DT19).
+
+**Não verificado:** os testes E2E sobre as imagens publicadas (escreveriam na base `matriz` do compose local; os do CI correm sobre imagens construídas do mesmo commit); a visibilidade dos dois pacotes nas definições do GitHub — o token local não tem o âmbito `read:packages`, pelo que se mediu o efeito (o manifesto e o `docker pull` sem credenciais) e não a definição.
