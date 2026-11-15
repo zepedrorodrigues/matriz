@@ -13,7 +13,7 @@ Resultados do Code Review e do Security Review do Matriz, com a evidência de ca
 | Code Review (Ex. 5.1) | Último incremento: o diff `1679cc6..44f1f11` (correções da revisão do I14, refatoração, documentação) | Skill `code-review` do Claude Code, nível *medium*, com foco em bugs, validações, tratamento de erros e testes em falta |
 | Security Review (Ex. 5.2) | Acesso a projetos e tarefas (IDOR / Broken Access Control), exposição de dados, secrets e validação | Agente separado, só de leitura, com o prompt de apoio da ficha: mapa de todas as rotas → verificação de autorização, ids no caminho, na query e no corpo, respostas, `git grep`/`git log -S` para secrets |
 | Autorização entre dois utilizadores (Ex. 5.2) | Projeto e tarefa da Equipa Beta | Teste E2E `SEC-01` com duas sessões reais do Keycloak (`bruno` e `rui`) — §3 |
-| Análise estática (Ex. 5.3) | Dependências e tipos | `npm audit` e `npm audit --omit=dev`; `tsc --noEmit` (TypeScript *strict*) no backend e no frontend. ESLint, Semgrep e SonarQube **não estão configurados** no projeto (decisão: não acrescentar dependências para isso) |
+| Análise estática (Ex. 5.3) | Dependências e tipos | `npm audit` e `npm audit --omit=dev`; `tsc --noEmit` (TypeScript *strict*) no backend e no frontend. ESLint, Semgrep e SonarQube **não estavam configurados** no projeto em 2026-11-05 (decisão: não acrescentar dependências para isso). **Revisto em 2026-11-15 (DT18):** ESLint com `typescript-eslint` acrescentado — §6 |
 
 **Confirmação dos achados (Ex. 5.3).** Um achado só passa a «confirmado» com evidência observada: ou no código, com a linha e o motivo, ou em execução. Para os que precisavam de execução, correu-se um teste temporário contra a base de testes isolada (`matriz_test`), não versionado, com os resultados abaixo. Os restantes ficam como «suspeita» ou «risco de desenho».
 
@@ -93,3 +93,26 @@ O `package-lock.json` não era versionado nesta revisão (decisão do humano), p
 - se a consola de conta do Keycloak deixa um utilizador mudar o e-mail para um já verificado (risco para a ligação de contas por e-mail, RN35);
 - o comportamento do Keycloak sob força bruta;
 - pedidos com chaves repetidas ou em lista no corpo e na query (analisado no código, não executado).
+
+## 6. Análise estática com ESLint e integração contínua (2026-11-15, DT18)
+
+Extensão opcional da ficha, na branch `chore/ci-testes-e-analise-estatica` (commit final do código `01a007f`; pull request #3). A decisão de 2026-11-05 de não acrescentar dependências para análise estática foi revista pelo responsável do projeto.
+
+**Configuração:** `eslint.config.mjs` — regras recomendadas do ESLint e do `typescript-eslint`, mais `no-floating-promises` e `no-misused-promises` com tipos, no backend e no frontend. Executar: `npm run lint`.
+
+**Primeira execução: 17 avisos, triados um a um.**
+
+| ID | Aviso | Onde | Classificação | Decisão | Estado |
+|---|---|---|---|---|---|
+| E1 | `no-undef` (`module`, `require`, `window`) e `no-require-imports` — 5 avisos | `backend/jest.config.js`, `backend/jest.unit.config.js`, `frontend/public/config.js` | Falso positivo: ficheiros CommonJS e um ficheiro servido ao browser, lidos como módulos ES | Declarar o tipo de ficheiro e os globais na configuração | Sem ação no código |
+| E2 | `no-floating-promises` — 5 avisos | `navigate(...)` em `TeamsPage`, `TeamPlanningPage`, `ProjectDetailPage`, `ProjectsPage` e `TaskDetailPage` | Falso positivo: o `navigate` do react-router 8 devolve `void \| Promise<void>` e não rejeita; não há erro a perder | `allowForKnownSafeCalls` para `NavigateFunction`; a regra mantém-se para as restantes promessas | Sem ação no código |
+| E3 | `no-unused-vars` — 1 aviso | `tasks.service.ts`: `const { subtaskCount: _subtaskCount, ...fields }` | Falso positivo: é a forma de retirar um campo | Ignorar nomes começados por `_` | Sem ação no código |
+| E4 | `no-misused-promises` — 2 avisos | `TaskDetailPage.tsx`: o `close` do diálogo devolvia a promessa do `navigate` a `onOpenChange` e a `onDeleted`, que esperam `void` | Confirmado (código); sem efeito observável | Corrigir: o `close` deixa de devolver valor | Corrigido (`613a9e2`) |
+| E5 | `no-useless-escape` — 3 avisos | `frontend/vite.config.ts`: `[\/]` nas duas expressões dos chunks | Confirmado (código); o escape não tinha efeito | Corrigir; os chunks `react` e `vendor` continuam a sair do build | Corrigido (`613a9e2`) |
+| E6 | `no-unused-vars` — 1 aviso | `backend/test/review-fixes.e2e-spec.ts`: `teamOut` atribuída e nunca lida | Confirmado (código de teste) | Corrigir; a equipa «Fora» continua a ser criada | Corrigido (`613a9e2`) |
+
+Nenhum dos 17 avisos é um defeito de comportamento. As três correções (E4–E6) foram aprovadas pelo responsável antes de aplicadas e não têm teste de regressão próprio: a regressão é o próprio `npm run lint`, que corre no CI. Depois delas: `npm run lint` sem erros, tipos sem erros, 255 testes do backend e 47 do frontend a passar, build concluído.
+
+**Integração contínua:** `.github/workflows/ci.yml`, com os resultados em [`verification.md`](verification.md) › Integração contínua e em [`test-plan.md`](test-plan.md) §5. O `npm audit --omit=dev --audit-level=high` passa: mantêm-se as 3 vulnerabilidades moderadas do `typeorm` 0.3 (§4).
+
+**Por validar:** os achados Pendentes da §2 (S4, S6, S7, CR8–CR10) e a lista da §5 mantêm-se; o ESLint não os cobre.

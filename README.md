@@ -48,6 +48,8 @@ O MVP destina-se à utilização interna da empresa. Os critérios de aceitaçã
 matriz/
 ├── README.md              visão geral e estado do projeto
 ├── AGENTS.md              instruções para coding agents
+├── .github/workflows/     ci.yml: análise estática e testes em cada pull request (DT18)
+├── eslint.config.mjs      regras da análise estática (npm run lint)
 ├── openapi.yaml           contrato REST (OpenAPI 3.1) de operações do MVP (Ficha PL 02)
 ├── package.json           npm workspaces (backend, frontend) e scripts comuns
 ├── .env.example           variáveis de ambiente; copiar para .env (fora do Git)
@@ -63,7 +65,7 @@ matriz/
 ├── e2e/                   testes End-to-End (Playwright)
 ├── deploy/                compose e proxy da verificação local da implantação
 ├── keycloak/              realm matriz versionado (contas fictícias)
-├── scripts/               db-setup.sql (role e bases) e keycloak-dev.ps1
+├── scripts/               db-setup.sql (role e bases), keycloak-dev.ps1 e keycloak-ci.mjs (só no CI)
 └── docs/
     ├── requirements.md    visão, utilizadores, regras de negócio, RF, RNF, âmbito do MVP
     ├── user-stories.md    user stories, prioridades, critérios de aceitação, casos excecionais
@@ -137,9 +139,12 @@ npm test -w backend           # integração: API real (Jest + supertest); recri
 npm test -w frontend          # regras da interface (node:test), sem browser
 npx jest test/tasks.e2e-spec.ts   # um ficheiro, a partir de backend/
 npm run test:e2e              # End-to-End (Playwright no Chrome instalado); precisa do Keycloak, da API e do frontend a correr
+npm run lint                  # análise estática (ESLint com typescript-eslint)
 ```
 
 Os testes de integração não precisam do Keycloak: assinam os próprios tokens com uma chave gerada no arranque. Os E2E (`e2e/`) entram pelo Keycloak real com as contas fictícias (palavra-passe `MATRIZ_DEMO_PASSWORD` do `.env`), criam dados com nomes únicos e eliminam o que criam; se falharem, a captura de ecrã e o trace ficam em `e2e/test-results/` (fora do Git). O Playwright usa o Chrome instalado (`channel: 'chrome'`): não é preciso `npx playwright install`. Planos e resultados: [`docs/test-plan.md`](docs/test-plan.md), [`docs/verification.md`](docs/verification.md) e [`docs/quality-security-review.md`](docs/quality-security-review.md).
+
+**Integração contínua (DT18).** O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) corre em cada pull request e em cada push para o `main`, com os mesmos comandos: `npm run lint`, os tipos do backend e do frontend, `npm test` (contra um PostgreSQL 17 criado para o job), `npm run build` e `npm audit --omit=dev --audit-level=high`. Um segundo job, só depois de o primeiro passar, corre `npm run test:e2e` com um Keycloak em contentor (realm versionado), a base `matriz` com as migrations e o seed, a API e o frontend; as palavras-passe do Keycloak são geradas em cada execução. Resultados: [`docs/verification.md`](docs/verification.md) › Integração contínua.
 
 **Outros comandos:** `npm run build` (backend e frontend), `npm start -w backend` (API compilada, a partir de `backend/dist`), `npm run migration:revert -w backend`.
 
@@ -207,7 +212,7 @@ O emissor OIDC tem de ter o mesmo endereço para o browser e para o backend no c
 - [x] Ex. 6 — Revisão crítica (human-in-the-loop) — Specification Pack v0.3, ver [`docs/review.md`](docs/review.md)
 - [x] Aula 2 (Ficha PL 02) — Architecture Pack: arquitetura, modelo de dados, API e wireframe, com revisão cruzada (human-in-the-loop), ver [`docs/review.md`](docs/review.md) §3
 - [x] Aula 3 (Ficha PL 03) — Implementação do MVP: plano em [`docs/implementation-plan.md`](docs/implementation-plan.md), verificação em [`docs/verification.md`](docs/verification.md). O I13 (consulta do histórico), que ficou fora do âmbito da ficha, foi feito depois: histórico de cada elemento na API e no ecrã, com as permissões e os filtros de D50 ([`docs/i13-historico-analise.md`](docs/i13-historico-analise.md)).
-- [x] Aula 4 (Ficha PL 04) — Testes unitários, de integração e E2E, Code Review e Security Review: [`docs/test-plan.md`](docs/test-plan.md), [`docs/quality-security-review.md`](docs/quality-security-review.md)
+- [x] Aula 4 (Ficha PL 04) — Testes unitários, de integração e E2E, Code Review e Security Review: [`docs/test-plan.md`](docs/test-plan.md), [`docs/quality-security-review.md`](docs/quality-security-review.md). Extensão opcional (2026-11-15): os testes e a análise estática correm num workflow de CI (DT18).
 
 **Em números:** 42 regras de negócio · 36 requisitos funcionais · 13 requisitos não funcionais · 10 user stories · 116 critérios de aceitação (110 nas US e 6 transversais), todos verificáveis · sem decisões funcionais pendentes.
 

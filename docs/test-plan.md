@@ -69,6 +69,18 @@ Plano de testes da funcionalidade **tarefas** (criar, consultar, editar, elimina
 | `npm test -w backend` | Integração (e os unitários do backend) | 227 testes a passar em 20 ficheiros (201 de antes, 20 unitários e 6 de regressão da revisão) |
 | `npm run test:e2e` | E2E | 2 testes a passar: `E2E-01` (criar tarefa) e `SEC-01` (autorização entre dois utilizadores); o `E2E-01` correu também sozinho três vezes seguidas (3,4 s, 2,9 s, 2,8 s) |
 
+**Execução de 2026-11-15** (commit `01a007f`, branch `chore/ci-testes-e-analise-estatica`). Os números acima são de 2026-11-05; entretanto entraram os testes do I13 e das ligações do pool. Medido de novo, na máquina local e no workflow de CI (execução `43706904915`):
+
+| Comando | Nível | Local | CI |
+|---|---|---|---|
+| `npm run test:unit -w backend` | Unitário (backend) | 20 testes a passar | incluídos em `npm test` |
+| `npm test -w frontend` | Unitário (frontend) | 47 testes a passar | 47 a passar |
+| `npm test -w backend` | Integração (e os unitários do backend) | 255 testes a passar em 22 ficheiros | 255 a passar em 22 ficheiros |
+| `npm run test:e2e` | E2E | não repetido (escreveria na base `matriz`) | 2 testes a passar (`E2E-01`, `SEC-01`), com Keycloak, base e seed criados para a execução |
+| `npm run lint` | Análise estática | sem erros | sem erros |
+
+**O workflow falha quando a regra falha (reversão).** Com o limite do título alterado de 150 para 151 (commit `b7a52fa`, revertido em `01a007f`), a execução `43706694497` falhou no passo «Testes unitários e de integração», a nomear os dois testes da CA03.18: `work.dto.spec.ts` «151 caracteres (acima do máximo)» e `tasks.e2e-spec.ts` «CA03.18, Ex. 8 (caso 04)»; 253 de 255 a passar, e o job dos E2E não correu.
+
 **Testes não executados:** nenhum dos previstos. O E2E precisa do Keycloak, da API e do frontend a correr; não corre sem eles (falha com uma mensagem a dizê-lo, em vez de um erro confuso).
 
 **Os testes verificam a regra, não só o código (mutação).** Com a regra alterada de propósito, os testes têm de falhar: limite máximo 150 → 151: 2 testes unitários falham; mínimo 3 → 2: 2 falham; sem retirar os espaços das pontas: 5 falham. No E2E, com um projeto que não existe (`E2E_PROJECT="Projeto inexistente"`), o teste falha a procurar a ligação e guarda a captura de ecrã em `e2e/test-results/` (fora do Git). O ficheiro de produção foi reposto e comparado byte a byte.
@@ -79,3 +91,4 @@ Plano de testes da funcionalidade **tarefas** (criar, consultar, editar, elimina
 |---|---|---|
 | O teste unitário não arrancava: `TypeError: Reflect.getMetadata is not a function` | Problema do teste | Os decoradores dos DTO precisam do polyfill `reflect-metadata`, que a aplicação carrega no arranque; o teste unitário importa-o (já era dependência). A regra não foi alterada. |
 | A primeira tentativa de mutação «sem retirar os espaços» não alterou o ficheiro | Problema da verificação (`sed` não faz substituições em várias linhas) | Repetida com um script; 5 testes falham, como esperado |
+| Na primeira execução do CI (`43706187429`) falharam 3 dos 255 testes do backend: os três «CAT04» do histórico esperavam «permission denied» e a operação foi aceite | Limitação do ambiente | No workflow, o role `matriz` era o superutilizador do contentor do PostgreSQL, a quem o `REVOKE` sobre `history_event` não se aplica. O workflow passou a criar o role sem privilégios, como o `scripts/db-setup.sql`; os testes e a aplicação não mudaram |
