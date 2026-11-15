@@ -12,6 +12,7 @@ import { buildDataSourceOptions } from './shared/database/database.config';
 import { ProblemDetailsFilter } from './shared/errors/problem-details.filter';
 import { apiValidationPipe } from './shared/errors/validation.pipe';
 import { HealthController } from './shared/health/health.controller';
+import { IdentityProviderProbe } from './shared/health/identity-provider.probe';
 import { SharedModule } from './shared/shared.module';
 
 /**
@@ -33,6 +34,7 @@ import { SharedModule } from './shared/shared.module';
   ],
   controllers: [HealthController],
   providers: [
+    { provide: IdentityProviderProbe, useFactory: () => new IdentityProviderProbe() },
     { provide: APP_FILTER, useClass: ProblemDetailsFilter },
     { provide: APP_PIPE, useFactory: apiValidationPipe },
   ],

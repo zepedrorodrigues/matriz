@@ -279,3 +279,22 @@ Branch `feat/entrega-compose-ci-e-versao-candidata`, pull request #5, versão `1
 | Credenciais | Sem resultados no `git grep`; só o `.env.example` versionado; nenhum `.env` nas imagens; nenhum segredo configurado no repositório |
 
 **Não verificado:** o compose fora do Windows com Docker Desktop e do `ubuntu-latest`; `keycloak.localhost` em browsers que não o Chrome; apagar só um dos dois volumes; o `openapi.yaml` com uma ferramenta de *lint*. O serviço `proxy` usa o `nginx:1.30-alpine` original, com 3 vulnerabilidades altas com correção (`libxslt`).
+
+## Observabilidade e publicação das imagens (2026-11-15, DT20)
+
+Branch `feat/observabilidade-e-publicacao-de-imagens`, pull request #7, versão `1.0.0-rc.2`.
+
+| Verificação | Resultado |
+|---|---|
+| Tipos, `npm run lint`, `npm test` | Sem erros; 277 testes do backend em 24 ficheiros (37 unitários) e 47 do frontend a passar |
+| Reversões (7), cada regra desfeita e reposta byte a byte | 7 apanhadas, cada uma pelo teste que a nomeia: a query registada (SEC07); as verificações de saúde registadas; os 5xx como informação; o identificador do proxy aceite sem validar; o `ready` a ignorar o fornecedor de identidade; a sonda sem cache; JSON fora de produção |
+| Registos no compose | 0 linhas que não sejam JSON nos dois backends; uma linha por pedido com `requestId`, `method`, `path`, `status` e `durationMs`; 0 ocorrências de `search=`, `Bearer`, e-mails ou nomes nas linhas dos pedidos, depois dos testes E2E |
+| `X-Request-Id` | `GET /api/projects?search=Ana` pelo proxy: 401 com `X-Request-Id`, e o mesmo identificador na linha do backend, com o caminho `/api/projects` sem a query |
+| `GET /api/health/ready`, tudo a correr | 200 `{"status":"ok","database":"ok","identityProvider":"ok"}` |
+| Base de dados parada (`docker compose stop db`) | `ready` 503 com `"database":"unavailable"`; `live` 200 |
+| Keycloak parado, depois dos 30 s de cache | `ready` 503 com `"identityProvider":"unavailable"`; `/api/health` 200, `live` 200 e `/api/projects` 401 — a API continua a responder |
+| Depois de arrancar outra vez os dois | `ready` 200; `E2E-01` e `SEC-01` a passar |
+
+**Defeito encontrado e corrigido antes do merge.** Na primeira versão, com o Keycloak parado, o `ready` e também o `/api/health` responderam **502** pelo proxy: o nginx contava o 503 do `ready` como falha da instância (`proxy_next_upstream … http_503`, `max_fails=1`), retirava as duas de serviço («no live upstreams», 5 ocorrências no registo do proxy) e a própria verificação de saúde do proxy, de 5 em 5 segundos, mantinha-as fora. Corrigido com uma `location /api/health` sem o 503 nas falhas; repetido o cenário: 0 ocorrências de «no live upstreams».
+
+**Não verificado nesta branch:** a publicação das imagens (`release.yml`) — só corre quando a versão `v1.0.0-rc.2` for publicada, depois do merge; o resultado regista-se a seguir. O `ready` não foi experimentado com um fornecedor de identidade lento (o limite de 2 s está coberto só pelo caso de falha do pedido, nos testes unitários).

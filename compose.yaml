@@ -18,7 +18,9 @@ name: matriz
 x-oidc-issuer: &oidc-issuer http://keycloak.localhost:8080/realms/matriz
 
 x-backend: &backend
-  image: matriz-backend
+  # Por omissão, as imagens construídas aqui. Para usar as publicadas (DT20), definir MATRIZ_BACKEND_IMAGE
+  # e MATRIZ_FRONTEND_IMAGE (p. ex. ghcr.io/<dono>/matriz-backend:<versão>) e arrancar com --no-build.
+  image: ${MATRIZ_BACKEND_IMAGE:-matriz-backend}
   restart: unless-stopped
   environment: &backend-env
     PORT: "3000"
@@ -133,7 +135,7 @@ services:
   backend-2: *backend
 
   frontend:
-    image: matriz-frontend
+    image: ${MATRIZ_FRONTEND_IMAGE:-matriz-frontend}
     build:
       context: .
       dockerfile: frontend/Dockerfile
@@ -166,8 +168,8 @@ services:
       keycloak-setup:
         condition: service_completed_successfully
     healthcheck:
-      # Atravessa o proxy até ao backend e à base de dados.
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/api/health"]
+      # Atravessa o proxy até ao backend, à base de dados e ao fornecedor de identidade (DT20).
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/api/health/ready"]
       interval: 5s
       timeout: 3s
       retries: 10

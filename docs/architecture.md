@@ -133,7 +133,7 @@ flowchart LR
 | Listagens | Paginadas (`page`, `pageSize` 20 por omissão e no máximo 100), com o total do conjunto filtrado. | D46 |
 | Eliminação | Lógica (`deleted_at`); os elementos eliminados ficam fora das consultas e o histórico conserva-se. | RN38, SEC04 |
 | Privacidade | Minimização de dados; motivos pessoais nunca registados; retenção segundo SEC09. | SEC05, SEC06, SEC09, P12 |
-| Observabilidade | Logs estruturados com identificador de pedido; métricas de tempo de resposta para verificar RNF08; medição da disponibilidade em horário de trabalho para verificar RNF09. | RNF08, RNF09 |
+| Observabilidade | Logs estruturados com identificador de pedido; métricas de tempo de resposta para verificar RNF08; medição da disponibilidade em horário de trabalho para verificar RNF09. **Feito (DT20):** registos em JSON com uma linha por pedido (identificador, método, caminho, código, duração) e verificações `live` e `ready`. **Por fazer:** as métricas e a medição da disponibilidade. | RNF08, RNF09, DT20 |
 | Cópias de segurança e recuperação | Cópia base diária e arquivo contínuo das alterações (WAL) do PostgreSQL, na UE, cifrados e conservados durante 30 dias; reposição num momento anterior a um erro; testes de reposição periódicos. Uma réplica não substitui as cópias, porque replica também os erros. | RNF13, DT13 |
 | Interface | pt-PT, para computador, WCAG 2.1 AA. | RNF10–RNF12 |
 | Testes | Um teste automático por CA ao nível da API; testes de arquitetura que verificam as dependências entre módulos. | DT08 |
