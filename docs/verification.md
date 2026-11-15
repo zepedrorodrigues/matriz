@@ -258,3 +258,24 @@ Branch `chore/ci-testes-e-analise-estatica`, pull request #3. Workflow `.github/
 | Pacotes acrescentados | 76 entradas novas no `package-lock.json` (ESLint e dependências); nenhuma das existentes mudou de versão |
 
 **Não verificado:** os testes E2E não foram repetidos na máquina local (escreveriam na base `matriz`); o resultado de 2026-11-15 é o do CI, numa base criada para a execução. O workflow no `main` (o gatilho `push`) só corre depois do merge. O comportamento do workflow com um pull request vindo de um fork não foi testado.
+
+## Entrega em contentores (2026-11-15, DT19, Ficha PL 05)
+
+Branch `feat/entrega-compose-ci-e-versao-candidata`, pull request #5, versão `1.0.0-rc.1`. O relatório completo, com os requisitos da ficha, os problemas e as limitações, está em [`delivery-report.md`](delivery-report.md); aqui fica o resumo das medições.
+
+| Verificação | Resultado |
+|---|---|
+| `docker compose config -q` e `docker compose build` | Sem erros; `matriz-backend` 487 MB, `matriz-frontend` 94,9 MB |
+| `docker compose up -d --wait`, volumes vazios | Saudável em 1 min 25 s: 6 serviços *healthy*, `migrate`, `seed` e `keycloak-setup` com código 0 |
+| Início de sessão com o Keycloak do compose | `E2E-01` e `SEC-01` a passar contra `http://localhost:5173`, com o emissor `http://keycloak.localhost:8080`; sem alterações ao ficheiro `hosts` (fecha a limitação registada em «Pendentes da verificação») |
+| Role da base no compose | `matriz` sem privilégios de superutilizador; `DELETE` e `TRUNCATE` sobre `history.history_event` recusados com «permission denied» (SEC04, CAT04) |
+| Persistência | `docker compose down` e `up`: 8 tarefas e 2 eventos antes e depois; o seed acrescenta 0 linhas na segunda execução; o início de sessão continua a funcionar |
+| Logs | 0 linhas de erro ou aviso no backend, no frontend e no proxy; no Keycloak, só avisos de funcionalidades obsoletas |
+| Trivy 0.76.2 (`HIGH,CRITICAL`, com correção) | Backend 6 → 0 (CLI do npm retirada da imagem final); frontend 58 → 0 (`nginx:1.30-alpine` com `apk upgrade`) |
+| Imagens corrigidas em execução | No contentor do backend não existe `npm` e o processo corre como `node`; o frontend responde com o nginx 1.30.6; migrations pela CLI do TypeORM: «No migrations are pending» |
+| CI, execução `43709645093` (commit `5246760`) | Os dois jobs a passar à primeira |
+| CI, falha controlada, execução `43709975844` (commit `09df3f0`) | Limite do título 150 → 151: «Análise estática e testes» falha a nomear os dois testes da CA03.18 (253 de 255); «Imagens Docker e testes End-to-End» não corre |
+| CI, execução `43710210612` (commit `e8a1d79`) | Limite reposto e versão 1.0.0-rc.1: os dois jobs a passar |
+| Credenciais | Sem resultados no `git grep`; só o `.env.example` versionado; nenhum `.env` nas imagens; nenhum segredo configurado no repositório |
+
+**Não verificado:** o compose fora do Windows com Docker Desktop e do `ubuntu-latest`; `keycloak.localhost` em browsers que não o Chrome; apagar só um dos dois volumes; o `openapi.yaml` com uma ferramenta de *lint*. O serviço `proxy` usa o `nginx:1.30-alpine` original, com 3 vulnerabilidades altas com correção (`libxslt`).

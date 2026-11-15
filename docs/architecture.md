@@ -157,6 +157,26 @@ flowchart LR
 - **Duas instâncias do backend** (DT13), sem estado, atrás do balanceador, com verificações de saúde e reinício automático. Uma falha de uma instância ou de uma máquina não interrompe o serviço, e as correções urgentes publicam-se uma instância de cada vez.
 - **PostgreSQL com réplica e cópias de segurança** (DT13, RNF13: RPO 5 min, RTO 1 h), na infraestrutura interna ou numa região cloud da UE (DT06, P09). Numa cloud, PostgreSQL gerido com mudança automática para a réplica; em infraestrutura interna, mudança manual segundo um procedimento escrito.
 - **Desenvolvimento** (DT15): PostgreSQL 17 ou superior e Keycloak (JDK 21) instalados localmente, sem Docker; o servidor de desenvolvimento do frontend encaminha `/api` para o backend, mantendo a mesma origem.
+- **Execução em contentores** (DT19): o `compose.yaml` da raiz arranca a aplicação completa num computador, com as mesmas imagens e o mesmo proxy, mais um PostgreSQL e um Keycloak próprios. Serve para executar e verificar a aplicação de forma reproduzível, localmente e no CI; não substitui a implantação acima (sem TLS, sem réplica, Keycloak em modo de desenvolvimento).
+
+```mermaid
+flowchart LR
+    B[Browser] -->|"localhost:5173"| P["proxy<br/>(nginx)"]
+    B -->|"keycloak.localhost:8080<br/>(início de sessão OIDC)"| K["keycloak<br/>(realm matriz)"]
+    P -->|"/"| F["frontend<br/>(nginx, estáticos)"]
+    P -->|"/api"| A1["backend-1"]
+    P -->|"/api"| A2["backend-2"]
+    A1 --> D[("db<br/>PostgreSQL 17<br/>volume db-data")]
+    A2 --> D
+    A1 -.->|"chaves públicas<br/>(descoberta OIDC)"| K
+    A2 -.-> K
+    M["migrate<br/>(passo único)"] --> D
+    S["seed<br/>(passo único)"] --> D
+    KS["keycloak-setup<br/>(passo único)"] --> K
+    K --- KV[("volume<br/>keycloak-data")]
+```
+
+  Ordem de arranque, imposta pelas verificações de saúde: `db` → `migrate` → `seed`; `keycloak` → `keycloak-setup`; as duas instâncias do backend depois das migrations e do Keycloak; o `proxy` só depois de o frontend e as duas instâncias estarem saudáveis e os passos únicos terem terminado.
 - A tarefa diária (prazos e fim das sprints) corre numa única instância de cada vez: antes de começar, obtém um trinco no PostgreSQL (*advisory lock*), sem dependências novas.
 - **Limitação conhecida:** o proxy/balanceador e a mudança manual para a réplica (em infraestrutura interna) são pontos a vigiar; se a disponibilidade medida se aproximar de 99 %, passa-se a um cluster com mudança automática (DT13).
 

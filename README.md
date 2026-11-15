@@ -2,7 +2,7 @@
 
 Aplicação interna de gestão de projetos e tarefas para equipas de trabalho, ao estilo de Jira, Azure DevOps ou Trello.
 
-> **Estado atual:** MVP implementado (Ficha PL 03), com testes unitários, de integração e E2E e revisão de código e de segurança (Ficha PL 04), e com a consulta do histórico (I13). Detalhe em [Estado atual](#estado-atual).
+> **Estado atual:** versão candidata **1.0.0-rc.1** — MVP implementado (Ficha PL 03), com testes unitários, de integração e E2E e revisão de código e de segurança (Ficha PL 04), a consulta do histórico (I13) e a entrega em contentores com integração contínua (Ficha PL 05). Detalhe em [Estado atual](#estado-atual); alterações em [`CHANGELOG.md`](CHANGELOG.md).
 
 **Tecnologias** (`docs/constraints.md` §4.3, DT01–DT15): TypeScript em toda a aplicação — NestJS e TypeORM no backend, React e Vite no frontend —, PostgreSQL 17 ou superior com um schema por módulo, autenticação OpenID Connect (Keycloak local em desenvolvimento). Monólito modular com API REST/JSON descrita em [`openapi.yaml`](openapi.yaml).
 
@@ -47,6 +47,8 @@ O MVP destina-se à utilização interna da empresa. Os critérios de aceitaçã
 ```
 matriz/
 ├── README.md              visão geral e estado do projeto
+├── CHANGELOG.md           alterações por versão (Semantic Versioning)
+├── compose.yaml           aplicação completa em contentores (Docker Compose, DT19)
 ├── AGENTS.md              instruções para coding agents
 ├── .github/workflows/     ci.yml: análise estática e testes em cada pull request (DT18)
 ├── eslint.config.mjs      regras da análise estática (npm run lint)
@@ -63,7 +65,7 @@ matriz/
 │   ├── src/               páginas, componentes, cliente da API, autenticação
 │   └── test/              regras da interface (node:test)
 ├── e2e/                   testes End-to-End (Playwright)
-├── deploy/                compose e proxy da verificação local da implantação
+├── deploy/                proxy de entrada e criação do role da base, usados pelo compose.yaml
 ├── keycloak/              realm matriz versionado (contas fictícias)
 ├── scripts/               db-setup.sql (role e bases), keycloak-dev.ps1 e keycloak-ci.mjs (só no CI)
 └── docs/
@@ -77,6 +79,8 @@ matriz/
     ├── verification.md    verificação da entrega: testes, browser, casos do Ex. 8 (Ficha PL 03)
     ├── test-plan.md       plano de testes unitários, de integração e E2E (Ficha PL 04)
     ├── quality-security-review.md  revisão de código e de segurança (Ficha PL 04)
+    ├── delivery-report.md validação final e relatório da entrega (Ficha PL 05)
+    ├── release-notes-1.0.0-rc.1.md  notas da versão candidata
     └── ui/
         ├── wireframe.svg  wireframe do planeamento da sprint (Ficha PL 02)
         └── wireframe.md   navegação e validação do wireframe face ao MVP
@@ -104,9 +108,43 @@ Os coding agents seguem, além disto, as instruções de [`AGENTS.md`](AGENTS.md
 | SEC | Requisito de segurança e privacidade | constraints.md |
 | D / DT | Decisão pendente funcional / técnica | constraints.md |
 
+## Execução com Docker Compose
+
+A forma mais curta de pôr a Matriz a correr (DT19). Precisa só do Docker com o Compose (verificado com Docker 29.6 e Compose 5.3) e das portas 5173 e 8080 livres.
+
+```powershell
+Copy-Item .env.example .env             # preencher DB_PASSWORD, KEYCLOAK_ADMIN_USER, KEYCLOAK_ADMIN_PASSWORD e MATRIZ_DEMO_PASSWORD
+docker compose up --build -d --wait     # constrói as imagens e espera que tudo esteja saudável (cerca de 1 min 30 s)
+```
+
+A aplicação fica em <http://localhost:5173>. Entra-se com as contas fictícias da tabela em [Desenvolvimento](#desenvolvimento) (`admin`, `gestor`, `ana`, `rui`, `bruno`) e a palavra-passe `MATRIZ_DEMO_PASSWORD` do `.env`.
+
+| Serviço | O que é | Verificação de saúde |
+|---|---|---|
+| `db` | PostgreSQL 17, volume `db-data`. No primeiro arranque, `deploy/db-init.sh` cria o role `matriz` sem privilégios de superutilizador e a base `matriz` | `pg_isready` |
+| `keycloak` | Keycloak 26.8.1 em modo de desenvolvimento, com o realm versionado (`keycloak/realm-matriz.json`), volume `keycloak-data`; porta 8080 | `/health/ready` |
+| `keycloak-setup` | Passo único: define a palavra-passe das contas fictícias (`scripts/keycloak-ci.mjs`) | termina com código 0 |
+| `migrate` | Passo único: migrations, com a imagem do backend | termina com código 0 |
+| `seed` | Passo único: dados de demonstração fictícios; idempotente, nunca apaga | termina com código 0 |
+| `backend-1`, `backend-2` | Duas instâncias da API (DT13) | `GET /api/health` |
+| `frontend` | Ficheiros estáticos servidos pelo nginx | `GET /config.js` |
+| `proxy` | nginx de entrada: `/api` para as duas instâncias, o resto para o frontend; porta 5173 | `GET /api/health` através do proxy |
+
+```powershell
+docker compose ps -a                    # estado dos contentores
+docker compose logs --tail=50           # registos
+docker compose down                     # parar; os dados ficam nos volumes
+docker compose down -v                  # parar e apagar a base e o Keycloak
+npm run test:e2e                        # testes End-to-End contra esta aplicação (precisa de npm install)
+```
+
+- **Emissor OIDC.** O browser e o backend no contentor têm de chegar ao Keycloak pelo mesmo endereço. O compose usa `http://keycloak.localhost:8080`: os browsers resolvem `*.localhost` para o próprio computador, e na rede do compose o nome é um alias do serviço `keycloak`. Não é preciso mexer no ficheiro `hosts`.
+- **Dados persistentes.** A base e o Keycloak vivem em volumes e mantêm-se depois de `docker compose down` e de recriar os contentores. Os dois volumes vivem juntos: as contas da Matriz ficam ligadas à identidade do Keycloak (RN35), por isso apagam-se os dois (`down -v`) ou nenhum.
+- **Não é a configuração de produção.** O Keycloak corre em modo de desenvolvimento, não há TLS e as contas são fictícias. A produção depende do fornecedor (DT06) e da réplica e cópias de segurança (DT13) — ver [Implantação](#implantação).
+
 ## Desenvolvimento
 
-Ambiente sem Docker (DT15). Nenhuma palavra-passe é guardada no repositório (SEC08): ficam no `.env` local, fora do Git.
+Ambiente sem Docker (DT15), para trabalhar no código com recarregamento automático. Nenhuma palavra-passe é guardada no repositório (SEC08): ficam no `.env` local, fora do Git.
 
 **Requisitos** (versões usadas): Node.js ≥ 22 (24.18.0), npm 11; PostgreSQL ≥ 17 (17.11, `winget`); JDK 21 (Temurin 21.0.12) e Keycloak 26.8.1 (zip), ambos fora do repositório.
 
@@ -144,7 +182,7 @@ npm run lint                  # análise estática (ESLint com typescript-eslint
 
 Os testes de integração não precisam do Keycloak: assinam os próprios tokens com uma chave gerada no arranque. Os E2E (`e2e/`) entram pelo Keycloak real com as contas fictícias (palavra-passe `MATRIZ_DEMO_PASSWORD` do `.env`), criam dados com nomes únicos e eliminam o que criam; se falharem, a captura de ecrã e o trace ficam em `e2e/test-results/` (fora do Git). O Playwright usa o Chrome instalado (`channel: 'chrome'`): não é preciso `npx playwright install`. Planos e resultados: [`docs/test-plan.md`](docs/test-plan.md), [`docs/verification.md`](docs/verification.md) e [`docs/quality-security-review.md`](docs/quality-security-review.md).
 
-**Integração contínua (DT18).** O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) corre em cada pull request e em cada push para o `main`, com os mesmos comandos: `npm run lint`, os tipos do backend e do frontend, `npm test` (contra um PostgreSQL 17 criado para o job), `npm run build` e `npm audit --omit=dev --audit-level=high`. Um segundo job, só depois de o primeiro passar, corre `npm run test:e2e` com um Keycloak em contentor (realm versionado), a base `matriz` com as migrations e o seed, a API e o frontend; as palavras-passe do Keycloak são geradas em cada execução. Resultados: [`docs/verification.md`](docs/verification.md) › Integração contínua.
+**Integração contínua (DT18, DT19).** O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) corre em cada pull request e em cada push para o `main`, com os mesmos comandos: `npm run lint`, os tipos do backend e do frontend, `npm test` (contra um PostgreSQL 17 criado para o job), `npm run build` e `npm audit --omit=dev --audit-level=high`. Um segundo job, só depois de o primeiro passar, valida o `compose.yaml`, constrói as duas imagens, analisa-as com o Trivy (falha com vulnerabilidades altas ou críticas que tenham correção), arranca a aplicação completa com `docker compose up -d --wait` e corre `npm run test:e2e` contra ela; as palavras-passe são geradas em cada execução e o workflow só tem permissão de leitura do repositório. Resultados: [`docs/verification.md`](docs/verification.md) › Integração contínua e [`docs/delivery-report.md`](docs/delivery-report.md).
 
 **Outros comandos:** `npm run build` (backend e frontend), `npm start -w backend` (API compilada, a partir de `backend/dist`), `npm run migration:revert -w backend`.
 
@@ -188,19 +226,12 @@ Duas imagens de contentor (DT06, `docs/architecture.md` §8, DT16), construídas
 | `matriz-backend` | `docker build -f backend/Dockerfile -t matriz-backend .` | `PORT`, `APP_TIME_ZONE`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `OIDC_ISSUER`, `OIDC_AUDIENCE` |
 | `matriz-frontend` | `docker build -f frontend/Dockerfile -t matriz-frontend .` | `OIDC_AUTHORITY`, `OIDC_CLIENT_ID` (escritos em `/config.js`; sem eles o contentor não arranca) |
 
-- O backend corre como utilizador sem privilégios, só com as dependências de produção, e tem `HEALTHCHECK` em `GET /api/health` (503 sem base de dados).
-- **Migrations:** passo próprio de cada publicação, antes de atualizar as instâncias, com a mesma imagem: `docker run --rm <variáveis DB_*> matriz-backend npm run migration:run:dist`. Não correm no arranque: as duas instâncias (DT13) correriam em simultâneo.
+- O backend corre como utilizador sem privilégios, só com as dependências de produção e sem a CLI do npm (DT19), e tem `HEALTHCHECK` em `GET /api/health` (503 sem base de dados).
+- **Migrations:** passo próprio de cada publicação, antes de atualizar as instâncias, com a mesma imagem: `docker run --rm <variáveis DB_*> matriz-backend node ../node_modules/typeorm/cli.js migration:run -d dist/src/shared/database/data-source.js`. Não correm no arranque: as duas instâncias (DT13) correriam em simultâneo.
 - O seed de demonstração recusa correr com `NODE_ENV=production` (o da imagem).
 - O proxy de entrada (TLS, `/api` para o backend, o resto para o frontend) e a base de dados com réplica e cópias de segurança são do fornecedor escolhido (DT06, DT13).
 
-**Verificação local** (`deploy/`): proxy nginx, frontend, duas instâncias do backend e um PostgreSQL 17 próprio, isolado das bases `matriz` e `matriz_test`. Com o Keycloak local na porta 8180:
-
-```powershell
-docker compose --env-file .env -f deploy/compose.yaml up --build -d   # aplicação em http://localhost:5173
-docker compose --env-file .env -f deploy/compose.yaml down -v         # parar e apagar a base de verificação
-```
-
-O emissor OIDC tem de ter o mesmo endereço para o browser e para o backend no contentor; o compose usa `http://host.docker.internal:8180/realms/matriz` (alterável com `DEPLOY_OIDC_ISSUER`). O browser só lá chega se `host.docker.internal` resolver para o próprio computador no ficheiro `hosts` e o Keycloak aceitar ligações nesse endereço.
+**Verificação local:** o `compose.yaml` da raiz constrói estas imagens e arranca-as com o proxy, a base e o Keycloak — ver [Execução com Docker Compose](#execução-com-docker-compose).
 
 ## Estado atual
 
@@ -213,6 +244,7 @@ O emissor OIDC tem de ter o mesmo endereço para o browser e para o backend no c
 - [x] Aula 2 (Ficha PL 02) — Architecture Pack: arquitetura, modelo de dados, API e wireframe, com revisão cruzada (human-in-the-loop), ver [`docs/review.md`](docs/review.md) §3
 - [x] Aula 3 (Ficha PL 03) — Implementação do MVP: plano em [`docs/implementation-plan.md`](docs/implementation-plan.md), verificação em [`docs/verification.md`](docs/verification.md). O I13 (consulta do histórico), que ficou fora do âmbito da ficha, foi feito depois: histórico de cada elemento na API e no ecrã, com as permissões e os filtros de D50 ([`docs/i13-historico-analise.md`](docs/i13-historico-analise.md)).
 - [x] Aula 4 (Ficha PL 04) — Testes unitários, de integração e E2E, Code Review e Security Review: [`docs/test-plan.md`](docs/test-plan.md), [`docs/quality-security-review.md`](docs/quality-security-review.md). Extensão opcional (2026-11-15): os testes e a análise estática correm num workflow de CI (DT18).
+- [x] Aula 5 (Ficha PL 05) — Entrega: Docker Compose com a aplicação completa, imagens construídas e analisadas no CI, changelog e versão candidata 1.0.0-rc.1 (DT19): [`docs/delivery-report.md`](docs/delivery-report.md), [`docs/release-notes-1.0.0-rc.1.md`](docs/release-notes-1.0.0-rc.1.md)
 
 **Em números:** 42 regras de negócio · 36 requisitos funcionais · 13 requisitos não funcionais · 10 user stories · 116 critérios de aceitação (110 nas US e 6 transversais), todos verificáveis · sem decisões funcionais pendentes.
 

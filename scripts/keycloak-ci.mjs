@@ -1,6 +1,6 @@
-// Prepara o Keycloak do workflow de CI para os testes E2E (DT18): espera que o realm matriz responda e
-// define a palavra-passe das contas fictícias pela API de administração — o mesmo que o
-// scripts/keycloak-dev.ps1 faz em desenvolvimento, sem depender do Windows.
+// Prepara o Keycloak em contentor (serviço keycloak-setup do compose.yaml, DT19; usado também no CI):
+// espera que o realm matriz responda e define a palavra-passe das contas fictícias pela API de
+// administração — o mesmo que o scripts/keycloak-dev.ps1 faz em desenvolvimento, sem depender do Windows.
 //
 // O realm versionado não tem palavras-passe (SEC08). Os valores vêm só do ambiente e nunca são escritos:
 //   KEYCLOAK_URL             endereço do Keycloak (por omissão http://localhost:8080)
