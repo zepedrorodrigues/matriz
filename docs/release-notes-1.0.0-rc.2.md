@@ -2,7 +2,9 @@
 
 - **Data:** 2026-11-15
 - **Versão:** `1.0.0-rc.2` (Semantic Versioning: segunda versão candidata à 1.0.0)
-- **Estado:** candidata. A etiqueta `v1.0.0-rc.2` e a publicação no GitHub fazem-se no `main` depois do merge do pull request #7; é essa publicação que envia as imagens para o registo.
+- **Etiqueta Git:** `v1.0.0-rc.2`, no commit `0a8e70b` do `main` (merge do pull request #7). CI no commit etiquetado: execução `43741271761`, os dois jobs a passar.
+- **Publicação no GitHub:** [v1.0.0-rc.2](https://github.com/zepedrorodrigues/matriz/releases/tag/v1.0.0-rc.2), marcada como pré-lançamento. Desencadeou o workflow `release.yml` (execução `43742137288`, a passar), que enviou as duas imagens para o registo.
+- **Estado:** candidata.
 - **Versão anterior:** [`1.0.0-rc.1`](release-notes-1.0.0-rc.1.md)
 
 ## O que muda
@@ -13,8 +15,10 @@ A funcionalidade da aplicação é a mesma da `1.0.0-rc.1`. Esta versão acresce
 - **Identificador do pedido.** Vai na resposta, em `X-Request-Id`, e é o mesmo nos registos do backend; o proxy do compose gera-o.
 - **Verificações de disponibilidade.** `GET /api/health/live` (o processo responde) e `GET /api/health/ready` (a base de dados e o fornecedor de identidade respondem; a resposta diz qual falhou). O `GET /api/health` mantém-se.
 - **Imagens publicadas.** Quando uma versão é publicada no GitHub, as duas imagens são construídas, analisadas com o Trivy e enviadas para o GitHub Container Registry:
-  - `ghcr.io/zepedrorodrigues/matriz-backend:1.0.0-rc.2`
-  - `ghcr.io/zepedrorodrigues/matriz-frontend:1.0.0-rc.2`
+  - `ghcr.io/zepedrorodrigues/matriz-backend:1.0.0-rc.2` (`sha256:cb2aadef7bc47b724a923a6d4d00687a9c769183a69dd21edeac8bf09de4763b`)
+  - `ghcr.io/zepedrorodrigues/matriz-frontend:1.0.0-rc.2` (`sha256:500ad86a53d703f840822704db39eea8f5939f0940f9a8e7c8534bf4683a7aa1`)
+
+  Descarregam-se sem credenciais. Por ser uma versão candidata, a etiqueta `latest` não foi publicada.
 
 ## Como executar
 
