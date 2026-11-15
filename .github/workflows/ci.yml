@@ -36,12 +36,10 @@ jobs:
       postgres:
         image: postgres:17
         env:
-          POSTGRES_USER: matriz
           POSTGRES_PASSWORD: so-para-o-ci
-          POSTGRES_DB: matriz_test
         ports: ['5432:5432']
         options: >-
-          --health-cmd "pg_isready -U matriz -d matriz_test"
+          --health-cmd "pg_isready -U postgres"
           --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v5
@@ -51,6 +49,11 @@ jobs:
           cache: npm
       - name: Instalar dependências
         run: npm ci
+      - name: Role matriz sem privilégios e base matriz_test
+        # Como o scripts/db-setup.sql: o role da aplicação é dono da base mas não é superutilizador
+        # (os testes CAT04 verificam que o REVOKE sobre o histórico o trava).
+        run: |
+          docker exec ${{ job.services.postgres.id }} psql -v ON_ERROR_STOP=1 -U postgres             -c "CREATE ROLE matriz LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE PASSWORD '$DB_PASSWORD'"             -c "CREATE DATABASE matriz_test OWNER matriz ENCODING 'UTF8' TEMPLATE template0"
       - name: Análise estática (ESLint)
         run: npm run lint
       - name: Tipos do backend
@@ -75,12 +78,10 @@ jobs:
       postgres:
         image: postgres:17
         env:
-          POSTGRES_USER: matriz
           POSTGRES_PASSWORD: so-para-o-ci
-          POSTGRES_DB: matriz
         ports: ['5432:5432']
         options: >-
-          --health-cmd "pg_isready -U matriz -d matriz"
+          --health-cmd "pg_isready -U postgres"
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       KEYCLOAK_ADMIN_USER: admin-ci
@@ -94,6 +95,11 @@ jobs:
           cache: npm
       - name: Instalar dependências
         run: npm ci
+      - name: Role matriz sem privilégios e base matriz
+        # Como o scripts/db-setup.sql: o role da aplicação é dono da base mas não é superutilizador
+        # (os testes CAT04 verificam que o REVOKE sobre o histórico o trava).
+        run: |
+          docker exec ${{ job.services.postgres.id }} psql -v ON_ERROR_STOP=1 -U postgres             -c "CREATE ROLE matriz LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE PASSWORD '$DB_PASSWORD'"             -c "CREATE DATABASE matriz OWNER matriz ENCODING 'UTF8' TEMPLATE template0"
       - name: Gerar as palavras-passe desta execução
         # Aleatórias, mascaradas nos logs e válidas só para o Keycloak deste job.
         run: |
