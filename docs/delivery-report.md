@@ -21,7 +21,8 @@ Validação da preparação da Matriz para entrega (Ex. 6) e relatório pedido n
 | Ex. 5 | README, arquitetura com Mermaid, compose documentado, OpenAPI, changelog, notas | Cumprido | `README.md`, `architecture.md` §8 (três diagramas Mermaid no documento), `openapi.yaml` (OpenAPI 3.1, 58 operações), `CHANGELOG.md`, notas da versão |
 | Ex. 6 | Validação final e este relatório | Cumprido | Este documento |
 | Desafio A | Análise de dependências e de imagens na pipeline | Cumprido | `npm audit` e Trivy 0.76.2 no CI |
-| Desafios B e C | Logs estruturados; publicação no GHCR | Não feitos | Fora do âmbito aprovado |
+| Desafio B | Logs estruturados e verificações adicionais de disponibilidade | Cumprido (1.0.0-rc.2, DT20) | Registos em JSON, uma linha por pedido, `GET /api/health/live` e `GET /api/health/ready`; `verification.md` › Observabilidade e publicação das imagens; CI `43713471476` a passar (277 + 47 testes, 2 E2E) |
+| Desafio C | Publicação automática de uma imagem no GitHub Container Registry, com uma release de teste | Workflow feito; publicação por verificar | `.github/workflows/release.yml`; só corre quando a versão `v1.0.0-rc.2` for publicada, depois do merge do pull request #7 |
 
 ## 2. Resultados dos testes e da pipeline
 
@@ -74,7 +75,7 @@ Validação da preparação da Matriz para entrega (Ex. 6) e relatório pedido n
 - **Imagem do proxy:** 3 vulnerabilidades altas com correção (`libxslt`) no `nginx:1.30-alpine` original (o frontend, construído pelo projeto, tem 0).
 - **Etiqueta Git `v1.0.0-rc.1`:** criada a 2026-11-15 no commit `0e3118f` do `main` (merge do pull request #5), depois de o CI passar nesse commit (execução `43711179061`), e publicada no GitHub como [pré-lançamento](https://github.com/zepedrorodrigues/matriz/releases/tag/v1.0.0-rc.1). Já não está pendente.
 - **Herdados das fichas anteriores:** P12; DT09–DT12; os achados pendentes S4, S6, S7 e CR8–CR10; 3 vulnerabilidades moderadas através do `typeorm` 0.3.
-- **Desafios opcionais B e C** (logs estruturados; publicação automática no GitHub Container Registry): não feitos.
+- **Desafios opcionais B e C:** feitos depois desta entrega, na versão `1.0.0-rc.2` (DT20; [`release-notes-1.0.0-rc.2.md`](release-notes-1.0.0-rc.2.md)). A publicação das imagens (C) só fica verificada depois de publicada a `v1.0.0-rc.2`. Continuam por fazer as métricas de tempo de resposta e a medição da disponibilidade (RNF08, RNF09).
 
 ## 6. Credenciais nos ficheiros versionados
 
