@@ -12,7 +12,7 @@ describe('I14 — correções da revisão', () => {
   let fx: Fixtures;
   const tokens: Record<string, string> = {};
   const ids: Record<string, string> = {};
-  let teamA: string, teamB: string, teamOut: string, projectId: string, epicId: string;
+  let teamA: string, teamB: string, projectId: string, epicId: string;
 
   const as = (who: string) => {
     const auth = (r: request.Test) => r.set('Authorization', `Bearer ${tokens[who]}`);
@@ -77,7 +77,7 @@ describe('I14 — correções da revisão', () => {
       { userId: ids.managerMember, role: 'member' },
     ]);
     await t.db.query(`UPDATE organization.team_membership SET allocation_pct = 50 WHERE user_id = $1`, [ids.managerMember]);
-    teamOut = await fx.team('Fora', [{ userId: ids.outsider, role: 'leader' }]);
+    await fx.team('Fora', [{ userId: ids.outsider, role: 'leader' }]);
     projectId = await fx.project('Projeto', { managers: [ids.manager, ids.managerMember], teams: [teamA, teamB] });
     epicId = await fx.epic(await fx.objective(projectId));
   });

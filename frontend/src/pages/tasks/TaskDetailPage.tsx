@@ -54,7 +54,9 @@ export function SprintTaskDialog() {
   const { sprintId = '', taskId = '' } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const close = () => navigate({ pathname: `/sprints/${sprintId}`, search: location.search });
+  const close = () => {
+    void navigate({ pathname: `/sprints/${sprintId}`, search: location.search });
+  };
   return (
     <Dialog open onOpenChange={(open) => (open ? undefined : close())}>
       {/* Sem transform (centrado por margens): a confirmação de «Eliminar», fixa, tem de cobrir a janela e não só o diálogo. */}
