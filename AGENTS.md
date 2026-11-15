@@ -95,5 +95,6 @@ A preparação do ambiente (PostgreSQL, Keycloak, `.env`) está no `README.md` �
 | Testes unitários | `npm run test:unit` | Sem base de dados: `backend/src/**/*.spec.ts` e frontend. |
 | Testes E2E | `npm run test:e2e` | Playwright no Chrome instalado; precisa do Keycloak, da API e do frontend a correr; entra com as contas fictícias (`MATRIZ_DEMO_PASSWORD` do `.env`) e escreve na base `matriz` (dados únicos, eliminados no fim): só com autorização (§6). |
 | Compilar | `npm run build` | |
+| Aplicação completa em contentores | `docker compose up --build -d --wait` | `compose.yaml` (DT19): base, Keycloak, migrations, seed, duas instâncias do backend, frontend e proxy, em `:5173`. Usa uma base e um Keycloak próprios, em volumes; `docker compose down -v` apaga-os: só com autorização (§6). |
 
 Antes de dar uma tarefa por concluída: tipos sem erros, `npm run lint` sem erros, `npm test` a passar e, quando a tarefa muda a interface, a verificação no browser. Os resultados registam-se em `docs/implementation-plan.md` §6 e, na entrega, em `docs/verification.md`. Os testes que verificam um critério de aceitação têm o seu ID no nome (p. ex. `CA03.18`).
