@@ -90,9 +90,10 @@ A preparação do ambiente (PostgreSQL, Keycloak, `.env`) está no `README.md` �
 | Dados de demonstração | `npm run db:seed` | Idempotente, nunca apaga dados. Também precisa de autorização (§6). |
 | Arrancar | `./scripts/keycloak-dev.ps1`, `npm run dev:backend`, `npm run dev:frontend` | Um terminal para cada. API em `:3000/api`, aplicação em `:5173`. |
 | Verificar os tipos | `npx tsc --noEmit -p tsconfig.json` | Em `backend/` e em `frontend/`. |
+| Análise estática | `npm run lint` | ESLint com `typescript-eslint` (`eslint.config.mjs`, DT18). O workflow de CI corre-a em cada pull request, com os tipos, os testes e o build. |
 | Testes | `npm test` | Backend (Jest; recria a base `matriz_test`) e frontend (`node:test`). Um ficheiro: `npx jest test/<ficheiro>` em `backend/`. |
 | Testes unitários | `npm run test:unit` | Sem base de dados: `backend/src/**/*.spec.ts` e frontend. |
 | Testes E2E | `npm run test:e2e` | Playwright no Chrome instalado; precisa do Keycloak, da API e do frontend a correr; entra com as contas fictícias (`MATRIZ_DEMO_PASSWORD` do `.env`) e escreve na base `matriz` (dados únicos, eliminados no fim): só com autorização (§6). |
 | Compilar | `npm run build` | |
 
-Antes de dar uma tarefa por concluída: tipos sem erros, `npm test` a passar e, quando a tarefa muda a interface, a verificação no browser. Os resultados registam-se em `docs/implementation-plan.md` §6 e, na entrega, em `docs/verification.md`. Os testes que verificam um critério de aceitação têm o seu ID no nome (p. ex. `CA03.18`).
+Antes de dar uma tarefa por concluída: tipos sem erros, `npm run lint` sem erros, `npm test` a passar e, quando a tarefa muda a interface, a verificação no browser. Os resultados registam-se em `docs/implementation-plan.md` §6 e, na entrega, em `docs/verification.md`. Os testes que verificam um critério de aceitação têm o seu ID no nome (p. ex. `CA03.18`).
