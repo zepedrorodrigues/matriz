@@ -3,6 +3,7 @@
 Validação da preparação da Matriz para entrega (Ex. 6) e relatório pedido na secção *Entrega* da ficha. Tudo o que aqui se afirma foi medido a 2026-11-15, na máquina de desenvolvimento (Windows 11, Docker 29.6.1, Compose 5.3.0) ou no GitHub Actions; o que não foi verificado está dito como tal.
 
 - **Versão:** `1.0.0-rc.1` · **Etiqueta:** `v1.0.0-rc.1` (`0e3118f`) · **Commit do código:** `e8a1d79` · **Branch:** `feat/entrega-compose-ci-e-versao-candidata` · **Pull request:** #5
+- **Estado atual (2026-11-15):** a versão corrente é a `1.0.0-rc.2` (etiqueta `v1.0.0-rc.2`, commit `0a8e70b`; pull requests #7 e #8; DT20), que acrescenta os desafios opcionais B e C a esta entrega e está publicada como [pré-lançamento](https://github.com/zepedrorodrigues/matriz/releases/tag/v1.0.0-rc.2), com as duas imagens no GitHub Container Registry. Os exercícios 1 a 6 e os três desafios opcionais estão cumpridos (§1). As medições das secções 2 e 3 são as da `1.0.0-rc.1`; as da `1.0.0-rc.2` estão em `verification.md` › Observabilidade e publicação das imagens e › Publicação das imagens.
 - **Decisão:** DT19 (`constraints.md` §4.3) · **Notas da versão:** [`release-notes-1.0.0-rc.1.md`](release-notes-1.0.0-rc.1.md) · **Changelog:** [`../CHANGELOG.md`](../CHANGELOG.md)
 
 ## 1. Requisitos da ficha
