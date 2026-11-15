@@ -94,7 +94,7 @@ export class CreateTaskDto {
 
   @Transform(trim)
   @IsString({ message: TITLE_MESSAGE })
-  @Length(3, 151, { message: TITLE_MESSAGE })
+  @Length(3, 150, { message: TITLE_MESSAGE })
   title!: string;
 
   @IsOptional()
