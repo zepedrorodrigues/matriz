@@ -307,6 +307,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/Health'
 
+  /health/live:
+    get:
+      tags: [Sistema]
+      operationId: getLiveness
+      summary: Verificar se o processo responde
+      description: |
+        Responde sempre que o backend está em execução, sem consultar a base de dados nem o fornecedor
+        de identidade (DT20). Serve para decidir se uma instância tem de ser reiniciada. Não exige
+        token nem devolve dados de utilizadores.
+      security: []
+      responses:
+        '200':
+          description: O processo responde.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Liveness'
+
+  /health/ready:
+    get:
+      tags: [Sistema]
+      operationId: getReadiness
+      summary: Verificar se a instância pode receber pedidos
+      description: |
+        Indica se a base de dados e o fornecedor de identidade respondem (DT20). O estado do fornecedor
+        de identidade (a descoberta OIDC do emissor) é guardado durante 30 segundos. Serve para decidir
+        se uma instância deve receber pedidos. Não exige token nem devolve dados de utilizadores.
+      security: []
+      responses:
+        '200':
+          description: A base de dados e o fornecedor de identidade estão disponíveis.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Readiness'
+        '503':
+          description: A base de dados ou o fornecedor de identidade não está disponível; a resposta diz qual.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Readiness'
+
   /me:
     get:
       tags: [Identidade e acesso]
@@ -2179,6 +2221,29 @@ components:
           type: string
           enum: [ok, unavailable]
         database:
+          type: string
+          enum: [ok, unavailable]
+
+    Liveness:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+
+    Readiness:
+      type: object
+      required: [status, database, identityProvider]
+      properties:
+        status:
+          type: string
+          enum: [ok, unavailable]
+          description: "`ok` só quando a base de dados e o fornecedor de identidade estão disponíveis."
+        database:
+          type: string
+          enum: [ok, unavailable]
+        identityProvider:
           type: string
           enum: [ok, unavailable]
 
