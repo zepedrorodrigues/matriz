@@ -17,12 +17,16 @@
     "build": "npm run build -w backend && npm run build -w frontend",
     "test": "npm test -w backend && npm test -w frontend",
     "test:unit": "npm run test:unit -w backend && npm test -w frontend",
-    "test:e2e": "playwright test --config e2e/playwright.config.ts"
+    "test:e2e": "playwright test --config e2e/playwright.config.ts",
+    "lint": "eslint ."
   },
   "overrides": {
     "multer": "2.5.0"
   },
   "devDependencies": {
-    "@playwright/test": "1.65.0"
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.65.0",
+    "eslint": "10.15.0",
+    "typescript-eslint": "8.72.2"
   }
 }
