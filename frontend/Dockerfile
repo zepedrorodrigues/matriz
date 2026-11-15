@@ -13,7 +13,9 @@ RUN npm ci -w frontend
 COPY frontend/ frontend/
 RUN npm run build -w frontend
 
-FROM nginx:1.29-alpine
+FROM nginx:1.30-alpine
+# Correções de segurança dos pacotes do Alpine publicadas depois da imagem base (análise do Trivy, DT19).
+RUN apk upgrade --no-cache
 COPY frontend/docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --chmod=755 frontend/docker/40-matriz-config.sh /docker-entrypoint.d/40-matriz-config.sh
 COPY --from=build /app/frontend/dist /usr/share/nginx/html
