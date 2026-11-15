@@ -243,3 +243,18 @@ Branch `feat/consulta-historico`. Plano e decisões em [`i13-historico-analise.m
 A causa registada na Implantação mudou: o `hosts` aponta `host.docker.internal` para `192.168.1.230`, que voltou a ser o IP desta máquina; o que impede o browser de chegar ao Keycloak é ele escutar só em `127.0.0.1`. Para não o expor na rede local, o Chrome do teste resolveu `host.docker.internal` para o loopback (`--host-resolver-rules`). Num browser sem essa regra, o início de sessão pelo proxy continua a exigir o Keycloak a escutar no IP da rede.
 
 **Não verificado:** o fim automático de uma sprint real no browser (exigia mexer nas datas de uma sprint na `matriz`; coberto pelos testes da API).
+
+## Integração contínua (2026-11-15, DT18)
+
+Branch `chore/ci-testes-e-analise-estatica`, pull request #3. Workflow `.github/workflows/ci.yml` no GitHub Actions (`ubuntu-latest`, Node 24, PostgreSQL 17 e Keycloak 26.8.1 em contentores do job).
+
+| Verificação | Resultado |
+|---|---|
+| Passos do workflow na máquina local, antes do primeiro push | `npm run lint` sem erros; tipos sem erros no backend e no frontend; 255 testes do backend (22 ficheiros) e 47 do frontend a passar; `npm run build` concluído, com os chunks `react` e `vendor`; `npm audit --omit=dev --audit-level=high` com código 0 (3 moderadas, do `typeorm`) |
+| Primeira execução (`43706187429`, commit `c33d075`) | **Falhou:** 3 de 255 testes, os «CAT04» do histórico. Causa: no workflow o role `matriz` era superutilizador (limitação do ambiente, não defeito). Corrigido no workflow em `d6ad296` |
+| Segunda execução (`43706370309`, commit `d6ad296`) | Os dois jobs a passar. «Análise estática e testes»: 255 e 47 testes, 2 min 8 s. «Testes End-to-End»: `SEC-01` e `E2E-01` a passar (16,1 s de testes), 1 min 25 s no total |
+| Reversão (`43706694497`, commit `b7a52fa`): limite do título 150 → 151 | **Falhou, como esperado,** em «Testes unitários e de integração»: `work.dto.spec.ts` «151 caracteres (acima do máximo)» e `tasks.e2e-spec.ts` «CA03.18, Ex. 8 (caso 04)»; 253 de 255. O job dos E2E não correu |
+| Depois de repor o limite (`43706904915`, commit `01a007f`) | Os dois jobs a passar; `backend/src` igual ao do `main` |
+| Pacotes acrescentados | 76 entradas novas no `package-lock.json` (ESLint e dependências); nenhuma das existentes mudou de versão |
+
+**Não verificado:** os testes E2E não foram repetidos na máquina local (escreveriam na base `matriz`); o resultado de 2026-11-15 é o do CI, numa base criada para a execução. O workflow no `main` (o gatilho `push`) só corre depois do merge. O comportamento do workflow com um pull request vindo de um fork não foi testado.

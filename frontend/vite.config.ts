@@ -18,8 +18,8 @@ export default defineConfig({
       output: {
         advancedChunks: {
           groups: [
-            { name: 'react', test: /node_modules[\/](react|react-dom|react-router|scheduler)[\/]/ },
-            { name: 'vendor', test: /node_modules[\/]/ },
+            { name: 'react', test: /node_modules\/(react|react-dom|react-router|scheduler)\// },
+            { name: 'vendor', test: /node_modules\// },
           ],
         },
       },

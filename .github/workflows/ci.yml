@@ -1,0 +1,146 @@
+# Integração contínua (Ficha PL 04, extensão opcional; DT18): análise estática e testes em cada pull request
+# e em cada push para o main. Os comandos são os do README › Desenvolvimento, sem variantes só do CI.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # A base vive só durante o job e não é acessível de fora: a palavra-passe não é um segredo (SEC08
+  # aplica-se a credenciais de ambientes reais).
+  DB_HOST: localhost
+  DB_PORT: 5432
+  DB_USER: matriz
+  DB_PASSWORD: so-para-o-ci
+  DB_NAME: matriz
+  DB_NAME_TEST: matriz_test
+  APP_TIME_ZONE: Europe/Lisbon
+  OIDC_ISSUER: http://localhost:8080/realms/matriz
+  OIDC_AUDIENCE: matriz-api
+
+jobs:
+  verificar:
+    name: Análise estática e testes
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: so-para-o-ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - name: Instalar dependências
+        run: npm ci
+      - name: Role matriz sem privilégios e base matriz_test
+        # Como o scripts/db-setup.sql: o role da aplicação é dono da base mas não é superutilizador
+        # (os testes CAT04 verificam que o REVOKE sobre o histórico o trava).
+        run: |
+          docker exec ${{ job.services.postgres.id }} psql -v ON_ERROR_STOP=1 -U postgres             -c "CREATE ROLE matriz LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE PASSWORD '$DB_PASSWORD'"             -c "CREATE DATABASE matriz_test OWNER matriz ENCODING 'UTF8' TEMPLATE template0"
+      - name: Análise estática (ESLint)
+        run: npm run lint
+      - name: Tipos do backend
+        run: npx tsc --noEmit -p tsconfig.json
+        working-directory: backend
+      - name: Tipos do frontend
+        run: npx tsc --noEmit -p tsconfig.json
+        working-directory: frontend
+      - name: Testes unitários e de integração
+        run: npm test
+      - name: Compilar
+        run: npm run build
+      - name: Dependências de produção sem vulnerabilidades altas ou críticas
+        run: npm audit --omit=dev --audit-level=high
+
+  e2e:
+    name: Testes End-to-End
+    needs: verificar
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: so-para-o-ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      KEYCLOAK_ADMIN_USER: admin-ci
+      VITE_OIDC_AUTHORITY: http://localhost:8080/realms/matriz
+      VITE_OIDC_CLIENT_ID: matriz-web
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - name: Instalar dependências
+        run: npm ci
+      - name: Role matriz sem privilégios e base matriz
+        # Como o scripts/db-setup.sql: o role da aplicação é dono da base mas não é superutilizador
+        # (os testes CAT04 verificam que o REVOKE sobre o histórico o trava).
+        run: |
+          docker exec ${{ job.services.postgres.id }} psql -v ON_ERROR_STOP=1 -U postgres             -c "CREATE ROLE matriz LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE PASSWORD '$DB_PASSWORD'"             -c "CREATE DATABASE matriz OWNER matriz ENCODING 'UTF8' TEMPLATE template0"
+      - name: Gerar as palavras-passe desta execução
+        # Aleatórias, mascaradas nos logs e válidas só para o Keycloak deste job.
+        run: |
+          for name in KEYCLOAK_ADMIN_PASSWORD MATRIZ_DEMO_PASSWORD; do
+            value="$(openssl rand -hex 24)"
+            echo "::add-mask::$value"
+            echo "$name=$value" >> "$GITHUB_ENV"
+          done
+      - name: Arrancar o Keycloak com o realm matriz
+        run: |
+          docker run -d --name keycloak -p 8080:8080 \
+            -e KC_BOOTSTRAP_ADMIN_USERNAME="$KEYCLOAK_ADMIN_USER" \
+            -e KC_BOOTSTRAP_ADMIN_PASSWORD="$KEYCLOAK_ADMIN_PASSWORD" \
+            -v "$PWD/keycloak:/opt/keycloak/data/import:ro" \
+            quay.io/keycloak/keycloak:26.8.1 start-dev --import-realm
+          node scripts/keycloak-ci.mjs
+      - name: Esquema e dados de demonstração
+        run: |
+          npm run db:migrate
+          npm run db:seed
+      - name: Arrancar a API e o frontend
+        run: |
+          npm run build -w backend
+          nohup npm start -w backend > backend.log 2>&1 &
+          nohup npm run dev:frontend > frontend.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -fsS http://localhost:5173/api/health > /dev/null && exit 0
+            sleep 2
+          done
+          echo "A API não respondeu através do frontend." && exit 1
+      - name: Testes End-to-End (Playwright no Chrome do runner)
+        run: npm run test:e2e
+      - name: Registos dos serviços
+        if: failure()
+        run: |
+          tail -n 100 backend.log frontend.log || true
+          docker logs --tail 100 keycloak || true
+      - name: Guardar capturas de ecrã e traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: e2e/test-results/
+          retention-days: 7
