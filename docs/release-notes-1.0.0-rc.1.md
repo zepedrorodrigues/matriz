@@ -2,8 +2,9 @@
 
 - **Data:** 2026-11-15
 - **Versão:** `1.0.0-rc.1` (Semantic Versioning: primeira versão candidata à 1.0.0)
-- **Commit do código:** `e8a1d79` (branch `feat/entrega-compose-ci-e-versao-candidata`); a etiqueta Git `v1.0.0-rc.1` é criada no `main` depois do merge, com autorização do responsável do projeto.
-- **Estado:** candidata. Não é uma publicação de produção (Ficha PL 05, Ex. 5).
+- **Etiqueta Git:** `v1.0.0-rc.1`, no commit `0e3118f` do `main` (merge do pull request #5; o código é o do commit `e8a1d79`). CI no commit etiquetado: execução `43711179061`, os dois jobs a passar.
+- **Publicação no GitHub:** [v1.0.0-rc.1](https://github.com/zepedrorodrigues/matriz/releases/tag/v1.0.0-rc.1), marcada como pré-lançamento, com autorização do responsável do projeto.
+- **Estado:** candidata. Não é uma publicação de produção (Ficha PL 05, Ex. 5): a página no GitHub identifica a versão, não publica imagens nem implanta nada.
 
 ## O que é
 

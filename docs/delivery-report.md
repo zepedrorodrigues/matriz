@@ -2,7 +2,7 @@
 
 Validação da preparação da Matriz para entrega (Ex. 6) e relatório pedido na secção *Entrega* da ficha. Tudo o que aqui se afirma foi medido a 2026-11-15, na máquina de desenvolvimento (Windows 11, Docker 29.6.1, Compose 5.3.0) ou no GitHub Actions; o que não foi verificado está dito como tal.
 
-- **Versão:** `1.0.0-rc.1` · **Commit do código:** `e8a1d79` · **Branch:** `feat/entrega-compose-ci-e-versao-candidata` · **Pull request:** #5
+- **Versão:** `1.0.0-rc.1` · **Etiqueta:** `v1.0.0-rc.1` (`0e3118f`) · **Commit do código:** `e8a1d79` · **Branch:** `feat/entrega-compose-ci-e-versao-candidata` · **Pull request:** #5
 - **Decisão:** DT19 (`constraints.md` §4.3) · **Notas da versão:** [`release-notes-1.0.0-rc.1.md`](release-notes-1.0.0-rc.1.md) · **Changelog:** [`../CHANGELOG.md`](../CHANGELOG.md)
 
 ## 1. Requisitos da ficha
@@ -63,7 +63,7 @@ Validação da preparação da Matriz para entrega (Ex. 6) e relatório pedido n
 
 - **Agente:** Claude Code (Anthropic), com acesso ao repositório, ao Docker local e à CLI do GitHub.
 - **O que fez:** a análise do estado do projeto e o plano (Ex. 1); o `compose.yaml`, o `deploy/db-init.sh`, as alterações aos Dockerfiles e ao workflow; a execução de todas as verificações deste relatório; a documentação, o changelog e as notas da versão.
-- **O que o humano decidiu:** aprovou o plano antes de qualquer alteração; decidiu incluir o Keycloak no compose, pôr o compose na raiz, a versão `1.0.0-rc.1` e a análise de imagens com o Trivy; perante os resultados do Trivy, decidiu corrigir as duas imagens. Os merges e a etiqueta da versão são do humano.
+- **O que o humano decidiu:** aprovou o plano antes de qualquer alteração; decidiu incluir o Keycloak no compose, pôr o compose na raiz, a versão `1.0.0-rc.1` e a análise de imagens com o Trivy; perante os resultados do Trivy, decidiu corrigir as duas imagens. Os merges são do humano; a etiqueta e a publicação da versão no GitHub foram feitas pelo agente, cada uma com autorização explícita.
 - **Como se validou:** nenhum resultado é afirmado sem execução. As correções mediram-se antes e depois (Trivy 58 → 0 e 6 → 0); a pipeline viu-se falhar com um defeito introduzido de propósito e passar depois de reposto; a persistência verificou-se a recriar os contentores.
 - **Onde a IA errou:** o erro de sintaxe no Dockerfile acima, apanhado pela verificação dentro do contentor; e uma primeira verificação do SEC04 com uma coluna errada, repetida com `DELETE` e `TRUNCATE`.
 
@@ -72,7 +72,7 @@ Validação da preparação da Matriz para entrega (Ex. 6) e relatório pedido n
 - **O compose não é a configuração de produção:** Keycloak em modo de desenvolvimento, sem TLS, contas fictícias. A implantação real depende do fornecedor (DT06) e da réplica e cópias de segurança (DT13).
 - **Não verificado:** a aplicação do compose noutro sistema operativo que não o Windows com Docker Desktop e o `ubuntu-latest` do CI; a resolução de `keycloak.localhost` em browsers que não o Chrome; o cenário de apagar só um dos dois volumes; o `openapi.yaml` com uma ferramenta de *lint*.
 - **Imagem do proxy:** 3 vulnerabilidades altas com correção (`libxslt`) no `nginx:1.30-alpine` original (o frontend, construído pelo projeto, tem 0).
-- **Etiqueta Git `v1.0.0-rc.1`:** por criar, no `main`, depois do merge e com autorização.
+- **Etiqueta Git `v1.0.0-rc.1`:** criada a 2026-11-15 no commit `0e3118f` do `main` (merge do pull request #5), depois de o CI passar nesse commit (execução `43711179061`), e publicada no GitHub como [pré-lançamento](https://github.com/zepedrorodrigues/matriz/releases/tag/v1.0.0-rc.1). Já não está pendente.
 - **Herdados das fichas anteriores:** P12; DT09–DT12; os achados pendentes S4, S6, S7 e CR8–CR10; 3 vulnerabilidades moderadas através do `typeorm` 0.3.
 - **Desafios opcionais B e C** (logs estruturados; publicação automática no GitHub Container Registry): não feitos.
 
