@@ -315,3 +315,47 @@ Depois do merge do pull request #7: etiqueta `v1.0.0-rc.2` no commit `0a8e70b` d
 **Observado.** Logo a seguir à troca das imagens, a API respondeu **502** pelo proxy durante cerca de 5 segundos (7 ocorrências de «no live upstreams», das 17:40:05 às 17:40:10): o compose recriou os dois backends ao mesmo tempo e o proxy ficou sem instâncias até passar o `fail_timeout` de 10 s. Recuperou sem intervenção. O compose não substitui as instâncias uma de cada vez; não é a configuração de produção (DT19).
 
 **Não verificado:** os testes E2E sobre as imagens publicadas (escreveriam na base `matriz` do compose local; os do CI correm sobre imagens construídas do mesmo commit); a visibilidade dos dois pacotes nas definições do GitHub — o token local não tem o âmbito `read:packages`, pelo que se mediu o efeito (o manifesto e o `docker pull` sem credenciais) e não a definição.
+
+## Ambiente de avaliação público (2026-11-16, DT21)
+
+A `1.0.0-rc.2` em <https://matriz-app.duckdns.org> (no primeiro arranque, `https://34-175-175-67.sslip.io`, o nome com que a tabela seguinte foi medida): máquina virtual `e2-medium` (2 vCPU, 4 GB) com Debian 12 no Google Cloud, região `europe-southwest1` (Madrid), Docker 29.9.3 com Compose 5.7.1, endereço IP fixo e regra de firewall só para as portas 80 e 443. Corre `compose.yaml` e `compose.publico.yaml` com as imagens do GitHub Container Registry (`--no-build`). Medido a partir do computador de desenvolvimento, de fora da máquina, salvo indicação.
+
+| Verificação | Resultado |
+|---|---|
+| `docker compose -f compose.yaml -f compose.publico.yaml up -d --wait --no-build`, com os volumes vazios | Saudável em 2 min 26 s, incluindo descarregar as imagens: `db`, `keycloak`, `backend-1`, `backend-2`, `frontend` e `proxy` *healthy*, `caddy` a correr; `migrate`, `seed` e `keycloak-setup` terminados com código 0 |
+| `GET /api/health/ready` pelo endereço público | 200, `{"status":"ok","database":"ok","identityProvider":"ok"}` — o backend chega ao emissor OIDC por HTTPS, pelo nome público |
+| Certificado TLS | Emitido pela Let's Encrypt, válido até 2027-02-14; `openssl s_client`: «Verify return code: 0 (ok)» |
+| `GET http://…/` | 308 para `https://…/` |
+| `GET /config.js` | `oidcAuthority` = `https://34-175-175-67.sslip.io/auth/realms/matriz` |
+| `GET /api/projects` sem token | 401 |
+| `GET /auth/admin/master/console/` | 403 (administração do Keycloak fechada a quem vem de fora) |
+| Portas 8080, 5173 e 5432 no endereço IP | Sem resposta |
+| `npm run test:e2e` com `E2E_BASE_URL` no endereço público | 2 a passar (`SEC-01` e `E2E-01`), 16,2 s: início de sessão pelo Keycloak, criação de uma tarefa e recusa de acesso (403) |
+| `backend-1` parado | 12 pedidos seguidos pelo endereço público (6 a `/api/health`, 6 a `/api/projects`): 6 × 200 e 6 × 401, nenhum 502 |
+| Role da base, dentro da máquina | `matriz` não é superutilizador; `DELETE` e `TRUNCATE` sobre `history.history_event`: «permission denied» (SEC04) |
+| Reinício da máquina (`sudo reboot`) | Sem intervenção, `GET /api/health/ready` voltou a 200 cerca de 112 s depois; os seis serviços e o Caddy a correr; os E2E voltaram a passar (2 em 19,1 s) |
+| Recursos, com tudo a correr | 1,5 GB de 3,9 GB de memória em uso; 4,6 GB de 20 GB de disco |
+
+Antes de chegar à máquina, o `compose.publico.yaml` foi experimentado no computador de desenvolvimento com o nome `matriz.localhost` (certificado interno do Caddy), só com o Keycloak, o `keycloak-setup` e o Caddy, num projeto do compose à parte, apagado no fim.
+
+| Reversão ou defeito | Resultado |
+|---|---|
+| Primeira versão do `deploy/Caddyfile`: o `respond 403` fora do `handle /auth/*` | `GET /auth/admin/master/console/` respondeu **200** — a regra não era aplicada. Com o `respond` dentro do `handle`: 403 em `/auth/admin`, `/auth/admin/`, na consola e em `/auth/admin/realms/matriz/users`; 200 nas chaves públicas e na página de início de sessão |
+| `MATRIZ_PUBLIC_URL` definido | Pedido de autorização com `redirect_uri=http://localhost:5173/`: 400; com o endereço público: 200. Pedido de token com utilizador e palavra-passe pelo `matriz-dev-cli`: `invalid_client` |
+
+**Não verificado:** o início de sessão num browser que não o Chrome do Playwright; a renovação do certificado (só acontece daqui a cerca de 60 dias, e o ambiente é apagado antes); o `compose.yaml` sozinho com o `scripts/keycloak-ci.mjs` alterado, no computador de desenvolvimento — fica para o CI do pull request, que arranca o compose e corre os E2E. A máquina depende de um serviço de nomes de terceiros (o DuckDNS): se ele falhar, o endereço deixa de resolver.
+
+**Mudança do nome público** para `matriz-app.duckdns.org` (subdomínio gratuito do DuckDNS), no mesmo dia: `MATRIZ_PUBLIC_HOST` alterado, `MATRIZ_REDIRECT_FROM` com o nome anterior e o mesmo `up -d --wait --no-build`.
+
+| Verificação, no nome novo | Resultado |
+|---|---|
+| Certificado TLS | Let's Encrypt, `CN=matriz-app.duckdns.org`, «Verify return code: 0 (ok)» |
+| `GET /api/health/ready` | 200, base de dados e fornecedor de identidade `ok` |
+| `keycloak-setup` | «Cliente matriz-web limitado a https://matriz-app.duckdns.org» |
+| `GET /auth/admin/master/console/` · `GET /api/projects` sem token | 403 · 401 |
+| `GET https://34-175-175-67.sslip.io/projects?x=1` | 301 para `https://matriz-app.duckdns.org/projects?x=1` |
+| `npm run test:e2e` | 2 a passar, 15,4 s — depois de corrigido o defeito abaixo |
+
+**Defeito encontrado na mudança.** O `up` recriou o frontend (configuração nova) mas não o `proxy`; o nginx do `proxy` resolve os nomes só no arranque e ficou com o endereço antigo do frontend: `GET /config.js` respondeu **502** e os 2 testes E2E falharam, com a API a responder 200. O `up --wait` tinha terminado com «container matriz-proxy-1 is unhealthy». Com `docker compose restart proxy`: `/config.js` 200 e os E2E a passar. Não acontece no primeiro arranque nem no reinício da máquina (todos os contentores arrancam de novo); fica documentado no README como passo da mudança de nome.
+
+**Não é a produção** (DT21): um só PostgreSQL, sem réplica nem cópias de segurança; Keycloak em modo de desenvolvimento; contas fictícias com a mesma palavra-passe.

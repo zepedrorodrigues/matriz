@@ -1,0 +1,79 @@
+# Ambiente de avaliação público (DT21): o compose.yaml da raiz numa máquina virtual com endereço
+# público, atrás de um Caddy que obtém e renova o certificado TLS. Usa-se por cima do compose.yaml:
+#
+#   docker compose -f compose.yaml -f compose.publico.yaml up -d --wait --no-build
+#
+# No .env, além das variáveis do compose.yaml: MATRIZ_PUBLIC_HOST (o nome público da máquina, sem
+# https://), e MATRIZ_BACKEND_IMAGE e MATRIZ_FRONTEND_IMAGE com as imagens publicadas (DT20).
+#
+# A aplicação e o Keycloak ficam no mesmo endereço e na porta 443: o Keycloak responde em /auth e o
+# resto vai para o proxy da aplicação. Só as portas 80 e 443 do Caddy ficam publicadas.
+#
+# Continua a não ser a configuração de produção: Keycloak em modo de desenvolvimento, contas
+# fictícias, um só PostgreSQL sem réplica nem cópias de segurança (DT13 por cumprir).
+
+x-oidc-issuer: &oidc-issuer https://${MATRIZ_PUBLIC_HOST:?Falta MATRIZ_PUBLIC_HOST no .env}/auth/realms/matriz
+
+services:
+  keycloak:
+    ports: !reset []
+    environment:
+      # O TLS termina no Caddy: o Keycloak recebe HTTP e lê o esquema dos cabeçalhos X-Forwarded-*.
+      KC_HOSTNAME: https://${MATRIZ_PUBLIC_HOST}/auth
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_PROXY_HEADERS: xforwarded
+      # A verificação de saúde do compose.yaml continua em /health/ready, na porta de gestão.
+      KC_HTTP_MANAGEMENT_RELATIVE_PATH: /
+
+  keycloak-setup:
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080/auth
+      # O cliente matriz-web passa a aceitar só este endereço; o matriz-dev-cli é desativado.
+      MATRIZ_PUBLIC_URL: https://${MATRIZ_PUBLIC_HOST}
+
+  migrate:
+    environment:
+      OIDC_ISSUER: *oidc-issuer
+  seed:
+    environment:
+      OIDC_ISSUER: *oidc-issuer
+  backend-1:
+    environment:
+      OIDC_ISSUER: *oidc-issuer
+  backend-2:
+    environment:
+      OIDC_ISSUER: *oidc-issuer
+
+  frontend:
+    environment:
+      OIDC_AUTHORITY: *oidc-issuer
+
+  proxy:
+    ports: !reset []
+
+  # Entrada pública: certificado TLS automático, /auth para o Keycloak, o resto para o proxy da aplicação.
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    environment:
+      MATRIZ_PUBLIC_HOST: ${MATRIZ_PUBLIC_HOST}
+      # Opcional: nome anterior da máquina, que passa a redirecionar para o atual.
+      MATRIZ_REDIRECT_FROM: ${MATRIZ_REDIRECT_FROM:-:8081}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    networks:
+      default:
+        aliases:
+          # O backend chega ao emissor OIDC pelo nome público sem sair da rede do compose.
+          - ${MATRIZ_PUBLIC_HOST}
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+volumes:
+  # Certificados e chaves do Caddy: mantêm-se entre arranques para não pedir um certificado novo de cada vez.
+  caddy-data:

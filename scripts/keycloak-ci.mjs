@@ -7,6 +7,9 @@
 //   KEYCLOAK_ADMIN_USER      administrador do realm master
 //   KEYCLOAK_ADMIN_PASSWORD  palavra-passe desse administrador
 //   MATRIZ_DEMO_PASSWORD     palavra-passe das contas fictícias do realm matriz
+//   MATRIZ_PUBLIC_URL        opcional (DT21): endereço público da aplicação, p. ex. https://matriz.exemplo.
+//                            Com ele, o cliente matriz-web passa a aceitar só esse endereço e o cliente
+//                            matriz-dev-cli (utilizador e palavra-passe, só para desenvolvimento) é desativado.
 import { readFileSync } from 'node:fs';
 import { setTimeout as sleep } from 'node:timers/promises';
 
@@ -70,3 +73,34 @@ for (const { username } of realm.users) {
 }
 
 console.log(`Keycloak pronto em ${base} (realm matriz). Palavra-passe definida para: ${realm.users.map((u) => u.username).join(', ')}.`);
+
+// Ambiente público (DT21): o realm versionado só conhece http://localhost:5173.
+const publicUrl = process.env.MATRIZ_PUBLIC_URL?.replace(/\/+$/, '');
+if (publicUrl) {
+  if (!/^https:\/\/[^/\s*]+$/.test(publicUrl)) {
+    throw new Error('MATRIZ_PUBLIC_URL tem de ser uma origem https, sem caminho (p. ex. https://matriz.exemplo).');
+  }
+
+  async function updateClient(clientId, changes) {
+    const found = await json(
+      await fetch(`${base}/admin/realms/matriz/clients?clientId=${encodeURIComponent(clientId)}`, { headers }),
+      `Procurar o cliente ${clientId}`,
+    );
+    if (found.length === 0) throw new Error(`Cliente ${clientId} não encontrado no realm matriz.`);
+    const client = found[0];
+    const updated = await fetch(`${base}/admin/realms/matriz/clients/${client.id}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ ...client, ...changes(client) }),
+    });
+    if (!updated.ok) throw new Error(`Atualizar o cliente ${clientId}: HTTP ${updated.status}`);
+  }
+
+  await updateClient('matriz-web', (client) => ({
+    redirectUris: [`${publicUrl}/*`],
+    webOrigins: [publicUrl],
+    attributes: { ...client.attributes, 'post.logout.redirect.uris': `${publicUrl}/*` },
+  }));
+  await updateClient('matriz-dev-cli', () => ({ enabled: false }));
+  console.log(`Cliente matriz-web limitado a ${publicUrl}; cliente matriz-dev-cli desativado.`);
+}

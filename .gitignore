@@ -7,3 +7,5 @@ coverage/
 # Playwright (só aparecem quando um teste falha)
 e2e/test-results/
 playwright-report/
+# Segredos do ambiente de avaliação público; nunca entra no Git
+.env.avaliacao

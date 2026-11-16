@@ -1,0 +1,25 @@
+# Entrada pública do ambiente de avaliação (DT21, compose.publico.yaml). O Caddy obtém e renova o
+# certificado TLS do nome em MATRIZ_PUBLIC_HOST e redireciona HTTP para HTTPS.
+{$MATRIZ_PUBLIC_HOST} {
+	encode gzip
+
+	handle /auth/* {
+		# A consola e a API de administração do Keycloak não ficam expostas: o keycloak-setup usa-as
+		# por dentro da rede do compose. Dentro do handle, o respond é avaliado antes do reverse_proxy.
+		@keycloak_admin path /auth/admin /auth/admin/*
+		respond @keycloak_admin 403
+
+		reverse_proxy keycloak:8080
+	}
+
+	handle {
+		reverse_proxy proxy:80
+	}
+}
+
+# Opcional: um nome anterior da mesma máquina (MATRIZ_REDIRECT_FROM) redireciona para o atual, para
+# que as ligações já partilhadas continuem a funcionar. Sem a variável, o bloco fica numa porta
+# interna que ninguém publica.
+{$MATRIZ_REDIRECT_FROM::8081} {
+	redir https://{$MATRIZ_PUBLIC_HOST}{uri} permanent
+}
