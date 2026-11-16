@@ -116,3 +116,20 @@ Nenhum dos 17 avisos é um defeito de comportamento. As três correções (E4–
 **Integração contínua:** `.github/workflows/ci.yml`, com os resultados em [`verification.md`](verification.md) › Integração contínua e em [`test-plan.md`](test-plan.md) §5. O `npm audit --omit=dev --audit-level=high` passa: mantêm-se as 3 vulnerabilidades moderadas do `typeorm` 0.3 (§4).
 
 **Por validar:** os achados Pendentes da §2 (S4, S6, S7, CR8–CR10) e a lista da §5 mantêm-se; o ESLint não os cobre.
+
+## 7. S7 e o ambiente de avaliação público (2026-11-16, DT21)
+
+O S7 recomenda não usar o realm de desenvolvimento fora do desenvolvimento. O ambiente de avaliação público (DT21) usa-o: é uma exceção decidida pelo humano, temporária, e o S7 continua **Pendente** para o realm versionado. No ambiente público, as duas partes do achado ficam assim:
+
+| Parte do S7 | No ambiente público | Evidência (2026-11-16, de fora da máquina) |
+|---|---|---|
+| Cliente público com *password grant* (`matriz-dev-cli`) | Desativado pelo `scripts/keycloak-ci.mjs` quando `MATRIZ_PUBLIC_URL` está definido | Pedido de token com `client_id=matriz-dev-cli` em `https://matriz-app.duckdns.org/auth/…/token`: `invalid_client` |
+| Sem proteção contra força bruta | **Mantém-se sem proteção, por decisão do humano** | — |
+
+**Porque não se ativou a proteção contra força bruta.** O bloqueio do Keycloak é por conta, e as contas fictícias são partilhadas com os avaliadores: qualquer pessoa que conheça o endereço podia bloquear a `ana` ou o `admin` com palavras-passe erradas, antes ou durante a apresentação. O risco de a deixar desligada é baixo neste ambiente:
+
+- a palavra-passe das contas fictícias é aleatória, com 12 caracteres gerados a partir de 9 bytes aleatórios (72 bits), e não está no repositório (SEC08);
+- a consola e a API de administração do Keycloak respondem 403 a quem vem de fora (`/auth/admin/master/console/` e `/auth/admin/realms/matriz/users`, medidos);
+- o ambiente só tem dados fictícios e é apagado depois da avaliação.
+
+**Não verificado:** o comportamento do Keycloak sob tentativas repetidas de início de sessão (já estava por validar na §5).

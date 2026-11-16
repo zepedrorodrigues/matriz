@@ -10,7 +10,7 @@ Validação da preparação da Matriz para entrega (Ex. 6) e relatório pedido n
 
 | Exercício | Requisito | Estado | Evidência |
 |---|---|---|---|
-| Ex. 1 | Análise e plano antes de alterar ficheiros | Cumprido | Plano apresentado e aprovado pelo responsável antes da primeira alteração (§5) |
+| Ex. 1 | Análise e plano antes de alterar ficheiros | Cumprido | Plano apresentado e aprovado pelo responsável antes da primeira alteração: o plano está no §8 e a aprovação também no §5 |
 | Ex. 2 | Dockerfiles, `.dockerignore`, imagens a construir e a arrancar; sem credenciais | Cumprido | `backend/Dockerfile`, `frontend/Dockerfile`, `.dockerignore`; `docker compose build` sem erros; nenhum `.env` nas imagens; nenhuma palavra-passe no histórico das camadas |
 | Ex. 3 | `compose.yaml` com os serviços, rede, volumes, `.env.example`, healthchecks | Cumprido | `compose.yaml`; `docker compose config -q` sem erros; 6 serviços saudáveis e 3 passos únicos terminados com código 0 |
 | Ex. 3 | Aplicação acessível, componentes a comunicar, funcionalidades operacionais | Cumprido | `GET /` 200, `GET /api/health` `{"status":"ok","database":"ok"}`; `E2E-01` e `SEC-01` a passar contra o compose |
@@ -99,3 +99,42 @@ O que esta entrega mudou no repositório (branch `feat/entrega-compose-ci-e-vers
 - `git grep` por atribuições de palavras-passe, tokens e chaves, por chaves privadas e por JWT: sem resultados.
 - O workflow tem uma palavra-passe fixa (`so-para-o-ci`) para a base de testes do primeiro job, que só existe durante o job e não é acessível de fora; as do segundo job são geradas em cada execução.
 - O `.env` está no `.gitignore` e no `.dockerignore`; nenhuma das duas imagens contém ficheiros `.env`.
+
+## 8. Plano aprovado (Ex. 1)
+
+O plano que o agente apresentou a 2026-11-15, às 11:17 UTC, depois de ler a ficha e os ficheiros de Docker, compose e CI então existentes, sem alterar nenhum. O responsável aprovou-o às 11:18 UTC («Accept your plan»), o que aceitou também as quatro recomendações que o plano lhe pedia para decidir. Foi apresentado em inglês, na sessão de trabalho; está aqui traduzido, sem alterações de conteúdo.
+
+**Estado do repositório face à ficha**
+
+| Exercício | Já existia | Em falta |
+|---|---|---|
+| Ex. 2 — Docker | `backend/Dockerfile` e `frontend/Dockerfile` (várias fases, `npm ci`, sem credenciais, backend com utilizador sem privilégios e `HEALTHCHECK`), `.dockerignore` na raiz | Construir e validar de novo no `main` atual |
+| Ex. 3 — Compose | `deploy/compose.yaml`: base com volume e verificação de saúde, passo das migrations, dois backends, frontend, proxy; `.env.example` | Não está na raiz como `compose.yaml`; o Keycloak não é um serviço (espera um no computador, na porta 8180); sem verificação de saúde no frontend nem no proxy; sem forma de carregar os dados de demonstração; persistência depois de recriar os contentores por validar |
+| Ex. 4 — CI | `ci.yml` em push e pull request, permissões mínimas, testes, build, falha controlada já evidenciada | Um job que construa as imagens Docker só depois das verificações |
+| Ex. 5 — Documentação e versão | `README.md`, `docs/architecture.md` com dois diagramas Mermaid, `openapi.yaml` | `CHANGELOG.md`, notas da versão, uma versão (sem `version` no `package.json`, sem etiquetas Git), instruções do compose novo |
+| Ex. 6 — Validação final | — | Executar a partir do README, estado dos contentores, registos, procura de credenciais, relatório curto com as cinco secções pedidas |
+
+**Etapas propostas**
+
+1. **Compose** (Ex. 3): acrescentar o Keycloak como serviço, com o realm versionado; um passo único que define as palavras-passe das contas fictícias (reutilizando o `scripts/keycloak-ci.mjs`); um passo opcional de seed; verificações de saúde no frontend e no proxy. Validar com os cinco comandos da ficha, os dois testes E2E contra a aplicação e um `down`/`up` para provar que os dados se mantêm.
+2. **CI** (Ex. 4): um terceiro job, depois de «Análise estática e testes», que constrói as duas imagens.
+3. **Documentação e versão** (Ex. 5): secção do compose no README, `CHANGELOG.md`, notas da versão, versão no `package.json`.
+4. **Relatório de validação** (Ex. 6 e relatório da entrega): um `docs/delivery-report.md` novo.
+5. Uma branch e um pull request contra o `main`, aberto depois de o pull request #4 estar integrado, porque os dois mexem no `AGENTS.md` §9. A decisão fica registada como DT19 no `constraints.md`.
+
+**Risco principal identificado no plano:** o endereço do emissor OIDC — o browser e o backend no contentor têm de chegar ao Keycloak pelo mesmo endereço, que foi o que falhou na verificação anterior do compose. Proposta: um alias de rede `keycloak.localhost`, que os browsers resolvem para o próprio computador; por experimentar à data do plano.
+
+**Decisões pedidas ao responsável e respostas**
+
+| # | Decisão | Recomendação do agente | Resposta |
+|---|---|---|---|
+| 1 | Keycloak dentro do compose (revê a DT15 e a DT16) | Sim | Aceite com o plano |
+| 2 | Local do ficheiro do compose | Passar `deploy/compose.yaml` para `compose.yaml` na raiz; `deploy/proxy.conf` fica onde está | Aceite com o plano |
+| 3 | Versão | `1.0.0-rc.1` (alternativa: `0.1.0-rc.1`); etiqueta Git só no fim, com autorização | Aceite com o plano |
+| 4 | Desafios opcionais | Acrescentar a análise de imagens com o Trivy (fecha o A); não fazer o B nem o C | Aceite com o plano |
+
+**Diferenças entre o plano e o que ficou feito**
+
+- O seed deixou de ser opcional: é um passo normal do compose, de que o proxy depende (§4 — sem ele, uma instalação nova não teria contas com que entrar).
+- O CI ficou com dois jobs e não três: o das imagens ficou junto com o dos testes E2E («Imagens Docker e testes End-to-End»), depois de «Análise estática e testes».
+- Os desafios B e C, que o plano deixava de fora, foram feitos depois, na `1.0.0-rc.2` (DT20), por decisão posterior do responsável.
