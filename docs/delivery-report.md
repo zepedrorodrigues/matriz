@@ -3,7 +3,7 @@
 Validação da preparação da Matriz para entrega (Ex. 6) e relatório pedido na secção *Entrega* da ficha. Tudo o que aqui se afirma foi medido a 2026-11-15, na máquina de desenvolvimento (Windows 11, Docker 29.6.1, Compose 5.3.0) ou no GitHub Actions; o que não foi verificado está dito como tal.
 
 - **Versão:** `1.0.0-rc.1` · **Etiqueta:** `v1.0.0-rc.1` (`0e3118f`) · **Commit do código:** `e8a1d79` · **Branch:** `feat/entrega-compose-ci-e-versao-candidata` · **Pull request:** #5
-- **Estado atual (2026-11-15):** a versão corrente é a `1.0.0-rc.2` (etiqueta `v1.0.0-rc.2`, commit `0a8e70b`; pull requests #7 e #8; DT20), que acrescenta os desafios opcionais B e C a esta entrega e está publicada como [pré-lançamento](https://github.com/zepedrorodrigues/matriz/releases/tag/v1.0.0-rc.2), com as duas imagens no GitHub Container Registry. Os exercícios 1 a 6 e os três desafios opcionais estão cumpridos (§1). As medições das secções 2 e 3 são as da `1.0.0-rc.1`; as da `1.0.0-rc.2` estão em `verification.md` › Observabilidade e publicação das imagens e › Publicação das imagens.
+- **Estado atual (2026-11-15):** a versão corrente é a `1.0.0-rc.2` (etiqueta `v1.0.0-rc.2`, commit `0a8e70b`; pull requests #7 e #8; DT20), que acrescenta os desafios opcionais B e C a esta entrega e está publicada como [pré-lançamento](https://github.com/zepedrorodrigues/matriz/releases/tag/v1.0.0-rc.2), com as duas imagens no GitHub Container Registry. Os exercícios 1 a 6 e os três desafios opcionais estão cumpridos (§1). As medições das secções 3 e 4 são as da `1.0.0-rc.1`; as da `1.0.0-rc.2` estão em `verification.md` › Observabilidade e publicação das imagens e › Publicação das imagens.
 - **Decisão:** DT19 (`constraints.md` §4.3) · **Notas da versão:** [`release-notes-1.0.0-rc.1.md`](release-notes-1.0.0-rc.1.md) · **Changelog:** [`../CHANGELOG.md`](../CHANGELOG.md)
 
 ## 1. Requisitos da ficha
@@ -17,7 +17,7 @@ Validação da preparação da Matriz para entrega (Ex. 6) e relatório pedido n
 | Ex. 3 | Dados mantêm-se depois de recriar os contentores | Cumprido | `docker compose down` e `up`: 8 tarefas e 2 eventos antes e depois; o seed, na segunda execução, acrescenta 0 linhas; o início de sessão continua a funcionar |
 | Ex. 3 | Logs sem erros críticos | Cumprido | 0 linhas de erro ou aviso no backend, no frontend e no proxy; no Keycloak, só avisos de funcionalidades obsoletas do modo de desenvolvimento |
 | Ex. 4 | `ci.yml` em push e pull request, dependências, testes, build, imagens | Cumprido | `.github/workflows/ci.yml`; execução `43710210612` a passar no commit `e8a1d79` |
-| Ex. 4 | Falha quando um teste falha; imagens só depois das verificações | Cumprido | Execução `43709975844` (§2) |
+| Ex. 4 | Falha quando um teste falha; imagens só depois das verificações | Cumprido | Execução `43709975844` (§3) |
 | Ex. 4 | Permissões mínimas; sem segredos | Cumprido | `permissions: contents: read`; palavras-passe geradas em cada execução e mascaradas; nenhum segredo configurado no repositório |
 | Ex. 5 | README, arquitetura com Mermaid, compose documentado, OpenAPI, changelog, notas | Cumprido | `README.md`, `architecture.md` §8 (três diagramas Mermaid no documento), `openapi.yaml` (OpenAPI 3.1, 58 operações), `CHANGELOG.md`, notas da versão |
 | Ex. 6 | Validação final e este relatório | Cumprido | Este documento |
@@ -25,7 +25,21 @@ Validação da preparação da Matriz para entrega (Ex. 6) e relatório pedido n
 | Desafio B | Logs estruturados e verificações adicionais de disponibilidade | Cumprido (1.0.0-rc.2, DT20) | Registos em JSON, uma linha por pedido, `GET /api/health/live` e `GET /api/health/ready`; `verification.md` › Observabilidade e publicação das imagens; CI `43713471476` a passar (277 + 47 testes, 2 E2E) |
 | Desafio C | Publicação automática de uma imagem no GitHub Container Registry, com uma release de teste | Cumprido (1.0.0-rc.2, DT20) | `.github/workflows/release.yml`; a publicação da `v1.0.0-rc.2` correu-o (execução `43742137288`, a passar) e enviou `ghcr.io/zepedrorodrigues/matriz-backend:1.0.0-rc.2` e `matriz-frontend:1.0.0-rc.2`; as duas descarregam-se sem credenciais e o compose arranca a partir delas; `verification.md` › Publicação das imagens |
 
-## 2. Resultados dos testes e da pipeline
+## 2. Alterações implementadas
+
+O que esta entrega mudou no repositório (branch `feat/entrega-compose-ci-e-versao-candidata`, pull request #5). O detalhe por versão está no [`CHANGELOG.md`](../CHANGELOG.md).
+
+| Área | Alteração |
+|---|---|
+| Docker Compose | `compose.yaml` na raiz (antes `deploy/compose.yaml`), com a aplicação completa: PostgreSQL, Keycloak com o realm versionado, migrations, dados de demonstração, passo das palavras-passe das contas fictícias, duas instâncias do backend, frontend e proxy, com verificações de saúde e dois volumes. O emissor OIDC passa a `http://keycloak.localhost:8080`, sem depender de um Keycloak instalado no computador |
+| Base de dados do compose | `deploy/db-init.sh`: o role `matriz` é criado sem privilégios de superutilizador (SEC04) |
+| Imagens | Frontend em `nginx:1.30-alpine` com `apk upgrade` (antes 1.29); a imagem final do backend deixa de ter a CLI do npm e as migrations passam a chamar a CLI do TypeORM pelo `node` |
+| Integração contínua | Job «Imagens Docker e testes End-to-End» no `ci.yml`, só depois do job dos testes: valida o compose, constrói as duas imagens, analisa-as com o Trivy, arranca a aplicação com o compose e corre os testes E2E contra ela |
+| Versão | `1.0.0-rc.1` nos três `package.json`; etiqueta `v1.0.0-rc.1` e pré-lançamento no GitHub |
+| Documentação | README (execução com Docker Compose), `architecture.md` §8, DT19, `CHANGELOG.md`, notas da versão e este relatório |
+| Depois desta entrega | `1.0.0-rc.2` (DT20): registos em JSON, `GET /api/health/live` e `/ready`, workflow `release.yml` que publica as imagens. Ambiente de avaliação público (DT21): `compose.publico.yaml`, `deploy/Caddyfile` e `MATRIZ_PUBLIC_URL` no `scripts/keycloak-ci.mjs` |
+
+## 3. Resultados dos testes e da pipeline
 
 **Na máquina local**
 
@@ -48,7 +62,7 @@ Validação da preparação da Matriz para entrega (Ex. 6) e relatório pedido n
 | `43709975844` | `09df3f0` | **Falha controlada:** limite do título alterado de 150 para 151. «Análise estática e testes» falhou a nomear os dois testes da CA03.18 (253 de 255); «Imagens Docker e testes End-to-End» ficou *skipped* — nenhuma imagem construída |
 | `43710210612` | `e8a1d79` | Limite reposto (`backend/src` igual ao do `main`) e versão 1.0.0-rc.1: os dois jobs a passar |
 
-## 3. Problemas encontrados e soluções
+## 4. Problemas encontrados e soluções
 
 | Problema | Classificação | Solução |
 |---|---|---|
@@ -59,9 +73,9 @@ Validação da preparação da Matriz para entrega (Ex. 6) e relatório pedido n
 | Trivy: 58 vulnerabilidades (1 crítica) na imagem do frontend, todas nos pacotes do Alpine do `nginx:1.29-alpine`, sem atualizações desde abril de 2026 | Confirmado (análise) | `nginx:1.30-alpine` com `apk upgrade --no-cache`: 0. Decisão do responsável |
 | Trivy: 6 vulnerabilidades altas na imagem do backend, todas na CLI do npm que vem no `node:24-slim` (`undici`, `brace-expansion`), nenhuma nas dependências da Matriz | Confirmado (análise) | A CLI do npm sai da imagem final: 0. As migrations passam a chamar a CLI do TypeORM pelo `node`. Decisão do responsável |
 | Um comentário dentro de um `RUN` com continuação de linha deu erro de sintaxe no `backend/Dockerfile`; como o `up` não reconstrói, a aplicação voltou a arrancar com as imagens antigas e pareceu estar bem | Erro do agente de IA | Comentário movido para antes do `RUN`; confirmado dentro do contentor que o npm já não existe e que o nginx é o 1.30.6 |
-| O `nginx:1.30-alpine` usado tal e qual pelo serviço `proxy` tem 3 vulnerabilidades altas com correção, todas no `libxslt` | Por resolver | A imagem do proxy não é construída pelo projeto; em produção o proxy é do fornecedor (DT06). Fica como limitação (§5) |
+| O `nginx:1.30-alpine` usado tal e qual pelo serviço `proxy` tem 3 vulnerabilidades altas com correção, todas no `libxslt` | Por resolver | A imagem do proxy não é construída pelo projeto; em produção o proxy é do fornecedor (DT06). Fica como limitação (§6) |
 
-## 4. Utilização dos agentes de IA
+## 5. Utilização dos agentes de IA
 
 - **Agente:** Claude Code (Anthropic), com acesso ao repositório, ao Docker local e à CLI do GitHub.
 - **O que fez:** a análise do estado do projeto e o plano (Ex. 1); o `compose.yaml`, o `deploy/db-init.sh`, as alterações aos Dockerfiles e ao workflow; a execução de todas as verificações deste relatório; a documentação, o changelog e as notas da versão.
@@ -69,7 +83,7 @@ Validação da preparação da Matriz para entrega (Ex. 6) e relatório pedido n
 - **Como se validou:** nenhum resultado é afirmado sem execução. As correções mediram-se antes e depois (Trivy 58 → 0 e 6 → 0); a pipeline viu-se falhar com um defeito introduzido de propósito e passar depois de reposto; a persistência verificou-se a recriar os contentores.
 - **Onde a IA errou:** o erro de sintaxe no Dockerfile acima, apanhado pela verificação dentro do contentor; e uma primeira verificação do SEC04 com uma coluna errada, repetida com `DELETE` e `TRUNCATE`.
 
-## 5. Limitações e pendentes
+## 6. Limitações e pendentes
 
 - **O compose não é a configuração de produção:** Keycloak em modo de desenvolvimento, sem TLS, contas fictícias. A implantação real depende do fornecedor (DT06) e da réplica e cópias de segurança (DT13).
 - **Ambiente de avaliação público (2026-11-16, DT21):** depois desta entrega, a `1.0.0-rc.2` ficou acessível por HTTPS numa máquina virtual (Debian 12, Google Cloud, Madrid), com o `compose.publico.yaml`; medições em `verification.md` › Ambiente de avaliação público. É um ambiente de demonstração e mantém as limitações do ponto anterior, exceto o TLS.
@@ -79,7 +93,7 @@ Validação da preparação da Matriz para entrega (Ex. 6) e relatório pedido n
 - **Herdados das fichas anteriores:** P12; DT09–DT12; os achados pendentes S4, S6, S7 e CR8–CR10; 3 vulnerabilidades moderadas através do `typeorm` 0.3.
 - **Desafios opcionais B e C:** feitos depois desta entrega, na versão `1.0.0-rc.2` (DT20; [`release-notes-1.0.0-rc.2.md`](release-notes-1.0.0-rc.2.md)). A publicação das imagens (C) ficou verificada com a `v1.0.0-rc.2` (`verification.md` › Publicação das imagens). Continuam por fazer as métricas de tempo de resposta e a medição da disponibilidade (RNF08, RNF09).
 
-## 6. Credenciais nos ficheiros versionados
+## 7. Credenciais nos ficheiros versionados
 
 - `git ls-files` por `.env`, chaves e certificados: só o `.env.example`, com valores fictícios («substituir»).
 - `git grep` por atribuições de palavras-passe, tokens e chaves, por chaves privadas e por JWT: sem resultados.
