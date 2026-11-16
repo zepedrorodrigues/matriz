@@ -176,6 +176,8 @@ flowchart LR
     K --- KV[("volume<br/>keycloak-data")]
 ```
 
+  **Ambiente de avaliação público** (DT21): o mesmo compose numa máquina virtual numa região da UE, com o `compose.publico.yaml` por cima. Um Caddy termina o TLS e é a única entrada (portas 80 e 443): `/auth` para o Keycloak, o resto para o `proxy`. O browser e o backend usam o mesmo emissor OIDC, `https://<nome público>/auth/realms/matriz`. Continua a não ser a implantação do primeiro diagrama: sem réplica nem cópias de segurança.
+
   Ordem de arranque, imposta pelas verificações de saúde: `db` → `migrate` → `seed`; `keycloak` → `keycloak-setup`; as duas instâncias do backend depois das migrations e do Keycloak; o `proxy` só depois de o frontend e as duas instâncias estarem saudáveis e os passos únicos terem terminado.
 - A tarefa diária (prazos e fim das sprints) corre numa única instância de cada vez: antes de começar, obtém um trinco no PostgreSQL (*advisory lock*), sem dependências novas.
 - **Limitação conhecida:** o proxy/balanceador e a mudança manual para a réplica (em infraestrutura interna) são pontos a vigiar; se a disponibilidade medida se aproximar de 99 %, passa-se a um cluster com mudança automática (DT13).

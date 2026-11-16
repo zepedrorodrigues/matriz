@@ -72,6 +72,7 @@ Validação da preparação da Matriz para entrega (Ex. 6) e relatório pedido n
 ## 5. Limitações e pendentes
 
 - **O compose não é a configuração de produção:** Keycloak em modo de desenvolvimento, sem TLS, contas fictícias. A implantação real depende do fornecedor (DT06) e da réplica e cópias de segurança (DT13).
+- **Ambiente de avaliação público (2026-11-16, DT21):** depois desta entrega, a `1.0.0-rc.2` ficou acessível por HTTPS numa máquina virtual (Debian 12, Google Cloud, Madrid), com o `compose.publico.yaml`; medições em `verification.md` › Ambiente de avaliação público. É um ambiente de demonstração e mantém as limitações do ponto anterior, exceto o TLS.
 - **Não verificado:** a aplicação do compose noutro sistema operativo que não o Windows com Docker Desktop e o `ubuntu-latest` do CI; a resolução de `keycloak.localhost` em browsers que não o Chrome; o cenário de apagar só um dos dois volumes; o `openapi.yaml` com uma ferramenta de *lint*.
 - **Imagem do proxy:** 3 vulnerabilidades altas com correção (`libxslt`) no `nginx:1.30-alpine` original (o frontend, construído pelo projeto, tem 0).
 - **Etiqueta Git `v1.0.0-rc.1`:** criada a 2026-11-15 no commit `0e3118f` do `main` (merge do pull request #5), depois de o CI passar nesse commit (execução `43711179061`), e publicada no GitHub como [pré-lançamento](https://github.com/zepedrorodrigues/matriz/releases/tag/v1.0.0-rc.1). Já não está pendente.

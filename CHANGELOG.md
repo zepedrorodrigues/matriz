@@ -2,6 +2,16 @@
 
 Alterações da Matriz por versão. O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e as versões seguem o [Semantic Versioning](https://semver.org/lang/pt-BR/). Os identificadores (US, CA, RN, DT…) remetem para a especificação em `docs/`.
 
+## [Não publicado]
+
+Ambiente de avaliação público (DT21). As imagens não mudam: o ambiente corre as da `1.0.0-rc.2`.
+
+### Adicionado
+
+- **`compose.publico.yaml`** e **`deploy/Caddyfile`:** por cima do `compose.yaml`, põem a aplicação numa máquina com endereço público, por HTTPS, com certificado obtido e renovado pelo Caddy. A aplicação e o Keycloak partilham o endereço (Keycloak em `/auth`); só as portas 80 e 443 ficam publicadas; a administração do Keycloak responde 403 a quem vem de fora.
+- **`MATRIZ_PUBLIC_URL`** no `scripts/keycloak-ci.mjs`: limita o cliente `matriz-web` ao endereço público e desativa o cliente `matriz-dev-cli`. Sem a variável, o script faz o mesmo que antes.
+- A aplicação está em <https://34-175-175-67.sslip.io> durante a avaliação.
+
 ## [1.0.0-rc.2] — 2026-11-15
 
 Segunda versão candidata: observabilidade e publicação das imagens (desafios opcionais B e C da Ficha PL 05, DT20). Notas da versão: [`docs/release-notes-1.0.0-rc.2.md`](docs/release-notes-1.0.0-rc.2.md).
