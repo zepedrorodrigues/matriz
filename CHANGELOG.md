@@ -8,9 +8,9 @@ Ambiente de avaliação público (DT21). As imagens não mudam: o ambiente corre
 
 ### Adicionado
 
-- **`compose.publico.yaml`** e **`deploy/Caddyfile`:** por cima do `compose.yaml`, põem a aplicação numa máquina com endereço público, por HTTPS, com certificado obtido e renovado pelo Caddy. A aplicação e o Keycloak partilham o endereço (Keycloak em `/auth`); só as portas 80 e 443 ficam publicadas; a administração do Keycloak responde 403 a quem vem de fora.
+- **`compose.publico.yaml`** e **`deploy/Caddyfile`:** por cima do `compose.yaml`, põem a aplicação numa máquina com endereço público, por HTTPS, com certificado obtido e renovado pelo Caddy. A aplicação e o Keycloak partilham o endereço (Keycloak em `/auth`); só as portas 80 e 443 ficam publicadas; a administração do Keycloak responde 403 a quem vem de fora. Com `MATRIZ_REDIRECT_FROM`, um nome anterior da máquina redireciona para o atual.
 - **`MATRIZ_PUBLIC_URL`** no `scripts/keycloak-ci.mjs`: limita o cliente `matriz-web` ao endereço público e desativa o cliente `matriz-dev-cli`. Sem a variável, o script faz o mesmo que antes.
-- A aplicação está em <https://34-175-175-67.sslip.io> durante a avaliação.
+- A aplicação está em <https://matriz-app.duckdns.org> durante a avaliação.
 
 ## [1.0.0-rc.2] — 2026-11-15
 

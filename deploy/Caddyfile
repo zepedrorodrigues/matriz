@@ -16,3 +16,10 @@
 		reverse_proxy proxy:80
 	}
 }
+
+# Opcional: um nome anterior da mesma máquina (MATRIZ_REDIRECT_FROM) redireciona para o atual, para
+# que as ligações já partilhadas continuem a funcionar. Sem a variável, o bloco fica numa porta
+# interna que ninguém publica.
+{$MATRIZ_REDIRECT_FROM::8081} {
+	redir https://{$MATRIZ_PUBLIC_HOST}{uri} permanent
+}

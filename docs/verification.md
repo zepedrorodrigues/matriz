@@ -318,7 +318,7 @@ Depois do merge do pull request #7: etiqueta `v1.0.0-rc.2` no commit `0a8e70b` d
 
 ## Ambiente de avaliação público (2026-11-16, DT21)
 
-A `1.0.0-rc.2` em <https://34-175-175-67.sslip.io>: máquina virtual `e2-medium` (2 vCPU, 4 GB) com Debian 12 no Google Cloud, região `europe-southwest1` (Madrid), Docker 29.9.3 com Compose 5.7.1, endereço IP fixo e regra de firewall só para as portas 80 e 443. Corre `compose.yaml` e `compose.publico.yaml` com as imagens do GitHub Container Registry (`--no-build`). Medido a partir do computador de desenvolvimento, de fora da máquina, salvo indicação.
+A `1.0.0-rc.2` em <https://matriz-app.duckdns.org> (no primeiro arranque, `https://34-175-175-67.sslip.io`, o nome com que a tabela seguinte foi medida): máquina virtual `e2-medium` (2 vCPU, 4 GB) com Debian 12 no Google Cloud, região `europe-southwest1` (Madrid), Docker 29.9.3 com Compose 5.7.1, endereço IP fixo e regra de firewall só para as portas 80 e 443. Corre `compose.yaml` e `compose.publico.yaml` com as imagens do GitHub Container Registry (`--no-build`). Medido a partir do computador de desenvolvimento, de fora da máquina, salvo indicação.
 
 | Verificação | Resultado |
 |---|---|
@@ -343,6 +343,19 @@ Antes de chegar à máquina, o `compose.publico.yaml` foi experimentado no compu
 | Primeira versão do `deploy/Caddyfile`: o `respond 403` fora do `handle /auth/*` | `GET /auth/admin/master/console/` respondeu **200** — a regra não era aplicada. Com o `respond` dentro do `handle`: 403 em `/auth/admin`, `/auth/admin/`, na consola e em `/auth/admin/realms/matriz/users`; 200 nas chaves públicas e na página de início de sessão |
 | `MATRIZ_PUBLIC_URL` definido | Pedido de autorização com `redirect_uri=http://localhost:5173/`: 400; com o endereço público: 200. Pedido de token com utilizador e palavra-passe pelo `matriz-dev-cli`: `invalid_client` |
 
-**Não verificado:** o início de sessão num browser que não o Chrome do Playwright; a renovação do certificado (só acontece daqui a cerca de 60 dias, e o ambiente é apagado antes); o `compose.yaml` sozinho com o `scripts/keycloak-ci.mjs` alterado, no computador de desenvolvimento — fica para o CI do pull request, que arranca o compose e corre os E2E. A máquina depende do serviço de nomes `sslip.io`, de terceiros: se ele falhar, o endereço deixa de resolver.
+**Não verificado:** o início de sessão num browser que não o Chrome do Playwright; a renovação do certificado (só acontece daqui a cerca de 60 dias, e o ambiente é apagado antes); o `compose.yaml` sozinho com o `scripts/keycloak-ci.mjs` alterado, no computador de desenvolvimento — fica para o CI do pull request, que arranca o compose e corre os E2E. A máquina depende de um serviço de nomes de terceiros (o DuckDNS): se ele falhar, o endereço deixa de resolver.
+
+**Mudança do nome público** para `matriz-app.duckdns.org` (subdomínio gratuito do DuckDNS), no mesmo dia: `MATRIZ_PUBLIC_HOST` alterado, `MATRIZ_REDIRECT_FROM` com o nome anterior e o mesmo `up -d --wait --no-build`.
+
+| Verificação, no nome novo | Resultado |
+|---|---|
+| Certificado TLS | Let's Encrypt, `CN=matriz-app.duckdns.org`, «Verify return code: 0 (ok)» |
+| `GET /api/health/ready` | 200, base de dados e fornecedor de identidade `ok` |
+| `keycloak-setup` | «Cliente matriz-web limitado a https://matriz-app.duckdns.org» |
+| `GET /auth/admin/master/console/` · `GET /api/projects` sem token | 403 · 401 |
+| `GET https://34-175-175-67.sslip.io/projects?x=1` | 301 para `https://matriz-app.duckdns.org/projects?x=1` |
+| `npm run test:e2e` | 2 a passar, 15,4 s — depois de corrigido o defeito abaixo |
+
+**Defeito encontrado na mudança.** O `up` recriou o frontend (configuração nova) mas não o `proxy`; o nginx do `proxy` resolve os nomes só no arranque e ficou com o endereço antigo do frontend: `GET /config.js` respondeu **502** e os 2 testes E2E falharam, com a API a responder 200. O `up --wait` tinha terminado com «container matriz-proxy-1 is unhealthy». Com `docker compose restart proxy`: `/config.js` 200 e os E2E a passar. Não acontece no primeiro arranque nem no reinício da máquina (todos os contentores arrancam de novo); fica documentado no README como passo da mudança de nome.
 
 **Não é a produção** (DT21): um só PostgreSQL, sem réplica nem cópias de segurança; Keycloak em modo de desenvolvimento; contas fictícias com a mesma palavra-passe.

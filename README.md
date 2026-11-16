@@ -148,7 +148,7 @@ npm run test:e2e                        # testes End-to-End contra esta aplicaç
 
 ## Ambiente de avaliação público
 
-Para a avaliação do projeto (DT21), a Matriz está em <https://34-175-175-67.sslip.io>, numa máquina virtual do Google Cloud em Madrid, com as imagens publicadas da `1.0.0-rc.2`. Entra-se com as contas fictícias da tabela em [Desenvolvimento](#desenvolvimento); a palavra-passe é entregue aos avaliadores pelo responsável do projeto e não está no repositório (SEC08). É um ambiente temporário de demonstração, não a produção: um só PostgreSQL sem réplica nem cópias de segurança, Keycloak em modo de desenvolvimento.
+Para a avaliação do projeto (DT21), a Matriz está em <https://matriz-app.duckdns.org>, numa máquina virtual do Google Cloud em Madrid, com as imagens publicadas da `1.0.0-rc.2`. Entra-se com as contas fictícias da tabela em [Desenvolvimento](#desenvolvimento); a palavra-passe é entregue aos avaliadores pelo responsável do projeto e não está no repositório (SEC08). É um ambiente temporário de demonstração, não a produção: um só PostgreSQL sem réplica nem cópias de segurança, Keycloak em modo de desenvolvimento.
 
 O [`compose.publico.yaml`](compose.publico.yaml) usa-se por cima do `compose.yaml` numa máquina com Docker, um nome público e as portas 80 e 443 abertas:
 
@@ -161,6 +161,7 @@ docker compose -f compose.yaml -f compose.publico.yaml up -d --wait --no-build
 - **Entrada única.** Um Caddy ([`deploy/Caddyfile`](deploy/Caddyfile)) obtém e renova o certificado TLS e redireciona HTTP para HTTPS. Só ele publica portas; o Keycloak e o proxy da aplicação deixam de as publicar.
 - **Um só endereço.** O Keycloak responde em `/auth` (emissor `https://<nome>/auth/realms/matriz`) e o resto vai para o proxy da aplicação. Dentro da rede do compose, o nome público é um alias do Caddy: o backend valida os tokens pelo mesmo endereço que o browser usa.
 - **Administração do Keycloak fechada.** `/auth/admin` responde 403 a quem vem de fora; o passo `keycloak-setup` usa-a por dentro da rede.
+- **Mudar o nome público.** Depois de alterar `MATRIZ_PUBLIC_HOST`, o mesmo comando recria o Keycloak, os backends e o frontend, mas não o `proxy`, que fica com o endereço antigo do frontend (502): `docker compose -f compose.yaml -f compose.publico.yaml restart proxy`. Com `MATRIZ_REDIRECT_FROM` no `.env`, o nome anterior redireciona para o novo.
 - **Clientes OIDC.** Com `MATRIZ_PUBLIC_URL`, o `scripts/keycloak-ci.mjs` limita o cliente `matriz-web` ao endereço público e desativa o `matriz-dev-cli` (utilizador e palavra-passe, só para desenvolvimento).
 
 Resultados medidos: [`docs/verification.md`](docs/verification.md) › Ambiente de avaliação público.
@@ -295,7 +296,7 @@ Duas imagens de contentor (DT06, `docs/architecture.md` §8, DT16), construídas
 - [x] Aula 4 (Ficha PL 04) — Testes unitários, de integração e E2E, Code Review e Security Review: [`docs/test-plan.md`](docs/test-plan.md), [`docs/quality-security-review.md`](docs/quality-security-review.md). Extensão opcional (2026-11-15): os testes e a análise estática correm num workflow de CI (DT18).
 - [x] Aula 5 (Ficha PL 05) — Entrega: Docker Compose com a aplicação completa, imagens construídas e analisadas no CI, changelog e versão candidata 1.0.0-rc.1 (DT19): [`docs/delivery-report.md`](docs/delivery-report.md), [`docs/release-notes-1.0.0-rc.1.md`](docs/release-notes-1.0.0-rc.1.md). Desafios opcionais B e C (1.0.0-rc.2, DT20): registos estruturados, verificações `live` e `ready` e publicação das imagens no GitHub Container Registry, feita e verificada com o [pré-lançamento `v1.0.0-rc.2`](https://github.com/zepedrorodrigues/matriz/releases/tag/v1.0.0-rc.2) — [`docs/release-notes-1.0.0-rc.2.md`](docs/release-notes-1.0.0-rc.2.md)
 
-- [x] Ambiente de avaliação público (2026-11-16, DT21): a `1.0.0-rc.2` em <https://34-175-175-67.sslip.io>, com HTTPS — ver [Ambiente de avaliação público](#ambiente-de-avaliação-público)
+- [x] Ambiente de avaliação público (2026-11-16, DT21): a `1.0.0-rc.2` em <https://matriz-app.duckdns.org>, com HTTPS — ver [Ambiente de avaliação público](#ambiente-de-avaliação-público)
 
 **Em números:** 42 regras de negócio · 36 requisitos funcionais · 13 requisitos não funcionais · 10 user stories · 116 critérios de aceitação (110 nas US e 6 transversais), todos verificáveis · sem decisões funcionais pendentes.
 

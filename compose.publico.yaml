@@ -57,6 +57,8 @@ services:
     restart: unless-stopped
     environment:
       MATRIZ_PUBLIC_HOST: ${MATRIZ_PUBLIC_HOST}
+      # Opcional: nome anterior da máquina, que passa a redirecionar para o atual.
+      MATRIZ_REDIRECT_FROM: ${MATRIZ_REDIRECT_FROM:-:8081}
     ports:
       - "80:80"
       - "443:443"
